@@ -1,0 +1,33 @@
+# GSE-One External Source Registry
+# Tracks all external sources evaluated by /gse:collect (retained and skipped).
+# Aligned with spec v0.7 Section 4.4
+
+sources:
+  - id: SRC-001
+    origin: ~/my-other-project/src/auth/
+    type: local                        # local | github
+    evaluated: 2026-04-10
+    sprint: 1
+    elements:
+      - path: auth_module.py
+        reusability: adaptable         # reusable-as-is | adaptable | incompatible
+        status: included               # included | skipped | deferred
+        integration_task: TASK-004     # link to backlog item
+        target: src/auth/              # where it was placed in the project
+      - path: tests/test_auth.py
+        reusability: adaptable
+        status: included
+        integration_task: TASK-005
+        target: tests/test_auth/
+
+  - id: SRC-002
+    origin: https://github.com/user/repo
+    type: github
+    evaluated: 2026-04-10
+    sprint: 1
+    license: MIT
+    elements:
+      - path: src/db/
+        reusability: incompatible
+        status: skipped
+        reason: "Project uses PostgreSQL, source uses MongoDB"

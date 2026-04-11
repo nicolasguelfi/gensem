@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "command": "if echo \"$CLAUDE_TOOL_INPUT\" | grep -q '^git commit'; then branch=$(git branch --show-current 2>/dev/null); if [ \"$branch\" = 'main' ]; then echo 'GUARDRAIL: Direct commit to main detected. Use a feature branch.'; exit 1; fi; fi"
+          },
+          {
+            "command": "if echo \"$CLAUDE_TOOL_INPUT\" | grep -q '^git push --force'; then echo 'EMERGENCY GUARDRAIL: Force push detected. This can cause permanent data loss. Aborting.'; exit 1; fi"
+          }
+        ]
+      }
+    ],
+    "postToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "command": "if echo \"$CLAUDE_TOOL_INPUT\" | grep -q '^git push'; then python3 -c \"import yaml; s=yaml.safe_load(open('.gse/status.yaml')); o=s.get('review_findings_open',0); print(f'WARNING: {o} open review findings') if o > 0 else None\" 2>/dev/null || true; fi"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "command": "if echo \"$CLAUDE_TOOL_INPUT\" | grep -q '.gse/'; then echo 'GSE-One state file modified. Run /gse:status to verify consistency.'; fi"
+          },
+          {
+            "command": "if echo \"$CLAUDE_TOOL_INPUT\" | grep -q 'docs/sprints/'; then echo 'Sprint artefact saved. Verify YAML frontmatter includes gse.branch field.'; fi"
+          }
+        ]
+      }
+    ]
+  }
+}

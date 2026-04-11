@@ -1,0 +1,42 @@
+# GSE-One Project Status
+# Auto-maintained by the GSE-One agent. Do not edit manually.
+# Schema aligned with spec v0.7
+
+gse_version: "0.7.0"
+current_sprint: 1
+current_phase: LC02                    # LC00 | LC01 | LC02 | LC03
+plan_status: approved                  # pending | approved | none
+
+health:
+  score: 0.0                           # Composite score 0-10
+  dimensions:
+    requirements_coverage: 0           # 0-10: % of REQ with linked tests
+    test_pass_rate: 0                  # 0-10: % of tests passing
+    design_debt: 0                     # 0-10: inverse of known shortcuts
+    review_findings: 0                 # 0-10: ratio of resolved findings
+    complexity_budget: 0               # 0-10: budget consumption ratio
+    traceability: 0                    # 0-10: % of artefacts with traces
+    git_hygiene: 0                     # 0-10: branch health
+    ai_integrity: 0                    # 0-10: unverified assertions, engagement
+  last_computed: ""                    # ISO 8601 timestamp
+
+complexity:
+  budget: 10                           # from config.yaml
+  consumed: 0
+  remaining: 10
+
+# P16 pushback detection
+consecutive_acceptances: 0             # counter for passive acceptance detection
+never_discusses: false                 # user never selects Discuss
+terse_responses: 0                     # single-word confirmations counter
+never_modifies: false                  # user never modifies proposals
+never_questions: false                 # user never asks why
+
+last_activity: ""                      # e.g., /gse:produce
+last_activity_date: ""                 # ISO 8601 timestamp
+
+# Stale sprint detection (complexity/session-based, not calendar-based)
+sessions_without_progress: 0           # incremented each /gse:go or /gse:resume with no TASK status change
+
+# Review findings counter (used by hooks)
+review_findings_open: 0

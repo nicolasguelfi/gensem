@@ -1,0 +1,124 @@
+---
+description: "Evaluate artefact status against project goals. Identifies covered, partial, and uncovered goals."
+---
+
+# GSE-One Assess — Gap Analysis
+
+Arguments: $ARGUMENTS
+
+## Options
+
+| Flag / Sub-command | Description |
+|--------------------|-------------|
+| (no args)          | Run full gap analysis against project goals |
+| `--sprint`         | Assess only the current sprint's coverage |
+| `--external`       | Focus assessment on external source compatibility |
+| `--report`         | Generate a formal gap report document |
+| `--help`           | Show this command's usage summary |
+
+## Prerequisites
+
+Before executing, read:
+1. `.gse/inventory.yaml` — artefact inventory from COLLECT
+2. `.gse/config.yaml` — project goals and scope definition
+3. `.gse/backlog.yaml` — current backlog (pool and sprint items)
+4. `.gse/sources.yaml` — external sources (if any)
+5. `docs/sprints/sprint-{NN}/reqs.md` — requirements for current sprint (if any)
+
+## Workflow
+
+### Step 1 — Gather Inputs
+
+Collect all inputs needed for the analysis:
+
+| Input | Source | Purpose |
+|-------|--------|---------|
+| Artefact inventory | `.gse/inventory.yaml` | What exists |
+| Project goals | `.gse/config.yaml` → `goals` | What is expected |
+| Backlog items | `.gse/backlog.yaml` | What is planned |
+| External sources | `.gse/sources.yaml` | What is available from outside |
+| Requirements | `docs/sprints/*/reqs.md` | Formal requirements |
+
+If `inventory.yaml` does not exist or was last generated in a previous session, propose running `/gse:collect` first.
+
+### Step 2 — Analyze Coverage Per Goal
+
+For each project goal defined in `config.yaml`:
+
+Evaluate coverage status:
+
+| Status | Symbol | Meaning |
+|--------|--------|---------|
+| **Covered** | `✓` | Goal is fully addressed by existing artefacts |
+| **Partial** | `◐` | Goal is partially addressed — some artefacts exist but gaps remain |
+| **Uncovered** | `✗` | No artefacts address this goal |
+| **At risk** | `⚠` | Artefacts exist but have quality concerns or dependency risks |
+
+For each goal, document:
+- Which artefacts contribute to it (by ID)
+- What is missing (specific gaps)
+- Suggested actions to close gaps
+
+### Step 3 — External Source Assessment
+
+For each included external source (from `.gse/sources.yaml`):
+
+| Criterion | Evaluation |
+|-----------|-----------|
+| **Compatibility** | Language, framework, and paradigm alignment with project |
+| **Integration cost** | Estimated effort to integrate (trivial / moderate / significant) |
+| **Risk** | Dependency risk, maintenance burden, license concerns |
+| **Coverage contribution** | Which goals this source helps address |
+
+Flag sources where integration cost exceeds the benefit of building from scratch.
+
+### Step 4 — Output Gap Report
+
+Present the analysis in a structured format:
+
+```
+Gap Analysis — Sprint S02 — 2026-01-20
+═══════════════════════════════════════
+
+Project Goals Coverage
+──────────────────────
+  ✓  G1: User authentication     REQ-001, REQ-002, SRC-010..015, TST-001..005
+  ◐  G2: API rate limiting       REQ-003 (defined), no implementation yet
+  ✗  G3: Admin dashboard         No artefacts
+  ⚠  G4: Data export             SRC-020 exists but has no tests, DES-005 incomplete
+
+External Sources
+────────────────
+  SRC-001 jwt.py         → G1 (reusable as-is, trivial integration)
+  SRC-002 oauth.py       → G1 (adaptable, moderate integration)
+  SRC-010 rate-limit.js  → G2 (incompatible — wrong language)
+
+Gaps Requiring Action
+─────────────────────
+  GAP-01: G2 needs implementation — suggest TASK for rate limiting middleware
+  GAP-02: G3 entirely uncovered — suggest requirements + design tasks
+  GAP-03: G4 at risk — SRC-020 needs tests, DES-005 needs completion
+
+Summary: 1/4 goals covered, 1 partial, 1 uncovered, 1 at risk
+```
+
+### Step 5 — Feed PLAN
+
+For each uncovered or partially covered goal, automatically generate candidate work items:
+
+1. Create TASK entries in the backlog pool:
+   - One TASK per identified gap
+   - Set `traces.derives_from` to the gap ID
+   - Set `status: pool` and `sprint: null`
+
+2. Report created items:
+```
+Created 3 candidate tasks in the backlog pool:
+  TASK-014 [code]        Implement rate limiting middleware (from GAP-01)
+  TASK-015 [requirement] Define admin dashboard requirements (from GAP-02)
+  TASK-016 [test]        Write tests for data export module (from GAP-03)
+
+These items are in the pool. Use /gse:plan to assign them to a sprint.
+```
+
+If `--report` flag is set, save the full gap report to `docs/sprints/sprint-{NN}/assess.md` with proper artefact frontmatter.

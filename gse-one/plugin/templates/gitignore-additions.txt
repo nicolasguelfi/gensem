@@ -1,0 +1,5 @@
+# GSE-One worktrees
+.worktrees/
+# GSE-One local state
+.gse/checkpoints/
+.gse/decisions-auto.log

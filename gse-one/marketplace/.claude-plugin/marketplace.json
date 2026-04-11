@@ -1,0 +1,19 @@
+{
+  "name": "gse-one",
+  "display_name": "GSE-One — AI Engineering Companion",
+  "description": "Structured SDLC management with 22 commands. Adaptive risk analysis, unified backlog, knowledge transfer, worktree isolation, AI integrity safeguards.",
+  "version": "0.7.0",
+  "author": {
+    "name": "GSE-One Project",
+    "url": "https://github.com/gse-one/gse-one"
+  },
+  "categories": ["development", "project-management", "quality"],
+  "keywords": ["sdlc", "agile", "sprint", "engineering", "project-management", "testing", "review", "git", "worktree"],
+  "license": "MIT",
+  "repository": "https://github.com/gse-one/gse-one",
+  "install": {
+    "type": "git",
+    "url": "https://github.com/gse-one/gse-one.git",
+    "path": "plugin"
+  }
+}

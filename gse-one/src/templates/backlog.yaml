@@ -1,0 +1,63 @@
+# GSE-One Unified Backlog
+# Single source of truth for all work items (TASK).
+# Items are either in the pool (sprint: null) or assigned to a sprint.
+# Git state is tracked per-TASK — no separate worktree tracking file.
+
+items:
+  # Sprint task — in progress (example)
+  - id: TASK-001
+    title: "Implement user authentication"
+    artefact_type: code                # code | requirement | design | test | doc | config | import
+    sprint: 1
+    priority: must                     # must | should | could
+    complexity: 3                      # complexity points consumed from budget
+    traces:
+      implements: [REQ-001]            # requirements this task implements
+      derives_from: [DES-001]          # design this task derives from
+    acceptance_criteria: "User can login via email/password and receive a JWT token"
+    status: in-progress                # open | planned | in-progress | review | fixing | done | delivered | deferred
+    origin: plan                       # plan | review | collect | user | import
+    origin_ref: null
+    git:
+      branch: gse/sprint-01/feat/auth
+      branch_status: active            # null | planned | active | merged | deleted
+      worktree: .worktrees/sprint-01-feat-auth
+      worktree_status: active          # null | active | removed
+      commits: 12
+      last_commit: 2026-04-10T14:30:00
+      uncommitted_changes: 0
+    github_issue: null                 # GitHub issue number, null if not enabled
+    test_campaign: null                # path to test campaign report
+    test_pass_rate: null               # % passing (set after test run)
+    code_coverage: null                # % coverage (set after test run)
+    created: 2026-04-08
+    updated: 2026-04-10
+
+  # Pool item — not yet assigned to a sprint (example)
+  - id: TASK-002
+    title: "Add dark mode support"
+    artefact_type: code
+    sprint: null                       # null = pool (unplanned)
+    priority: could
+    complexity: null                   # estimated during PLAN when promoted
+    traces:
+      derives_from: []
+      implements: []
+    acceptance_criteria: ""
+    status: open
+    origin: user
+    origin_ref: null
+    git:
+      branch: null
+      branch_status: null
+      worktree: null
+      worktree_status: null
+      commits: 0
+      last_commit: null
+      uncommitted_changes: 0
+    github_issue: 46
+    test_campaign: null
+    test_pass_rate: null
+    code_coverage: null
+    created: 2026-04-10
+    updated: 2026-04-10

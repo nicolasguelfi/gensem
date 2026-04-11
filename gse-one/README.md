@@ -27,74 +27,96 @@ GSE-One orchestrates the full lifecycle: `COLLECT > ASSESS > PLAN > PRODUCE > RE
 
 ## Installation
 
-### Step 1 — Clone the Repository
+### Claude Code
 
-Clone the repo once, anywhere on your machine:
+#### Step 1 — Clone the repository
 
 ```bash
 git clone https://github.com/nicolasguelfi/gensem.git ~/gensem
 ```
 
-### Step 2 — Choose an Installation Scope
+#### Step 2 — Install the plugin
 
-GSE-One provides 22 `/gse:*` commands. If you use multiple plugins, you may not want all of them loaded at all times. Choose the scope that fits your workflow:
+GSE-One adds 22 `/gse:*` commands. If you use multiple plugins, you may not want all of them loaded at all times. Choose the scope that fits your workflow:
 
 | Scope | When GSE-One is active | Best for |
 |-------|----------------------|----------|
-| **Project** | Only when you work inside a specific project | Most users — keeps your `/` menu clean |
-| **Global** | In every session, from any directory | Users who want GSE-One always available |
+| **Project** | Only inside a specific project directory | Most users — keeps your `/` menu clean |
+| **Project (personal)** | Same, but not committed to git | Solo developers |
+| **Global** | Every session, every directory | Users who want GSE-One always available |
 | **One-time** | Current terminal session only | Quick testing |
 
-#### Project scope (recommended)
-
-The plugin is only active when Claude Code or Cursor is launched inside the project directory. Other projects remain unaffected.
-
-**Claude Code** — run this from your project root:
+**Project scope (recommended)** — run from your project root:
 ```bash
 claude plugin install ~/gensem/gse-one/plugin --scope project
 ```
-This creates a `.claude/settings.json` in your project (committable, shared with your team).
+Creates `.claude/settings.json` in the project (committable, shared with the team). The plugin is only active when Claude Code is launched inside this directory. Other projects remain unaffected.
 
-For a personal project-level install (not committed to git), use `--scope local` instead — it writes to `.claude/settings.local.json` (gitignored).
-
-**Cursor:**
+**Project scope (personal)** — same, but gitignored:
 ```bash
-cp -r ~/gensem/gse-one/plugin/ ./gse-one-plugin/
-# In Cursor: /add-plugin > Local > select gse-one-plugin/
+claude plugin install ~/gensem/gse-one/plugin --scope local
 ```
+Writes to `.claude/settings.local.json` (not committed to git).
 
-#### Global scope
-
-The plugin is available in every Claude Code session, regardless of the working directory.
-
+**Global scope** — available everywhere:
 ```bash
 claude plugin install ~/gensem/gse-one/plugin --scope user
 ```
+Adds the plugin to `~/.claude/settings.json`. Active in every session regardless of working directory.
 
-This adds the plugin to `~/.claude/settings.json`.
-
-#### One-time session (testing only)
-
-Loads the plugin for the current session only. Nothing is persisted.
-
+**One-time session** — testing only:
 ```bash
 claude --plugin-dir ~/gensem/gse-one/plugin/
 ```
+Loads the plugin for the current session. Nothing is persisted.
 
-### Step 3 — Verify
+#### Step 3 — Verify
 
 Type `/gse:go`. The agent should respond and detect your project state.
 
-### Marketplace (when available)
+#### Marketplace (when available)
 
-These methods are not yet operational. They will become available once the official marketplaces accept submissions.
-
-**Claude Code:**
+Not yet operational. After approval by Anthropic:
 ```bash
 claude plugin install gse-one
 ```
 
-**Cursor:**
+---
+
+### Cursor
+
+#### Step 1 — Clone the repository
+
+```bash
+git clone https://github.com/nicolasguelfi/gensem.git ~/gensem
+```
+
+#### Step 2 — Copy the plugin into your project
+
+Cursor plugins are scoped to the project where they are installed. Copy the plugin directory into your project root:
+
+```bash
+cp -r ~/gensem/gse-one/plugin/ /path/to/your-project/gse-one-plugin/
+```
+
+Then register it in Cursor:
+
+1. Open Cursor in your project
+2. Type `/add-plugin`
+3. Select **Local**
+4. Navigate to and select the `gse-one-plugin/` directory
+
+The plugin is now active in this project only. Repeat for each project where you want GSE-One. Other projects remain unaffected.
+
+> **Tip:** Add `gse-one-plugin/` to your `.gitignore` if you don't want to commit the plugin files, or leave it committed to share with your team.
+
+#### Step 3 — Verify
+
+Type `/gse:go`. The agent should respond and detect your project state.
+
+#### Marketplace (when available)
+
+Not yet operational. After approval by Cursor:
 ```
 # Search "gse-one" in /add-plugin
 ```

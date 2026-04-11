@@ -118,12 +118,14 @@ GSE-One adds 22 `/gse:*` commands. Choose the installation scope based on where 
 
 ### For Cursor
 
+> **Note:** Cursor does not currently support project-scoped plugin installation. Local plugins are installed globally via `~/.cursor/plugins/`.
+
 ```bash
-cp -r ~/gensem/gse-one/plugin/ /path/to/your-project/gse-one-plugin/
-# In Cursor: /add-plugin > Local > select gse-one-plugin/
+mkdir -p ~/.cursor/plugins/local
+ln -sf ~/gensem/gse-one/plugin ~/.cursor/plugins/local/gse-one
 ```
 
-The plugin is scoped to the project where it is copied. Other projects remain unaffected.
+The plugin is active in all projects opened in Cursor. Using a symlink keeps it in sync with the cloned repository.
 
 #### Cursor Marketplace (when available)
 
@@ -169,8 +171,9 @@ claude --plugin-dir ~/gensem/gse-one/plugin/
 ### Cursor User
 
 ```bash
-# Copy plugin into your project, then:
-# /add-plugin > Local > select gse-one-plugin/
+# Global install (symlink)
+mkdir -p ~/.cursor/plugins/local
+ln -sf ~/gensem/gse-one/plugin ~/.cursor/plugins/local/gse-one
 ```
 
 ### Verification

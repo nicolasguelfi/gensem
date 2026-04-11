@@ -93,51 +93,22 @@ git clone https://github.com/nicolasguelfi/gensem.git ~/gensem
 
 #### Step 2 — Install the plugin
 
-Like Claude Code, Cursor supports different installation scopes. Choose the one that fits your workflow:
+> **Note:** Unlike Claude Code, Cursor does not currently support project-scoped plugin installation. Local plugins are installed globally via `~/.cursor/plugins/` and are active in all projects.
 
-| Scope | When GSE-One is active | Best for |
-|-------|----------------------|----------|
-| **Project (team)** | Only inside a specific project, shared with the team | Teams — plugin committed to git |
-| **Project (personal)** | Only inside a specific project, not committed | Solo developers |
-| **Global** | Every project opened in Cursor | Users who want GSE-One always available |
+Create a symlink from the Cursor plugins directory to the cloned plugin:
 
-**Project scope — shared with team (recommended):**
-
-Copy the plugin into your project root and commit it:
 ```bash
-cp -r ~/gensem/gse-one/plugin/ /path/to/your-project/gse-one-plugin/
+mkdir -p ~/.cursor/plugins/local
+ln -sf ~/gensem/gse-one/plugin ~/.cursor/plugins/local/gse-one
 ```
-Then register it:
-1. Open Cursor in your project
-2. Type `/add-plugin` > **Local** > select `gse-one-plugin/`
 
-The plugin is committed to git — every team member gets it automatically. Other projects remain unaffected.
+The plugin is now available in every project opened in Cursor. Using a symlink means you always get the latest version when you `git pull` the repository.
 
-**Project scope — personal (not committed):**
-
-Same as above, but add the plugin directory to `.gitignore`:
-```bash
-cp -r ~/gensem/gse-one/plugin/ /path/to/your-project/gse-one-plugin/
-echo "gse-one-plugin/" >> /path/to/your-project/.gitignore
-```
-Then register via `/add-plugin` > **Local** > select `gse-one-plugin/`.
-
-The plugin is active in this project only and not visible to other team members.
-
-**Global scope — available in all projects:**
-
-Install the plugin in the Cursor user directory:
-```bash
-mkdir -p ~/.cursor/plugins
-cp -r ~/gensem/gse-one/plugin/ ~/.cursor/plugins/gse-one/
-```
-The plugin loads automatically in every project opened in Cursor.
-
-> **Note:** With a global install, the 22 `/gse:*` commands appear in every project. Use project scope if you prefer to keep your command menu clean.
+> **Tip:** The 22 `/gse:*` commands will appear in all projects. If Cursor adds project-scoped plugins in the future, this documentation will be updated.
 
 #### Step 3 — Verify
 
-Type `/gse:go`. The agent should respond and detect your project state.
+Open any project in Cursor and type `/gse:go`. The agent should respond and detect your project state.
 
 #### Marketplace (when available)
 

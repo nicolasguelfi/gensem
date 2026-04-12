@@ -589,7 +589,7 @@ To prevent this, each sprint has a **complexity budget** — a finite number of 
 The budget size is calibrated by project size and team context (via HUG). A solo beginner gets a smaller budget (fewer moving parts to manage); an expert team gets a larger one.
 
 ### P11 — Guardrails (Risk Mitigation and Traceability)
-Guardrails are the enforcement mechanism of the P7→P8→P11 risk analysis chain. They ensure that high-consequence actions are formally validated by the user and traced in the decision journal. Guardrails do not block — they make cost visible and require proportional acknowledgment. See Section 9 for levels (Soft, Hard, Emergency), calibration by expertise, and git-specific guardrails.
+Guardrails are the enforcement mechanism of the P7→P8→P11 risk analysis chain. They ensure that high-consequence actions are formally validated by the user and traced in the decision journal. Guardrails make cost visible and require proportional acknowledgment: Soft guardrails warn without blocking; Hard guardrails block until the user provides a documented rationale for overriding; Emergency guardrails halt operations until explicit acknowledgment of risk. See Section 9 for levels, calibration by expertise, and git-specific guardrails.
 
 **Infrastructure**
 
@@ -888,12 +888,12 @@ The HUG activity captures and maintains the following profile dimensions:
 | Dimension | Purpose | Examples |
 |-----------|---------|----------|
 | **IT expertise** | Calibrate technical depth of explanations | Beginner / Intermediate / Advanced / Expert |
-| **Scientific expertise** | Calibrate analytical rigor and formalism | None / Familiar / Proficient / Researcher |
-| **Abstraction capability** | Calibrate level of conceptual vs. concrete communication | Prefers examples / Balanced / Prefers abstractions |
+| **Scientific expertise** | Calibrate analytical rigor and formalism | none / familiar / practitioner / researcher |
+| **Abstraction capability** | Calibrate level of conceptual vs. concrete communication | concrete-first / balanced / abstract-first |
 | **Language** | Adapt interaction and production languages | `chat: fr`, `artifacts: en`, `overrides: {requirement: fr}`. Default: chat=detected, artifacts=en. Changeable at any time globally or per document. |
-| **Preferred verbosity** | Control response length | Concise / Standard / Verbose |
+| **Preferred verbosity** | Control response length | terse / normal / detailed |
 | **Domain background** | Source of analogies for adaptive communication (P9) | Teaching / Business / Science / Engineering / Design |
-| **Decision involvement** | Calibrate decision tier thresholds (P7) | Hands-off (more Auto) / Balanced / Hands-on (more Gate) |
+| **Decision involvement** | Calibrate decision tier thresholds (P7) | autonomous (more Auto) / collaborative / supervised (more Gate) |
 | **Project domain** | Adapt engineering recommendations | Web / Embedded / Scientific / CLI / Library / Mobile |
 | **Team context** | Adapt collaboration recommendations | Solo / Small team / Large team |
 | **Learning goals** | Drive proactive learning proposals (P14) | "I want to understand testing" / "Learn git basics" / None |
@@ -1514,7 +1514,7 @@ Guardrails are the enforcement mechanism of the risk analysis system (P7→P8→
 1. **Formal validation** — ensure that actions with significant consequences on any project dimension (quality, cost, time, security, scope) are explicitly approved by the user before execution.
 2. **Traceability** — every guarded decision is logged in the decision journal with the full risk analysis, the user's choice, and the rationale, so it can be audited and revisited.
 
-Guardrails do not block — they make cost visible and require proportional acknowledgment. The stronger the guardrail, the more explicit the acknowledgment must be.
+Guardrails make cost visible and require proportional acknowledgment. Soft guardrails warn without blocking. Hard guardrails block until the user provides a documented rationale. Emergency guardrails halt until explicit risk acknowledgment. The stronger the guardrail, the more explicit the acknowledgment must be.
 
 ### 9.2 Levels
 
@@ -1823,13 +1823,7 @@ This log is not shown to the user by default but is available via `/gse:status -
 │       └── ...                      # One file per topic, enriched over time
 │
 ├── src/                             # Source code artefacts
-├── tests/                           # Test artefacts
-│   └── evidence/                    # Test evidence (screenshots, videos, reports)
-│       └── sprint-NN/
-│           └── TASK-NNN/
-│               ├── *.png            # Screenshots
-│               ├── *.mp4            # Videos (optional)
-│               └── report.md        # Campaign report
+├── tests/                           # Test source files (unit, integration, e2e)
 └── ...                              # Other project files
 ```
 
@@ -2349,9 +2343,10 @@ Evaluate states **in order** — the first matching row wins.
 | Sprint, design + preview done (or skipped), **no test strategy** (no `test-strategy.md`) | Start `TESTS --strategy` — define test pyramid: verification tests (from DESIGN) + validation tests (from REQS acceptance criteria). |
 | Sprint, tasks ready (reqs + design + test strategy + preview done or skipped), none in-progress | Start `PRODUCE` on first planned TASK |
 | Sprint exists, tasks in-progress | Resume `PRODUCE` on current task |
-| Sprint exists, tasks done, not reviewed | Start `REVIEW` |
+| Sprint exists, tasks done, not reviewed | Start `REVIEW` (requires test evidence — will block if tests were skipped) |
 | Sprint exists, review done, fixes pending | Start `FIX` |
-| Sprint exists, all tasks delivered | Start LC03 (`COMPOUND` > `INTEGRATE`) |
+| Sprint exists, all tasks reviewed, ready to deliver | Start `DELIVER` (requires REQ→TST coverage for must-priority requirements) |
+| Sprint exists, all delivered | Start LC03 (`COMPOUND` > `INTEGRATE`) |
 | Sprint exists, compound done | Propose next sprint → LC01 |
 | Sprint stale (> `lifecycle.stale_sprint_sessions` sessions without progress) | Stale detection (Step 3) |
 

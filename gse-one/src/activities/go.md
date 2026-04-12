@@ -76,8 +76,9 @@ Evaluate states **in order** — the first matching row wins.
 | Design + preview done (or skipped), **no test strategy** (no `test-strategy.md`) | Start TESTS `--strategy` — define test pyramid: verification tests (from DESIGN) + validation tests (from REQS acceptance criteria). |
 | Tasks ready (reqs + design + test strategy + preview done or skipped), none in-progress | Start PRODUCE on first planned TASK |
 | Tasks with status `in-progress` | Resume PRODUCE — show current task, propose continuation |
-| All sprint tasks `done`, no review | Start REVIEW — propose `/gse:review` |
+| All sprint tasks `done`, no review | Start REVIEW — propose `/gse:review` (requires test evidence — will block if tests were skipped) |
 | Review done, fixes pending | Start FIX — propose `/gse:fix` |
+| All tasks reviewed, ready to deliver | Start DELIVER — propose `/gse:deliver` (requires REQ→TST coverage for must-priority requirements) |
 | All tasks delivered, no compound | Start LC03 — propose `/gse:compound` |
 | Compound done | Propose next sprint — increment sprint number, transition to LC01 (`COLLECT` > `ASSESS` > `PLAN`) |
 

@@ -78,14 +78,22 @@ Read `config.yaml` field `git.strategy` and branch accordingly:
 
 #### Strategy: `branch-only`
 
-1. Create feature branch:
+1. Determine base branch:
+   - If sprint branch `gse/sprint-{NN}` exists (full mode): branch from it.
+   - If no sprint branch exists (Lightweight mode): branch from `main` directly.
+2. Create feature branch:
    ```
+   # Full mode:
    git branch gse/sprint-{NN}/{type}/{name} gse/sprint-{NN}
    git checkout gse/sprint-{NN}/{type}/{name}
+
+   # Lightweight mode (no sprint branch):
+   git branch gse/{type}/{name} main
+   git checkout gse/{type}/{name}
    ```
-2. Update the TASK in `backlog.yaml`:
+3. Update the TASK in `backlog.yaml`:
    - `status: in-progress`
-   - `git.branch: gse/sprint-{NN}/{type}/{name}`
+   - `git.branch: gse/sprint-{NN}/{type}/{name}` (full) or `gse/{type}/{name}` (lightweight)
    - `git.branch_status: active`
 
 #### Strategy: `none`

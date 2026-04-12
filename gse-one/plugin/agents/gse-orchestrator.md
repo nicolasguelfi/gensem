@@ -93,6 +93,12 @@ When `profile.it_expertise` is `beginner`, apply these rules to ALL chat output 
 - **Artefact metadata:** Every structured artefact includes YAML frontmatter: gse.type, gse.sprint, gse.branch, gse.traces, gse.status, gse.created, gse.updated.
 - **TASK lifecycle:** open > planned > in-progress > review > fixing > done > delivered | deferred. Git state per TASK in backlog.yaml.
 
+### Resilience
+
+- **YAML validation:** After writing any `.gse/*.yaml` file, verify the YAML is parseable. If invalid → restore from the latest checkpoint in `.gse/checkpoints/` and report the error. Never leave a corrupt state file.
+- **Context overflow prevention:** When `backlog.yaml` exceeds ~200 lines (typically sprint 5+), compact it: move TASKs with `status: delivered` to `backlog-archive.yaml`. When sprint artefact directories accumulate, propose archiving completed sprints: `docs/sprints/sprint-{NN}/` → `docs/archive/sprint-{NN}/`.
+- **Graceful degradation:** All `.gse/` files are human-readable YAML and Markdown. If the agent is unavailable, the user can consult `status.yaml` (current state), `backlog.yaml` (tasks), and `docs/sprints/` (artefacts) directly to understand project state and continue manually.
+
 ## Project Layout (mandatory structure)
 
 ```

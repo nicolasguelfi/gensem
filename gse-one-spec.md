@@ -2016,6 +2016,22 @@ When resuming a session, the agent loads state in priority order to stay within 
 
 **Total essential context:** ~100-200 lines. The agent must NEVER load all state files at once.
 
+### 12.7 Resilience
+
+GSE-One state files are human-readable YAML and Markdown by design. This enables resilience against agent failures:
+
+1. **YAML validation** — After writing any `.gse/*.yaml` file, the agent verifies that the YAML is parseable. If the file is corrupt (invalid YAML), the agent restores from the latest checkpoint in `.gse/checkpoints/` and reports the error. A corrupt state file must never be left in place.
+
+2. **Context overflow prevention** — When `backlog.yaml` exceeds ~200 lines (typically around sprint 5), the agent compacts it by moving TASKs with `status: delivered` to `backlog-archive.yaml`. When sprint artefact directories accumulate past 5 sprints, the agent proposes archiving completed sprints: `docs/sprints/sprint-{NN}/` → `docs/archive/sprint-{NN}/`. This keeps the active state within context window limits.
+
+3. **Graceful degradation** — If the AI agent is unavailable (context overflow, service outage, model error), the user can continue by reading the state files directly:
+   - `status.yaml` → current sprint, phase, last activity
+   - `backlog.yaml` → task list and statuses
+   - `docs/sprints/sprint-{NN}/` → plan, requirements, design, test strategy, review findings
+   - `.gse/checkpoints/` → recovery snapshots
+
+   All file formats are documented in Sections 12.1–12.5. No proprietary encoding is used.
+
 ---
 
 ## 13. Configuration & Customization

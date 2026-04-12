@@ -28,6 +28,8 @@ Every structured interaction follows a consistent format that provides context, 
 
 2. **MANDATORY "Discuss" option** — Every structured interaction MUST end with "Discuss" as the last numbered option. This ensures the human can always request more information, challenge assumptions, or explore alternatives before committing. The agent MUST NEVER omit this option.
 
+3. **Interactive mode (preferred)** — When the hosting environment provides an interactive question tool (e.g., `AskUserQuestion` in Claude Code, clarifying questions in Cursor), the agent SHOULD use it instead of the text-based numbered list. Benefits: clickable options, checkboxes for multi-select questions, skip buttons. The structured content (Question, Context, Options, Discuss) remains identical — only the presentation adapts. The "Discuss" option maps to the automatic "Other" escape hatch in interactive tools. Fall back to text format when the interactive tool is unavailable or the number of options exceeds its limits (e.g., >4 options).
+
 3. **Consequence horizons** — For Gate-tier decisions, each option includes consequence analysis at three time scales (per P8):
    - **Now**: Immediate effect
    - **3 months**: Medium-term implications

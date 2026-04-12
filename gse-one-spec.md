@@ -378,6 +378,8 @@ N. Discuss — Open a discussion around this question
 **Your choice:** [1/2/3/.../N]
 ```
 
+**Interactive mode (preferred when available):** When the hosting environment provides an interactive question tool (e.g., `AskUserQuestion` in Claude Code, clarifying questions in Cursor), the agent SHOULD use it instead of the text-based numbered list. This provides a better UX with clickable options, checkboxes for multi-select, and skip buttons. The structured content (Question, Context, Options, Discuss) remains the same — only the presentation changes from text to interactive widget. When the interactive tool is unavailable or the number of options exceeds its limits, fall back to the text format above.
+
 **No implicit consent:** Silence or lack of response is NOT consent for Gate-tier decisions. If the user does not respond, the agent waits or works on other non-blocked tasks. The agent never assumes approval.
 
 **Escalation when uncertain:** If the agent is uncertain about the risk tier of a decision, it MUST escalate to Gate tier. It is always safe to ask; it is never safe to assume.
@@ -534,6 +536,10 @@ Examples:
 **Language levels:** Communication uses the user's `language.chat` setting; produced artefacts use `language.artifacts` (default: `en`). Per-type overrides are available (e.g., requirements in French, code in English). See the Language dimension in the HUG profile.
 
 **Domain-specific expertise:** The agent observes expertise signals during activities and silently records per-domain expertise in the user profile (`expertise_domains`). When a domain entry exists, the agent uses it instead of the global `it_expertise` for communication depth and decision tier calibration in that domain. The agent never announces classification changes — it adapts silently.
+
+**System dialog anticipation:** When the agent is about to trigger an action that will produce a system permission dialog (e.g., git init confirmation, file access request, terminal command approval), it MUST prepare the user before executing. For beginner users: explain what the dialog means and which button to click. For advanced users: no anticipation needed. This prevents beginners from being blocked by unexpected technical dialogs.
+
+**Question cadence:** The number of questions asked simultaneously is proportional to IT expertise. Beginner: 1 question at a time. Intermediate: 2-3 grouped by theme. Advanced/Expert: all in one block. This applies across all skills.
 
 **Output formatting:** Chat output uses **bold** for decisions and key terms, *italic* for file paths and references, bullet lists over tables (portability), code blocks for commands and YAML. Emoji usage is controlled by the `emoji` HUG dimension (default: on, at most one per message, never inside technical content).
 

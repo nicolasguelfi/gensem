@@ -55,6 +55,10 @@ The key distinction is between translation and simplification. Translation prese
 
 8. **No condescension** — Adaptive communication is respectful. Explaining a concept to a beginner does not mean being patronizing. The tone is always that of a knowledgeable colleague who happens to speak the user's language.
 
+9. **System dialog anticipation** — When the agent is about to trigger an action that will produce a system permission dialog (e.g., git init confirmation, file access request, terminal command approval), it MUST prepare the user before executing the action. For beginner users: explain what the dialog means and which button to click (e.g., "A confirmation dialog will appear — click 'Run' to confirm, or 'Skip' to cancel"). For advanced users: no anticipation needed — they know the IDE. This prevents beginners from being blocked by unexpected technical dialogs they don't understand.
+
+10. **Question cadence** — The number of questions asked simultaneously is proportional to the user's IT expertise. Beginners receive **one question at a time** (wait for response before the next). Intermediate users receive **2-3 questions grouped** by related theme. Advanced/expert users receive **all questions in one block**. This applies to all skills, not just HUG — whenever the agent needs multiple inputs from the user, it batches them according to expertise level.
+
 9. **Output formatting** — Chat output must be readable across terminals and IDEs. Rules:
    - Use **bold** for decisions, actions, and key terms
    - Use *italic* for file paths, branch names, and technical references

@@ -39,8 +39,10 @@ Examine the working directory to classify the situation.
 | Condition | State | Action |
 |-----------|-------|--------|
 | No `.gse/` directory AND project files exist (after exclusions) | **Adopt candidate** | Transition to Adopt mode (Step 8) |
-| No `.gse/` directory AND directory is empty/near-empty (only excluded dirs) | **New project** | Transition to HUG (`/gse:hug`) |
+| No `.gse/` directory AND directory is empty/near-empty (only excluded dirs) | **New project** | **Automatically execute** `/gse:hug` (do NOT just propose it — run it directly). No preamble, no table, no technical explanation. |
 | `.gse/` exists | **Existing project** | Read `status.yaml` and proceed to Step 2 |
+
+**New project auto-start rule:** When the project is empty, the user's intent is clear — they want to get started. The agent MUST immediately execute the HUG skill inline (language question first, then profile interview) without asking for confirmation or displaying diagnostic output. The user should see the HUG language question as the very first interaction, not a status table.
 
 ### Step 2 — Recovery Check (Unsaved Work Detection)
 

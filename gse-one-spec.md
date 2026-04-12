@@ -2493,7 +2493,61 @@ AD-HOC              /gse:task
 
 ---
 
-## Appendix B — Changelog
+## Appendix B — Maintainer Guide
+
+This section helps anyone maintaining, extending, or debugging GSE-One understand the architecture and avoid cascading inconsistencies.
+
+### File hierarchy and propagation rules
+
+```
+gse-one-spec.md                    ← Authoritative source of truth
+  ↓ (principles extracted to)
+src/principles/*.md                ← Detailed principle rules (P1-P16)
+  ↓ (summarized into)
+src/agents/gse-orchestrator.md     ← Agent context (routing + global rules)
+  ↓ (activities implemented as)
+src/activities/*.md                ← Skill files (execution details)
+  ↓ (generated into)
+plugin/                            ← Deployable plugin (Claude Code + Cursor)
+```
+
+### Discipline: what goes where
+
+| Content type | Location | Rationale |
+|---|---|---|
+| **Routing decisions** (which activity next) | Orchestrator | Loaded in every session |
+| **Global rules** (beginner filter, project layout, recovery) | Orchestrator | Applied across all skills |
+| **Principle summaries** (1-3 lines per P) | Orchestrator | Agent needs them for risk/communication decisions |
+| **Execution details** (how to run an activity, pre-checks) | Skill files | Loaded on-demand when the activity is invoked |
+| **Detailed rules** (full rule sets, examples, edge cases) | Principle files | Reference documentation |
+| **Canonical definitions** (enums, formats, lifecycle phases) | Spec | Single source of truth |
+
+### Modification checklist
+
+When changing any concept, verify alignment across all layers:
+
+1. **Spec** (`gse-one-spec.md`) — update the canonical definition
+2. **Principle file** (`src/principles/*.md`) — update detailed rules if applicable
+3. **Orchestrator** (`src/agents/gse-orchestrator.md`) — update summary if it affects routing or global behavior
+4. **Skill files** (`src/activities/*.md`) — update execution details if applicable
+5. **Guardrails** (`src/principles/guardrails.md`) — update if severity levels change
+6. **Regenerate** — run `python gse_generate.py --clean --verify` to rebuild the plugin
+7. **Cross-audit** — verify no contradictions between spec, orchestrator, and skills
+
+### Common cascade patterns
+
+| If you change... | Also check... |
+|---|---|
+| An enum (e.g., verbosity scale) | Spec table, HUG skill, profile YAML example, orchestrator |
+| A lifecycle phase ordering | Orchestrator decision tree, go.md decision tree, spec Section 14.3 |
+| A guardrail severity level | guardrails.md, orchestrator lifecycle guardrails, go.md, affected skill |
+| A principle rule number | Principle file, spec, any skill that references "(P{N})" |
+| The project layout | Orchestrator Project Layout, spec Section 12.1, affected skills |
+| A TASK artefact_type | Spec Section 4, task.md, produce.md, guardrails.md |
+
+---
+
+## Appendix C — Changelog
 
 > **Note:** Versions 0.1.0 through 0.7.0 were developed during an intensive design session. The dates reflect the actual drafting period. Future versions will follow standard release cadence.
 

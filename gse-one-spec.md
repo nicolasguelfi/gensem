@@ -531,6 +531,12 @@ Examples:
 - For a scientist: "A worktree is like a parallel experiment — isolated conditions, same lab, merge results when proven"
 - For a business person: "A branch is like a draft proposal — work on it independently, present it for approval, then merge into the official version"
 
+**Language levels:** Communication uses the user's `language.chat` setting; produced artefacts use `language.artifacts` (default: `en`). Per-type overrides are available (e.g., requirements in French, code in English). See the Language dimension in the HUG profile.
+
+**Domain-specific expertise:** The agent observes expertise signals during activities and silently records per-domain expertise in the user profile (`expertise_domains`). When a domain entry exists, the agent uses it instead of the global `it_expertise` for communication depth and decision tier calibration in that domain. The agent never announces classification changes — it adapts silently.
+
+**Output formatting:** Chat output uses **bold** for decisions and key terms, *italic* for file paths and references, bullet lists over tables (portability), code blocks for commands and YAML. Emoji usage is controlled by the `emoji` HUG dimension (default: on, at most one per message, never inside technical content).
+
 ### P10 — Complexity Budget
 A sprint that accumulates too many features, dependencies, or architectural changes becomes unmanageable — tests are skipped, reviews are superficial, and defects slip through. Users rarely perceive this risk because each addition feels small in isolation, but complexity compounds.
 
@@ -695,6 +701,19 @@ The agent maintains a lightweight **competency map** in the HUG profile (`.gse/p
 
 This map is used to calibrate both the contextual tips and the proactive proposals, and to progressively adjust the user's effective expertise level over time. As the user learns, the agent naturally shifts from Gate-tier to Inform-tier decisions, from verbose to concise explanations, and from frequent to rare guardrails — the tutoring works itself out of a job.
 
+#### Progressive expertise by domain
+
+In addition to the global `it_expertise` captured at HUG, the profile includes an `expertise_domains` section (initially empty) that the agent populates by observation during activities. Example after a few sprints:
+
+```yaml
+expertise_domains:
+  frontend: advanced       # user corrected CSS issues spontaneously
+  database: beginner       # user struggled with SQL joins
+  security: advanced       # user identified a vulnerability before the agent
+```
+
+When a domain entry exists, the agent uses it instead of the global `it_expertise` for communication and decision tier calibration in that domain. This is never asked at HUG — it emerges from use.
+
 **AI Integrity**
 
 ### P15 — Agent Fallibility (Self-Awareness)
@@ -832,7 +851,7 @@ The HUG activity captures and maintains the following profile dimensions:
 | **IT expertise** | Calibrate technical depth of explanations | Beginner / Intermediate / Advanced / Expert |
 | **Scientific expertise** | Calibrate analytical rigor and formalism | None / Familiar / Proficient / Researcher |
 | **Abstraction capability** | Calibrate level of conceptual vs. concrete communication | Prefers examples / Balanced / Prefers abstractions |
-| **Mother tongue** | Adapt interaction language | fr, en, de, ... |
+| **Language** | Adapt interaction and production languages | `chat: fr`, `artifacts: en`, `overrides: {requirement: fr}`. Default: chat=detected, artifacts=en. Changeable at any time globally or per document. |
 | **Preferred verbosity** | Control response length | Concise / Standard / Verbose |
 | **Domain background** | Source of analogies for adaptive communication (P9) | Teaching / Business / Science / Engineering / Design |
 | **Decision involvement** | Calibrate decision tier thresholds (P7) | Hands-off (more Auto) / Balanced / Hands-on (more Gate) |
@@ -840,6 +859,7 @@ The HUG activity captures and maintains the following profile dimensions:
 | **Team context** | Adapt collaboration recommendations | Solo / Small team / Large team |
 | **Learning goals** | Drive proactive learning proposals (P14) | "I want to understand testing" / "Learn git basics" / None |
 | **Contextual tips** | Enable/disable in-activity micro-explanations (P14) | Enabled / Disabled |
+| **Emoji** | Enable/disable emoji in chat output | On (default) / Off |
 
 **Smart interview:** The agent infers as many dimensions as possible from context before asking:
 - **Language:** detected from the user's first message
@@ -1981,7 +2001,9 @@ lifecycle:
 
 interaction:
   verbosity: standard                   # concise | standard | verbose
-  language: auto                       # auto (from HUG) | en | fr | de | ...
+  language:
+    chat: auto                          # auto (from HUG) | en | fr | de | ...
+    artifacts: en                       # default language for produced files
 
 decisions:
   tier_bias: balanced                  # hands-off | balanced | hands-on
@@ -2248,10 +2270,18 @@ When invoked, `/gse:go` follows this decision tree:
 | `.gse/` does not exist + project is empty | Enter **HUG** (LC00) |
 | `.gse/` exists | Read `status.yaml` → proceed to Step 2 |
 
-**Step 2 — Determine next action:**
+**Step 2 — Recovery check:**
+
+If `.gse/` exists, scan for unsaved work from a previous session that ended without `/gse:pause`:
+- Check all active worktrees and the main directory for uncommitted changes
+- If found: present a Gate decision — recover (auto-commit), review the diff first, discard, or skip
+- If nothing found: proceed silently
+
+**Step 3 — Determine next action:**
 
 | Current state | Next action |
 |--------------|-------------|
+| No sprint exists AND `it_expertise: beginner` AND new project | Enter **intent-first mode** (Step 6) |
 | No sprint exists | Start LC01 (GO > COLLECT > ASSESS > PLAN) |
 | Sprint exists, plan not approved | Resume PLAN |
 | Sprint exists, tasks in-progress | Resume PRODUCE on current task |
@@ -2259,9 +2289,9 @@ When invoked, `/gse:go` follows this decision tree:
 | Sprint exists, review done, fixes pending | Start FIX |
 | Sprint exists, all tasks delivered | Start LC03 (COMPOUND > INTEGRATE) |
 | Sprint exists, compound done | Propose next sprint → LC01 |
-| Sprint stale (> `lifecycle.stale_sprint_sessions` sessions without progress) | Stale detection (Step 3) |
+| Sprint stale (> `lifecycle.stale_sprint_sessions` sessions without progress) | Stale detection (Step 4) |
 
-**Step 3 — Stale sprint detection:**
+**Step 4 — Stale sprint detection:**
 
 ```
 **Question:** Sprint N has had X sessions without progress. What would you like to do?
@@ -2275,13 +2305,22 @@ When invoked, `/gse:go` follows this decision tree:
 4. Discuss
 ```
 
-**Step 4 — Failure handling:**
+**Step 5 — Failure handling:**
 
 If an activity fails (test failure, merge conflict, tool error):
 1. Save current state to checkpoint
 2. Report the error with the agent's assessment of the cause
 3. Propose options (Gate): retry, skip (if skippable), pause, discuss
 4. Never silently continue after a failure
+
+**Step 6 — Intent-first mode (beginner + new project):**
+
+When `it_expertise: beginner` and no sprint exists yet, the orchestrator enters a conversational mode before the formal lifecycle:
+1. Elicit intent in plain language: *"Describe what you'd like to build or achieve."*
+2. Reformulate and validate: *"If I understand correctly, you want: [list]. Correct?"*
+3. Translate to initial backlog items (no jargon)
+4. Transition to LC01, presenting each activity in plain language (e.g., COLLECT → *"Let me look at what we have to work with"*)
+5. The user can exit intent-first mode at any time by saying *"I know the process"* — the agent switches to normal orchestration and updates the profile
 
 ```yaml
 # In config.yaml → lifecycle:

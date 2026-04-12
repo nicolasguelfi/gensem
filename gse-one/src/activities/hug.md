@@ -32,7 +32,7 @@ Before asking any questions, infer as much as possible from available signals:
 
 | Dimension | Inference Source |
 |-----------|-----------------|
-| Mother tongue | Language of the user's first message |
+| Chat language | Language of the user's first message |
 | Project domain | Package manifest, README, directory structure |
 | IT expertise | Vocabulary complexity in user messages (e.g., "deploy" vs "put online") |
 | Team context | Git log — number of contributors, commit patterns |
@@ -49,7 +49,7 @@ The 11 HUG dimensions are:
 | 1 | **IT expertise** | beginner / intermediate / advanced / expert | Calibrate technical depth of explanations |
 | 2 | **Scientific expertise** | none / familiar / practitioner / researcher | Adjust formality and rigor expectations |
 | 3 | **Abstraction capability** | concrete-first / balanced / abstract-first | Choose explanation style (examples vs theory) |
-| 4 | **Mother tongue** | ISO 639-1 code (e.g., `fr`, `en`, `de`) | Set agent communication language |
+| 4 | **Language** | `chat`: ISO 639-1, `artifacts`: ISO 639-1, `overrides`: per-type | Set chat language, artifact language, and per-type overrides. Default: chat=detected, artifacts=en. Tell the user: "I'll communicate in [chat language]. Files will be produced in [artifacts language] by default. You can change this at any time, globally or per document." |
 | 5 | **Preferred verbosity** | terse / normal / detailed | Control output length and ceremony level |
 | 6 | **Domain background** | free text | Tailor domain-specific vocabulary and examples |
 | 7 | **Decision involvement** | autonomous / collaborative / supervised | Control Gate frequency and agent autonomy |
@@ -57,6 +57,7 @@ The 11 HUG dimensions are:
 | 9 | **Team context** | solo / pair / small-team / large-team | Adjust collaboration ceremonies |
 | 10 | **Learning goals** | free text (optional) | Activate proactive LEARN at relevant moments |
 | 11 | **Contextual tips** | on / off | Enable/disable inline micro-explanations |
+| 12 | **Emoji** | on / off | Enable/disable emoji in chat output (default: on) |
 
 For dimensions that could not be inferred, ask questions in natural conversation style. Group related questions to minimize back-and-forth. Typically 4-5 questions suffice.
 

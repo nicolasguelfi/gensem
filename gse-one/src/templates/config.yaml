@@ -22,7 +22,9 @@ lifecycle:
 # --- Section 3: Interaction ---
 interaction:
   verbosity: standard                  # concise | standard | verbose
-  language: auto                       # auto (from HUG) | en | fr | de | ...
+  language:
+    chat: auto                         # auto (from HUG) | en | fr | de | ...
+    artifacts: en                      # default language for produced files
 
 # --- Section 4: Decisions ---
 decisions:

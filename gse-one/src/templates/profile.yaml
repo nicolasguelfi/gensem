@@ -8,7 +8,10 @@ user:
   it_expertise: ""          # beginner | intermediate | advanced | expert
   scientific_expertise: ""  # none | familiar | proficient | researcher
   abstraction_capability: "" # examples | balanced | abstractions
-  mother_tongue: ""         # ISO 639-1 code (fr, en, de, ...)
+  language:
+    chat: ""               # ISO 639-1 code — language for chat communication (e.g., fr, en, de)
+    artifacts: en          # ISO 639-1 code — default language for produced files (code, docs, commits)
+    overrides: {}          # per-artefact-type language overrides (e.g., {requirement: fr, learning-note: fr})
   preferred_verbosity: ""   # concise | standard | verbose
   domain_background: ""     # teaching | business | science | engineering | design
   decision_involvement: ""  # hands-off | balanced | hands-on
@@ -16,6 +19,20 @@ user:
   team_context: ""          # solo | small-team | large-team
   learning_goals: []
   contextual_tips: true     # enable/disable in-activity tips
+  emoji: true               # enable/disable emoji in chat output
+
+# Progressive expertise by domain (populated by agent observation, not by HUG).
+# The agent detects expertise signals during activities and updates this section.
+# When a domain is listed here, the agent uses it instead of the global it_expertise
+# for communication calibration and decision tier classification in that domain.
+expertise_domains: {}
+  # Example after a few sprints:
+  # frontend: advanced       # user corrected CSS issues spontaneously
+  # backend: intermediate    # user asked clarifying questions but understood quickly
+  # database: beginner       # user struggled with SQL joins
+  # security: advanced       # user identified a vulnerability before the agent
+  # testing: intermediate    # user wrote tests but needed guidance on coverage
+  # devops: beginner         # user asked what CI/CD means
 
 competency_map:
   concepts_explained: []    # List of SE concepts the agent has explained

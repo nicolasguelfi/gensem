@@ -142,7 +142,9 @@ Claude ignores the `rules/` directory silently. Cursor ignores `settings.json` s
 
 > **Terminology:** This document describes the design of **skills** — the technical artifacts (`SKILL.md` files in `plugin/skills/`) that deliver the **activities** defined in the specification. Each skill implements exactly one activity: the skill `plan/SKILL.md` delivers the activity `/gse:plan`. See the specification for the formal relationship between activities, skills, commands, and inclusion policies.
 
-> **Note:** This document details the 17 skills that required specific design decisions (git integration, new mechanisms, complex workflows). The following 5 activities are implemented directly from the spec without additional design: `/gse:reqs`, `/gse:design`, `/gse:preview`, `/gse:compound`, `/gse:integrate`. See the specification (§3) for their full definitions.
+> **Note:** This document details the 17 skills that required specific design decisions (git integration, new mechanisms, complex workflows). The following 5 activities are implemented directly from the spec without additional design: `/gse:reqs`, `/gse:design`, `/gse:preview`, `/gse:compound`, `/gse:integrate`. See the specification for their full definitions.
+
+> **Spec-driven enrichments (v0.10+):** The following features are implemented in skills and principles directly from the specification, without additional design. See the specification for details: three-level language management (chat/artifacts/overrides) in HUG and P9; output formatting rules and emoji control in P9; recovery check for unsaved work in `/gse:go`; intent-first mode for beginner users in `/gse:go`; progressive expertise tracking by domain in P9 and the user profile.
 
 ### 4.1 `/gse:plan` — Git Integration
 

@@ -36,13 +36,29 @@ Examine the working directory to classify the situation:
 | No `.gse/` directory AND directory is empty/near-empty | **New project** | Transition to HUG (`/gse:hug`) |
 | `.gse/` exists | **Existing project** | Read `status.yaml` and proceed to Step 2 |
 
-### Step 2 — Determine Next Action (Decision Tree)
+### Step 2 — Recovery Check (Unsaved Work Detection)
+
+If `.gse/` exists, scan for unsaved work before proceeding:
+
+1. **Check worktrees** — For each worktree listed in `config.yaml → git.worktree_dir` (default `.worktrees/`), run `git status`. Detect uncommitted changes.
+2. **Check main working directory** — Run `git status` on the project root.
+3. **If uncommitted changes are found:**
+   - Report clearly: *"I found unsaved changes in N worktree(s). This usually means the previous session ended without `/gse:pause`."*
+   - List each worktree with changes (branch name, number of modified files)
+   - Present Gate decision:
+     - **Recover** (default) — Auto-commit changes with message `gse(recovery): checkpoint — unsaved work from previous session`
+     - **Review first** — Show the diff before committing
+     - **Discard** — Discard uncommitted changes (confirm twice — destructive)
+     - **Skip** — Continue without committing (changes remain uncommitted)
+4. **If no uncommitted changes** — Proceed silently (no message).
+
+### Step 3 — Determine Next Action (Decision Tree)
 
 Read `status.yaml` fields: `current_sprint`, `lifecycle_phase`, `last_activity`, `last_activity_timestamp`.
 
 | Current State | Proposed Action |
 |---------------|-----------------|
-| No sprint defined | Start LC01 — run sequence: `/gse:collect` > `/gse:assess` > `/gse:plan --strategic` |
+| No sprint defined | If `it_expertise: beginner` and new project: start Intent-First mode (Step 7). Otherwise: start LC01 — run sequence: `/gse:collect` > `/gse:assess` > `/gse:plan --strategic` |
 | Plan exists, not approved | Resume PLAN — present plan summary, ask for approval Gate |
 | Tasks with status `in-progress` | Resume PRODUCE — show current task, propose continuation |
 | All sprint tasks `done`, no review | Start REVIEW — propose `/gse:review` |
@@ -52,7 +68,7 @@ Read `status.yaml` fields: `current_sprint`, `lifecycle_phase`, `last_activity`,
 
 Present the proposal and wait for user confirmation before executing.
 
-### Step 3 — Stale Sprint Detection
+### Step 4 — Stale Sprint Detection
 
 Read `config.yaml → lifecycle.stale_sprint_sessions` (default: 3 sessions).
 
@@ -67,7 +83,7 @@ If the session-without-progress count reaches the configured threshold:
    - **Discard** — Abandon sprint, return all tasks to pool
    - **Discuss** — Explain the situation and help decide
 
-### Step 4 — Failure Handling
+### Step 5 — Failure Handling
 
 If the last activity ended with an error or incomplete state:
 
@@ -79,7 +95,7 @@ If the last activity ended with an error or incomplete state:
    - **Pause** — Save state and stop (user will return later)
    - **Discuss** — Explore alternatives
 
-### Step 5 — Lightweight Mode Detection
+### Step 6 — Lightweight Mode Detection
 
 If `.gse/` does not exist AND the project has < 5 files:
 
@@ -99,7 +115,33 @@ If `.gse/` does not exist AND the project has < 5 files:
 3. User can upgrade to full mode anytime via `/gse:go` — the agent scaffolds the missing structure.
 4. **Minimum viable project size:** For truly one-off tasks (single script, quick fix), using GSE-One adds more overhead than value. Suggest working without GSE-One and adopting later if the project grows.
 
-### Step 6 — Adopt Mode (`--adopt`)
+### Step 7 — Intent-First Mode (Beginner + New Project)
+
+When `profile.it_expertise` is `beginner` and no sprint has been defined yet (first time through LC01), the orchestrator enters a conversational mode to clarify the user's intent before starting the formal lifecycle:
+
+1. **Elicit intent** — Ask in simple terms:
+   *"Describe in a few sentences what you'd like to build or achieve."*
+   Let the user express freely. Do not ask for technical details.
+
+2. **Reformulate and validate** — Translate the intent into a structured summary using the user's vocabulary (no jargon):
+   *"If I understand correctly, you want: [bulleted list in plain language]. Is that right?"*
+   Iterate until the user confirms.
+
+3. **Translate to backlog** — Convert the validated intent into initial TASK items in `backlog.yaml`. Present them as concrete goals, not technical work items:
+   *"Here's what we'll work on: [list of goals]. I'll guide you through each step."*
+
+4. **Transition to LC01** — Enter the normal lifecycle (`COLLECT` > `ASSESS` > `PLAN`), but present each activity in plain language:
+   - COLLECT → *"Let me look at what we have to work with"*
+   - ASSESS → *"Let me figure out what's missing"*
+   - PLAN → *"Let me organize the work into manageable steps"*
+   - REQS → *"Let me write down exactly what the application should do"*
+   - PRODUCE → *"Now I'll build it"*
+   - REVIEW → *"Let me check my own work for mistakes"*
+   - DELIVER → *"Let me finalize and package the result"*
+
+5. **Exit condition** — The user can say *"I know the process, let's skip ahead"* at any point. The agent switches to normal orchestration immediately and updates the profile: `it_expertise: intermediate`.
+
+### Step 8 — Adopt Mode (`--adopt`)
 
 When adopting an existing project not created with GSE-One.
 

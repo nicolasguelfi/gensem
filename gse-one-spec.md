@@ -11,7 +11,7 @@
 
 ## Table of Contents
 
-1. [Overview](#1-overview) — Coding agent architecture, platform mapping, GSE-One philosophy, key concepts, agent roles
+1. [Overview](#1-overview) — Coding agent architecture, agile foundations, platform mapping, GSE-One philosophy, key concepts, agent roles
 2. [Core Principles](#2-core-principles) — Foundations (P1-P3, P5-P6) | Risk & Communication (P4, P7–P11) | Infrastructure (P12–P14) | AI Integrity (P15–P16)
 3. [Activities (Commands)](#3-activities-commands) — 23 commands across 9 categories
 4. [Collect — Artefact Inventory and External Source Discovery](#4-collect)
@@ -27,7 +27,8 @@
 14. [Standard Activity Groups (Lifecycle Phases)](#14-standard-activity-groups)
 15. [Glossary](#15-glossary)
 A. [Activity Summary (Quick Reference)](#appendix-a)
-B. [Changelog](#appendix-b)
+B. [Maintainer Guide](#appendix-b)
+C. [Changelog](#appendix-c)
 
 ---
 
@@ -265,7 +266,65 @@ GSE-One delivers its methodology as a **single plugin directory** (`plugin/`) th
 
 Note: "orchestrator" is a GSE-One convention. In Claude Code, it is the session's default agent. In Cursor, it is an always-on rule. Neither platform has a formal "orchestrator" concept.
 
-### 1.2 GSE-One Overview
+### 1.2 Agile Software Engineering Foundations
+
+This section defines the agile engineering principles that underpin GSE-One. Understanding these foundations is essential because GSE-One is not a generic tool — it is an opinionated methodology that adapts agile practices for the solo developer + AI agent context.
+
+#### Why agile?
+
+Traditional software development (waterfall) follows a sequential process: gather all requirements → design everything → build everything → test everything → deliver. Each phase completes before the next begins. This fails in practice because requirements change, designs have flaws only visible during implementation, and late testing discovers issues that are expensive to fix.
+
+Agile methodologies solve this by working in **short iterations** (sprints) where each cycle delivers a working increment of the product. Feedback is gathered early and often, and the plan adapts to what is learned. The Agile Manifesto (2001) summarizes this as four values:
+
+1. **Individuals and interactions** over processes and tools
+2. **Working software** over comprehensive documentation
+3. **Customer collaboration** over contract negotiation
+4. **Responding to change** over following a plan
+
+#### Core agile concepts
+
+| Concept | Standard Definition |
+|---|---|
+| **Sprint** | A short iteration (typically 1-4 weeks) producing a working increment |
+| **Product Backlog** | The ordered list of everything the product needs |
+| **Sprint Backlog** | The subset of backlog items selected for a sprint |
+| **User Story** | A requirement expressed as "As a [role], I want [goal], so that [benefit]" |
+| **Acceptance Criteria** | Conditions that must be met for a story to be considered done |
+| **Increment** | The sum of all completed work, integrated with prior increments |
+| **Definition of Done** | The checklist an artefact must satisfy to be considered complete |
+| **Retrospective** | A sprint-end reflection on process improvement |
+| **Velocity** | The amount of work completed per sprint |
+
+#### How GSE-One adapts agile for solo AI-assisted development
+
+GSE-One inherits agile principles but adapts them for a context that standard agile (Scrum, XP, SAFe) does not address: a single developer working with an AI agent, not a team of humans.
+
+| Agile standard | GSE-One adaptation | Why |
+|---|---|---|
+| Sprint = time-boxed (2 weeks) | Sprint = **complexity-boxed** (budget of points, no fixed duration) | A solo dev + AI has no fixed cadence; sessions vary in length |
+| Product Owner (human role) | The **user** is the product owner | No organizational role separation needed |
+| Scrum Master (human facilitator) | The **AI agent** is the facilitator | The agent guides the process, enforces guardrails, proposes next steps |
+| Daily Standup (team sync) | **Recovery check** at each `/gse:go` | No team to sync; the agent checks for unsaved work instead |
+| Sprint Review (stakeholder demo) | `/gse:review` with **devil's advocate** | The agent reviews its own work and challenges its own assumptions (P16) |
+| Sprint Retrospective (process improvement) | `/gse:compound` (3 axes: project, methodology, competencies) | Deeper than a retrospective — includes knowledge transfer and methodology feedback |
+| User Stories | **Test-driven requirements** (REQ- with Given/When/Then acceptance criteria) | Acceptance criteria = validation test specifications, ensuring every requirement is testable |
+| Definition of Done (manual checklist) | **Lifecycle guardrails** (REQS → TESTS → PRODUCE → REVIEW, automatically enforced) | No manual checklist — the agent blocks progression if prerequisites are missing |
+| Velocity (story points per sprint) | **Complexity points** consumed per sprint | Same concept, measured in complexity cost rather than abstract story points |
+| Pair Programming (XP) | **Human + AI agent** collaboration | The agent is the permanent pair partner, adapting its level of autonomy to the user's preference |
+
+#### What GSE-One adds beyond standard agile
+
+| GSE-One original | Purpose | Not found in standard agile |
+|---|---|---|
+| **AI integrity** (P15, P16) | Protect the user from hallucinations, complaisance, and outdated knowledge | Agile assumes human practitioners don't hallucinate |
+| **Adaptive communication** (P9) | Translate jargon to the user's level; beginner output filter | Agile assumes shared vocabulary among team members |
+| **Consequence horizons** (P8) | Evaluate decisions at 3 time scales (Now, 3 months, 1 year) | Agile focuses on the current sprint, not multi-horizon impact |
+| **Complexity budget** (P10) | Finite budget per sprint preventing scope creep via measurable cost | Agile uses velocity as a trailing indicator, not a forward constraint |
+| **Progressive knowledge transfer** (P14) | Agent teaches the user during work, with mastery tracking | Agile expects pre-existing expertise or external training |
+| **Spike mode** | Complexity-boxed experiments bypassing REQS/TESTS guardrails | XP has spikes, but without formal guardrail bypass or complexity caps |
+| **Three project modes** (Micro/Lightweight/Full) | Scale ceremony to project size | Agile methodologies are typically one-size (Scrum) or customizable but heavy (SAFe) |
+
+### 1.3 GSE-One Overview
 
 GSE-One (Generic Software Engineering One) is an AI engineering companion that guides users through the full software development lifecycle. It is implemented as a plugin for AI coding agents (Claude Code, Cursor, or any compatible agent-based IDE) and provides 23 commands covering planning, requirements, design, production, quality, delivery, deployment, and capitalization.
 
@@ -275,7 +334,7 @@ The canonical command prefix is **`/gse:`**.
 
 > **Note:** All artefact metadata (YAML frontmatter), git operations, and state management are handled automatically by the GSE-One agent. Users focus on intent and validation — the agent handles the mechanics.
 
-### 1.3 Design Philosophy
+### 1.4 Design Philosophy
 
 GSE-One is built for a fundamental asymmetry: the **user has the intent** but the **agent has the technical depth**. The methodology bridges this gap through seven pillars:
 
@@ -293,7 +352,7 @@ GSE-One is built for a fundamental asymmetry: the **user has the intent** but th
 
 7. **AI integrity safeguards** — The agent is a generative AI with inherent limitations (hallucinations, complaisance, outdated knowledge). GSE-One protects the user from these failures through explicit confidence levels on every recommendation, verification gates for critical assertions, adversarial self-review (devil's advocate), source citation, and active encouragement of user pushback when passive acceptance is detected. (P15, P16)
 
-### 1.4 Key Concepts
+### 1.5 Key Concepts
 
 | Concept | Summary |
 |---------|---------|
@@ -301,7 +360,7 @@ GSE-One is built for a fundamental asymmetry: the **user has the intent** but th
 | **Backlog** | The single list of all work items (TASK). Unplanned items are in the pool; planned items are in a sprint. |
 | **Artefact** | Any project deliverable: code, requirements, design, tests, documentation, learning notes. |
 | **Decision tier** | Every decision is classified as Auto (agent decides), Inform (agent decides + explains), or Gate (user must validate). |
-| **Guardrail** | Protection against high-consequence actions. Makes risk visible without blocking. |
+| **Guardrail** | Protection against high-consequence actions. Three levels: Soft (warn), Hard (block until override), Emergency (halt until risk acknowledgment). |
 | **Health score** | A 0–10 composite metric reflecting project quality across 8 dimensions. |
 | **Worktree** | An isolated working directory per task — the user and agent can work on multiple tasks in parallel without interference. |
 | **Learning note** | A persistent, reusable course note written by the agent in the user's language, grounded in the project context. |
@@ -309,7 +368,7 @@ GSE-One is built for a fundamental asymmetry: the **user has the intent** but th
 | **Confidence level** | Every agent recommendation carries a confidence tag: Verified, High, Moderate, or Low. |
 | **Devil's advocate** | During review, the agent challenges its own productions — hunting hallucinations, unverified claims, and missing alternatives. |
 
-### 1.5 Agent Roles
+### 1.6 Agent Roles
 
 An agent is a named role that shapes how the coding agent reasons about a specific concern (see the Agent concept defined earlier in this section). GSE-One defines 9 agents — one orchestrator and 8 specialized roles. Each specialized agent is invoked by the orchestrator during the activities that require its expertise:
 

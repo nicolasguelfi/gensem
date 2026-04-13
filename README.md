@@ -109,15 +109,51 @@ python3 install.py
 
 The installer detects your environment and guides you through platform selection (Claude Code, Cursor, or both), installation mode (plugin or non-plugin), and scope (project, personal, global).
 
-For non-interactive or scripted installation:
+For non-interactive or scripted installation, use the CLI options described below.
+
+#### `install.py` options
+
+| Option | Values | Default | Description |
+|--------|--------|---------|-------------|
+| *(no flags)* | — | — | **Interactive mode** — the installer detects your environment and guides you step by step |
+| `--platform` | `claude` \| `cursor` \| `both` | *(interactive)* | Target platform. `both` installs on Claude Code and Cursor in one run |
+| `--mode` | `plugin` \| `no-plugin` | *(interactive)* | **plugin**: uses the platform's plugin system (recommended). **no-plugin**: copies artifacts directly into `.claude/` or `.cursor/` (fallback if plugin system is unavailable) |
+| `--scope` | `project` \| `local` \| `user` | `project` | **Claude Code plugin scope only** (ignored for Cursor). `project`: visible to all users of the project (committed to git). `local`: project-scoped but gitignored. `user`: global, applies to all projects for this user |
+| `--project-dir` | path | current directory | **no-plugin mode only**. The project directory where artifacts are installed. If the directory does not exist, the installer proposes to create it |
+| `--uninstall` | *(flag)* | `false` | Remove GSE-One from the specified platform and mode |
+
+#### Examples
 
 ```bash
+# Interactive (recommended for first install)
+python3 install.py
+
+# Claude Code — plugin, project scope
 python3 install.py --platform claude --mode plugin --scope project
+
+# Claude Code — plugin, global (all projects)
+python3 install.py --platform claude --mode plugin --scope user
+
+# Claude Code — plugin, gitignored
+python3 install.py --platform claude --mode plugin --scope local
+
+# Cursor — plugin (global, copied to ~/.cursor/plugins/)
 python3 install.py --platform cursor --mode plugin
+
+# Both platforms at once
 python3 install.py --platform both --mode plugin --scope user
+
+# Non-plugin mode (copy to .claude/ in a specific project)
+python3 install.py --platform claude --mode no-plugin --project-dir /path/to/myproject
+
+# Uninstall — Claude Code plugin
+python3 install.py --uninstall --platform claude --mode plugin
+
+# Uninstall — Cursor non-plugin from a specific project
+python3 install.py --uninstall --platform cursor --mode no-plugin --project-dir /path/to/myproject
 ```
 
-Run `python3 install.py --help` for all options.
+> **Windows:** If `python3` is not recognized, use `python` instead.
 
 #### Marketplace (when available)
 

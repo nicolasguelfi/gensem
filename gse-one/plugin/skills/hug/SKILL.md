@@ -182,7 +182,14 @@ Verify the project environment is ready. **This step is blocking** — do NOT me
      ```
    - **For intermediate/advanced users:** Ask concisely: "No git repo detected here. Should I run `git init`?"
    - **Wait for response** — Do NOT proceed or mention next steps until the user responds.
-   - If yes: run `git init`, create initial `.gitignore`. If a system permission dialog appears, the user has already been told what to do.
+   - If yes: run `git init`, create initial `.gitignore`, then create a **foundational commit** on `main`:
+     ```bash
+     git init
+     # create .gitignore with project-appropriate entries
+     git add .gitignore
+     git commit -m "chore: initialize repository"
+     ```
+     This foundational commit is **mandatory** — without it, `main` is not a valid branch reference and all subsequent branching operations (P12) will fail. If a system permission dialog appears, the user has already been told what to do.
    - If no: acknowledge and continue without git. Note that some GSE features (branching, version control guardrails) will be unavailable.
 2. **Create `.gse/` directory** — If it does not exist:
    - Create `.gse/` with subdirectories: `profiles/`

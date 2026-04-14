@@ -75,6 +75,22 @@ If `config.yaml → dependency_audit: true` (default for projects with package m
 2. **Regenerate `docs/dashboard.html`** — Run `python3 "$(cat ~/.gse-one)/tools/dashboard.py"` to update the dashboard with current state.
 3. This runs silently — no message to the user unless it's the first generation (in which case, inform per HUG Step 5.5 rules).
 
+### Step 2.7 — Git Baseline Verification
+
+If `.gse/config.yaml` → `git.strategy` is `worktree` or `branch-only`:
+
+1. **Verify `main` has at least one commit:**
+   ```bash
+   git rev-parse --verify main
+   ```
+2. **If this fails** (no commits on `main`) — **Hard guardrail**: the repository was initialized but has no foundational commit. This blocks all branching operations.
+   - If `.gitignore` exists but is not committed: auto-fix by committing it: `git add .gitignore && git commit -m "chore: initialize repository"`.
+   - If no files exist to commit: create `.gitignore` and commit it.
+   - For beginners: "I need to save a first checkpoint in version control before we can organize the work properly. I'll do it now."
+3. **If `main` exists** — proceed to Step 3.
+
+This step is a **safety net** for cases where HUG Step 4 was interrupted or the foundational commit was not created.
+
 ### Step 3 — Determine Next Action (Decision Tree)
 
 Read `status.yaml` fields: `current_sprint`, `lifecycle_phase`, `last_activity`, `last_activity_timestamp`.

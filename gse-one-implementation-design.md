@@ -147,6 +147,12 @@ Read `.gse/config.yaml` → `git.strategy`.
 
 **If strategy is `worktree` or `branch-only`:**
 
+0. **Precondition — git baseline exists:**
+   ```bash
+   git rev-parse --verify main
+   ```
+   If this fails → **Hard guardrail**: "`main` has no commits. Run `/gse:hug` to initialize the repository with a foundational commit before planning."
+
 1. Check if sprint branch exists:
    ```bash
    git branch --list "gse/sprint-<N>/integration"

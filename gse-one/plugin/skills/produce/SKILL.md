@@ -56,6 +56,8 @@ If no tasks are pending:
 
 ### Step 2 — Git Setup (Before Production)
 
+**Precondition — git baseline:** If `git.strategy` is `worktree` or `branch-only`, verify `main` has at least one commit (`git rev-parse --verify main`). If not → **Hard guardrail**: "The repository has no foundational commit. Run `/gse:hug` or `/gse:go` to initialize it before producing."
+
 **Git branch check:** Before starting work on any TASK, verify that the current branch is NOT `main`. If on `main`, remind the user that the methodology recommends working on a dedicated branch and create one per the convention below. If the user explicitly chooses to stay on `main`, respect the choice and note it as a known process deviation in the sprint review.
 
 Read `config.yaml` field `git.strategy` and branch accordingly:

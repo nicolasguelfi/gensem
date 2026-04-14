@@ -221,11 +221,16 @@ def collect_data():
         "project_root": str(ROOT),
     }
 
-    # Config
+    # Config — try dotted keys (project.name) and flat keys (name) for compatibility
     config = parse_yaml_simple(GSE_DIR / "config.yaml")
-    data["project_name"] = config.get("name", config.get("project", "Unknown Project"))
-    data["domain"] = config.get("domain", "unknown")
-    data["mode"] = config.get("mode", "full")
+    data["project_name"] = (config.get("project.name")
+                            or config.get("name")
+                            or config.get("project")
+                            or "Unknown Project")
+    data["domain"] = (config.get("project.domain")
+                      or config.get("domain")
+                      or "unknown")
+    data["mode"] = config.get("mode", config.get("lifecycle.mode", "full"))
 
     # Status
     status = parse_yaml_simple(GSE_DIR / "status.yaml")
@@ -320,6 +325,22 @@ def collect_data():
     data["archived_sprints"] = []
     if archive_dir.exists():
         data["archived_sprints"] = sorted([d.name for d in archive_dir.iterdir() if d.is_dir()])
+
+    # Smoke test — validate required fields and warn on placeholders
+    warnings = []
+    if data["project_name"] == "Unknown Project":
+        warnings.append("config.yaml: project name is missing or unset (showing 'Unknown Project')")
+    if data["domain"] == "unknown":
+        warnings.append("config.yaml: project domain is missing or unset")
+    if not data.get("current_phase"):
+        warnings.append("status.yaml: current_phase is missing")
+    if data.get("user_name") == "Unknown":
+        warnings.append("profile.yaml: user name is missing")
+    if warnings:
+        print(f"[dashboard] WARNING — {len(warnings)} validation issue(s) in .gse/ files:", file=sys.stderr)
+        for w in warnings:
+            print(f"  - {w}", file=sys.stderr)
+    data["_validation_warnings"] = warnings
 
     return data
 

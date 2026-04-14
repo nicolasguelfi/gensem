@@ -709,7 +709,8 @@ Guardrails are the enforcement mechanism of the P7→P8→P11 risk analysis chai
 Every production task is performed in an isolated git environment. The `main` branch is always stable and deployable. Work is done on feature branches, each in its own git worktree. Merges are planned activities with Gate-tier validation.
 
 **Core rules:**
-1. **`main` is sacred** — no direct commits. All changes arrive via reviewed, approved merges.
+0. **Foundational commit** — a newly initialized repository MUST have at least one commit on `main` before any branching operation. Without this, `main` is not a valid branch reference and `git checkout -b ... main` fails. This commit is created during HUG (Step 4) as part of git initialization.
+1. **`main` is sacred** — no direct commits after the foundational commit. All subsequent changes arrive via reviewed, approved merges.
 2. **One branch per task** — each planned task gets its own branch, named predictably.
 3. **Worktree isolation** — each branch is checked out in its own directory, so work on multiple tasks doesn't interfere.
 4. **Merge is a decision** — every merge is a Gate-tier decision. The way the agent presents the merge options is adapted to the user's expertise (P9): a beginner sees a plain-language choice between "clean summary" vs. "full history"; an expert sees the technical options (squash, merge, rebase) with consequence horizons.
@@ -936,12 +937,21 @@ RVW-012 [AI-INTEGRITY] [MEDIUM] — Unverified library recommendation
 
 The agent monitors the user's engagement pattern. If it detects signs of **passive acceptance** (the user validates everything without pushback), it triggers a proactive challenge:
 
-**Passive acceptance signals (observable within the conversation):**
-- The user chooses the agent's recommended option in N+ consecutive Gate decisions
-- The user never selects "Discuss" in any interaction
-- The user never asks "why?", "what about...?", or proposes alternatives
-- The user responds with single-word confirmations ("ok", "yes", "1") to complex decisions
-- The user never modifies a plan, design, or test strategy proposed by the agent
+**Passive acceptance counter:** The agent maintains a `consecutive_acceptances` counter in `.gse/status.yaml` (persisted across context window resets). This counter is **incremented** by +1 for each of the following events:
+- The user chooses the agent's recommended option in a **Gate decision** (the primary signal)
+- The user confirms a reformulation, plan, design, or requirement set with a single-word response ("yes", "ok", "1") **without modification or question**
+
+The counter is **reset to 0** when:
+- The user selects "Discuss" in any interaction
+- The user asks "why?", "what about...?", or proposes an alternative
+- The user modifies any proposed artefact (plan, design, requirements, test strategy)
+- The user rejects an option or selects a non-recommended option
+- The pushback checkpoint is triggered and the user responds
+
+**What does NOT increment the counter:**
+- Inform-tier acknowledgments (the user was not asked to decide)
+- Auto-tier decisions (the user was not involved)
+- Simple navigation confirmations ("should I continue?" → "yes") that are not Gate decisions
 
 **Agent response (after detecting passive acceptance):**
 
@@ -992,7 +1002,7 @@ The pushback mechanism is calibrated:
 
 | Command | Activity | Description |
 |---------|----------|-------------|
-| `/gse:hug` | **User Profile** | Establish or update the full engineering context profile (see Section 3.2.1). Also verifies that the project is a git repository and initializes `.gse/` if needed |
+| `/gse:hug` | **User Profile** | Establish or update the full engineering context profile (see Section 3.2.1). Also verifies that the project is a git repository (initializes with foundational commit if needed) and creates `.gse/` |
 
 #### 3.2.1 HUG Profile Dimensions
 
@@ -2130,12 +2140,11 @@ complexity:
   consumed: 6.5
   remaining: 3.5
 
-# P16 pushback detection
-consecutive_acceptances: 2             # counter for passive acceptance detection
-never_discusses: false                 # user never selects Discuss
-terse_responses: 0                     # single-word confirmations counter
-never_modifies: false                  # user never modifies proposals
-never_questions: false                 # user never asks why
+# P16 pushback detection — see spec P16 for increment/reset rules
+# Incremented: Gate decision accepted without modification, single-word confirmation of artefact
+# Reset to 0: user selects Discuss, asks why, modifies proposal, rejects option, or checkpoint triggers
+consecutive_acceptances: 2             # primary counter — triggers pushback at threshold (beginner=3, intermediate=5, expert=8)
+pushback_dismissed: 0                  # times user chose "Everything looks good" — if >=2, suppress for rest of sprint
 
 last_activity: /gse:produce
 last_activity_date: 2026-04-10
@@ -2146,6 +2155,30 @@ sessions_without_progress: 0           # incremented each /gse:go or /gse:resume
 # Review findings counter (used by hooks)
 review_findings_open: 0
 ```
+
+### 12.4.1 Required Fields in `.gse/` Files
+
+The following fields are **mandatory** — tools and the dashboard depend on them. The agent MUST verify their presence and non-emptiness after writing any `.gse/` file.
+
+**`config.yaml` — required fields:**
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `project.name` | string (non-empty) | Project display name — used by dashboard title |
+| `project.domain` | string | Project domain — used by dashboard and PREVIEW logic |
+| `git.strategy` | `worktree` \| `branch-only` \| `none` | Git branching strategy |
+
+**`status.yaml` — required fields:**
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `gse_version` | string | GSE-One version — used by dashboard |
+| `current_sprint` | integer ≥ 0 | Current sprint number |
+| `current_phase` | `LC00` \| `LC01` \| `LC02` \| `LC03` | Current lifecycle phase — used by dashboard |
+| `plan_status` | `pending` \| `approved` \| `none` | Plan approval state |
+| `consecutive_acceptances` | integer ≥ 0 | P16 pushback counter |
+
+**Validation rule:** After creating or updating `config.yaml` or `status.yaml`, the agent SHOULD verify that all required fields are present and non-empty. If the dashboard tool (`dashboard.py`) is available, regenerate the dashboard and verify the output does not contain placeholder values ("Unknown Project", empty phase).
 
 ### 12.5 Checkpoint Format
 
@@ -2475,6 +2508,7 @@ Available at any time, outside of phase sequencing:
 ```
 LC00 (once)
   │  verify git, init .gse/, create .gitignore for .worktrees/
+  │  foundational commit on main (required for branching)
   v
 ┌─── LC01: Discovery & Planning ──────────────────────────┐
 │    GO > COLLECT > ASSESS > PLAN                         │
@@ -2510,6 +2544,32 @@ LC00 (once)
 Cross-cutting (available at any point):
   PLAN, LEARN, HEALTH, STATUS, PAUSE, RESUME, TASK
 ```
+
+### 14.0.1 Activity Ceremony by Expertise Level
+
+Activities MUST be executed as **separate, identifiable steps** regardless of the user's expertise level. The agent adapts **communication** (P9) and **artefact formality**, not **lifecycle structure**. Fusing or skipping activities without explicit specification is a methodology violation.
+
+The following table defines the minimum ceremony per expertise level for Full mode:
+
+| Activity | Beginner | Intermediate | Advanced/Expert |
+|----------|----------|--------------|-----------------|
+| **COLLECT** | Agent runs silently, reports findings in plain language | Agent reports summary | Agent reports summary |
+| **ASSESS** | Agent explains gaps in plain language, one at a time | Grouped summary | Grouped summary |
+| **PLAN** | Agent proposes plan in plain language, Gate approval | Plan summary, Gate | Plan summary, Gate |
+| **REQS** | Conversational elicitation (Step 0) → formal reqs (hidden IDs) → quality checklist | Full REQS flow, IDs visible | Full REQS flow |
+| **DESIGN** | Agent explains structure in plain language, Gate | Design artefact, Gate | Design artefact, Gate |
+| **PREVIEW** | Visual artefact (HTML mockup or wireframe), Gate | Visual artefact, Gate | Optional (agent proposes, user can skip) |
+| **TESTS** | Strategy explained in plain language, no jargon | Strategy artefact | Strategy artefact |
+| **PRODUCE** | Agent builds, explains key choices contextually (P14) | Agent builds, Inform on choices | Agent builds, Auto on low-risk |
+| **REVIEW** | Guided walkthrough (step-by-step with user) | Summary + findings | Summary + findings |
+| **DELIVER** | Agent explains merge in plain language, Gate | Gate on merge strategy | Gate on merge strategy |
+
+**Non-fusion rule:** The agent MUST NOT merge two activities into a single conversational turn (e.g., combining DESIGN and PREVIEW into one message, or running TESTS strategy inside PRODUCE). Each activity produces its own output and, where applicable, its own artefact. The user must be able to identify which activity is being performed.
+
+**Exceptions:**
+- **Micro mode** and **Lightweight mode** have reduced lifecycles (see Section 13.2) — the table above applies to Full mode only.
+- **COLLECT + ASSESS** may be presented as a single "analysis" step for beginners if the project is empty (nothing to collect), but both must run internally.
+- If a user explicitly requests acceleration ("just build it"), the agent records a **planning debt** item (P5) and may proceed, but must not silently drop activities.
 
 ### 14.1 Sprint 1 vs Sprint N+1
 
@@ -2565,6 +2625,15 @@ If `config.yaml → dependency_audit: true` (default for projects with package m
 3. If no vulnerabilities or low-severity only → proceed silently to Step 2
 
 This runs at **every session start**, not just during `/gse:tests`, to catch vulnerabilities disclosed between sprints.
+
+**Step 1.7 — Git baseline verification:**
+
+If `config.yaml → git.strategy` is `worktree` or `branch-only`:
+1. Verify `main` has at least one commit: `git rev-parse --verify main`
+2. If this fails → **Hard guardrail**: auto-fix by committing `.gitignore` (or creating it if missing): `git add .gitignore && git commit -m "chore: initialize repository"`. For beginners: "I need to save a first checkpoint in version control before we can organize the work properly."
+3. If `main` exists → proceed to Step 2
+
+This is a **safety net** for cases where HUG Step 4 was interrupted or the foundational commit was not created. Without a commit on `main`, all branching operations (sprint branch, feature branches) will fail.
 
 **Step 2 — Determine next action:**
 

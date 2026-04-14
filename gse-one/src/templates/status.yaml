@@ -25,12 +25,11 @@ complexity:
   consumed: 0
   remaining: 10
 
-# P16 pushback detection
-consecutive_acceptances: 0             # counter for passive acceptance detection
-never_discusses: false                 # user never selects Discuss
-terse_responses: 0                     # single-word confirmations counter
-never_modifies: false                  # user never modifies proposals
-never_questions: false                 # user never asks why
+# P16 pushback detection — see spec P16 for increment/reset rules
+# Incremented: Gate decision accepted without modification, single-word confirmation of artefact
+# Reset to 0: user selects Discuss, asks why, modifies proposal, rejects option, or checkpoint triggers
+consecutive_acceptances: 0             # primary counter — triggers pushback at threshold (beginner=3, intermediate=5, expert=8)
+pushback_dismissed: 0                  # times user chose "Everything looks good" — if >=2, suppress for rest of sprint
 
 last_activity: ""                      # e.g., /gse:produce
 last_activity_date: ""                 # ISO 8601 timestamp

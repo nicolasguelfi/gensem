@@ -5,6 +5,107 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.0] - 2026-04-14
+
+Layers impacted: **spec** (major), **design** (minor), **production** (moderate)
+
+### Added
+- Conversational elicitation (Step 0) in `/gse:reqs` — free-form user dialogue before formalization captures functional needs and implicit quality expectations
+- ISO 25010-inspired quality assurance checklist (Step 7) in `/gse:reqs` — verifies NFR completeness across 7 dimensions (Performance, Security, Reliability, Usability, Maintainability, Accessibility, Compatibility) with gap classification (HIGH/MEDIUM/LOW)
+- Quality coverage matrix persisted in `reqs.md` template
+- Quality-driven test derivation in `/gse:tests` — gaps from the quality checklist generate corresponding TST- artefacts with `quality_gap` trace
+- Quality checklist completion check in `/gse:review` (Step 2c, requirements-analyst perspective)
+- `--elicit` option in `/gse:reqs` — run only the conversational elicitation phase
+- `elicitation_summary` field in requirements template frontmatter
+- Section 0 "Getting Started" in spec — prerequisites and 20-minute quickstart for first-time learners
+- "Essential Concepts" card (20 terms) at the top of the glossary (Section 15)
+- 12 missing glossary terms: spike, acceptance criteria, lifecycle phases, intent-first mode, supervised mode, micro mode, stale sprint, design debt, regression test, quality gap, dependency audit, quality coverage matrix
+- Commands-by-phase table (Section 3.10) mapping all 23 commands to lifecycle phases
+- Spike documentation in `/gse:task` description (Section 3.1) — `--spike` flag with full rules
+- Micro mode row in orchestrator decision tree (Section 14.3, Step 2) — was missing from spec
+
+### Changed
+- `/gse:reqs` workflow: 7 steps → 9 steps (added Step 0 elicitation, Step 7 quality checklist, renumbered Step 7 Persist → Step 8)
+- Orchestrator guardrail "No PRODUCE without REQS" now also requires quality checklist completion
+- Beginner output filter: 5 new entries (elicitation, quality checklist, quality gap, quality coverage matrix, updated `/gse:reqs` description)
+- Lightweight mode row in decision tree now explicitly names the 3 health dimensions (test_pass_rate, review_findings, git_hygiene)
+- Version notes and changelogs externalized from spec and design doc to this file (single source of truth)
+
+## [0.16.0] - 2026-04-13
+
+Layers impacted: **spec** (major), **design** (minor), **production** (major)
+
+### Added
+- Process discipline rule: lifecycle default is always the next step, no proactive shortcuts
+- Beginner artefact approval via plain-language summaries (not raw technical files)
+- Git branch check in PRODUCE (reminder, not blocker)
+- Mandatory test campaign reports in `test-reports/` after every PRODUCE test run
+- Requirements coverage analysis step in REQS (proactive gap detection across 9 dimensions)
+- Dashboard: cumulative view (all sprints + archive), YAML parser handles nested keys
+- HUG dimension #13: user name
+- Compound auto-captures process deviations from review findings
+- Tool registry `~/.gse-one` written by `install.py`
+
+### Changed
+- Branch naming: sprint integration branch renamed to `gse/sprint-NN/integration` (avoids git path conflict)
+- Manual testing procedure in PRODUCE (adapted to project type and user level)
+- Health scores written by review and deliver activities
+
+## [0.15.0] - 2026-04-13
+
+Layers impacted: **spec** (minor), **design** (minor), **production** (moderate)
+
+### Added
+- `~/.gse-one` registry file (written by `install.py`) for runtime tool resolution
+- Dashboard moved to `plugin/tools/dashboard.py` with `# @gse-tool` header
+- `install.py` writes/removes registry on install/uninstall
+- README branding (header, banner, key features)
+
+### Changed
+- Kanban label readability (dark pill background)
+
+## [0.14.0] - 2026-04-13
+
+Layers impacted: **spec** (major), **design** (moderate), **production** (major)
+
+### Added
+- §1.2 Agile Foundations (principles, adaptations, originals)
+- Test-driven requirements: acceptance criteria (Given/When/Then) mandatory in REQS, validation test derivation in TESTS
+- Lifecycle guardrails (Hard): no PRODUCE without REQS, no PRODUCE without test strategy
+- Spike mode (`artefact_type: spike`): complexity-boxed (max 3 pts), non-deliverable, bypasses REQS/TESTS guardrails
+- Micro mode (< 3 files): PRODUCE → DELIVER, direct commit, 1 state file
+- Supervised mode: `decision_involvement: supervised` escalates all PRODUCE choices to Gate
+- Beginner output filter (28-entry translation table in orchestrator)
+- Interactive question support (AskUserQuestion / Cursor clarifying questions)
+- Language-first onboarding with locale detection
+- Dashboard (`docs/dashboard.html` via `~/.gse-one` registry + `tools/dashboard.py`, Chart.js CDN)
+- Cross-sprint regression scan during REVIEW
+- Pre-commit self-review (5 checks)
+- P16 passive acceptance signals + suppression rule
+- Sprint archival during COMPOUND
+- Monorepo `sub_domains` for per-directory test pyramid calibration
+- Resilience: YAML validation, context overflow prevention, graceful degradation
+- Maintainer Guide (spec Appendix B)
+- Installer duplicate detection
+
+### Changed
+- LC02 order corrected: REQS → DESIGN → PREVIEW → TESTS → PRODUCE
+- Complexity budget >100% downgraded from Hard to Gate guardrail
+- P7 composite rule + uncertainty escalation in orchestrator
+- P14: 5-option learning format + progressive reduction
+- P15: confidence escalation to Gate for critical claims
+- 23 commands, 3 modes (Micro/Lightweight/Full), 8 health dimensions
+
+## [0.13.0] - 2026-04-12
+
+Layers impacted: **spec** (moderate), **production** (minor)
+
+### Added
+- Interactive QCM via AskUserQuestion (Claude Code) and clarifying questions (Cursor)
+- Language-first onboarding flow
+- Adaptive question cadence by user expertise
+- Beginner git init flow
+
 ## [0.12.0] - 2026-04-12
 
 Layers impacted: **spec** (moderate), **design** (minor), **production** (major)
@@ -140,6 +241,11 @@ Layers impacted: **spec** (major), **design** (moderate), **production** (modera
 - First specification and implementation design drafts
 - Requirements document
 
+[0.17.0]: https://github.com/nicolasguelfi/gensem/compare/v0.16.0...v0.17.0
+[0.16.0]: https://github.com/nicolasguelfi/gensem/compare/v0.15.0...v0.16.0
+[0.15.0]: https://github.com/nicolasguelfi/gensem/compare/v0.14.0...v0.15.0
+[0.14.0]: https://github.com/nicolasguelfi/gensem/compare/v0.13.0...v0.14.0
+[0.13.0]: https://github.com/nicolasguelfi/gensem/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/nicolasguelfi/gensem/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/nicolasguelfi/gensem/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/nicolasguelfi/gensem/compare/v0.9.0...v0.10.0

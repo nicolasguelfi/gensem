@@ -1,21 +1,11 @@
 # GSE-One — Implementation Design Document
 
-**Version:** see `VERSION` file  
-**Date:** 2026-04-13  
-**Status:** Mono-plugin architecture — cross-platform parity, hooks aligned, terminology traceable  
+**Version:** see `VERSION` file — **Changelog:** see `CHANGELOG.md`  
 **Input:** `gse-one-spec.md`, implementation inspection and restructuration pass
 
 ---
 
-## 1. Key Changes
-
-| Version | Changes |
-|---------|---------|
-| v0.2 → v0.3 | Plugin architecture for Claude Code and Cursor |
-| v0.3 → v0.4 | Full git/worktree integration, renamed to GSE prefix |
-| v0.4 → v0.6 | `/gse:learn`, `/gse:backlog`, unified backlog, external sources, adopt/lightweight modes, team profiles, P15-P16 AI integrity, testing strategy, COMPOUND 3 axes, mono-repo, GitHub sync. |
-| v0.6 → v0.7 | **44-gap alignment with spec v0.7.** Eliminated `worktrees.yaml` (git state per-TASK in backlog). Added: assess skill, orchestrator decision logic (stale sprint, failure handling), safety/recovery (backup tags), status.yaml schema, checkpoint schema, state loading priority, deploy/rollback in deliver, dependency audit, framework drift detection, doc-as-artefact, concurrent access, team matching algorithm. Full config.yaml template (8 sections, ~50 keys). Principle count 16, agents 8, Cursor rules 9+3, templates 15. Spelling: `artefact_type`. |
-| v0.7 → v0.8 | **Mono-plugin architecture.** `dist/claude/` + `dist/cursor/` merged into single `plugin/` directory. Agents 8→9 (added `gse-orchestrator` for Claude identity). Cursor rules consolidated from 9+3 `.mdc` to 1 single `000-gse-methodology.mdc`. Hooks: 5→3 system hooks (removed Write|Edit reminders, reclassified as agent behaviors), official event-based format (`PreToolUse`/`PostToolUse`), cross-platform Python commands, two platform-specific files. Settings simplified to `{"agent": "gse-orchestrator"}`. TIME→COMPLEXITY: `stale_sprint_days`→`stale_sprint_sessions`, all calendar-based metrics removed. Config.yaml: 11 sections, ~50 keys (hooks section aligned with 3 system hooks). Methodology parity: orchestrator body = `.mdc` body, generated from same source. Generator rewrite (~400 lines). |
+For version history and evolution details, see `CHANGELOG.md`.
 
 ---
 
@@ -144,7 +134,7 @@ Claude ignores the `rules/` directory silently. Cursor ignores `settings.json` s
 
 > **Note:** This document details the 17 skills that required specific design decisions (git integration, new mechanisms, complex workflows). The following 5 activities are implemented directly from the spec without additional design: `/gse:reqs`, `/gse:design`, `/gse:preview`, `/gse:compound`, `/gse:integrate`. See the specification for their full definitions.
 
-> **Spec-driven enrichments (v0.10+):** The following features are implemented in skills and principles directly from the specification, without additional design. See the specification for details: three-level language management (chat/artifacts/overrides) in HUG and P9; output formatting rules and emoji control in P9; recovery check for unsaved work in `/gse:go`; intent-first mode for beginner users in `/gse:go`; progressive expertise tracking by domain in P9 and the user profile; Hetzner deployment skill (`/gse:deploy`) with flexible starting points (solo full-flow, pre-configured server, training mode with shared Coolify).
+> **Spec-driven enrichments:** The following features are implemented in skills and principles directly from the specification, without additional design. See the specification for details: three-level language management (chat/artifacts/overrides) in HUG and P9; output formatting rules and emoji control in P9; recovery check for unsaved work in `/gse:go`; intent-first mode for beginner users in `/gse:go`; progressive expertise tracking by domain in P9 and the user profile; Hetzner deployment skill (`/gse:deploy`) with flexible starting points (solo full-flow, pre-configured server, training mode with shared Coolify); conversational elicitation and ISO 25010 quality checklist in `/gse:reqs`.
 
 ### 4.1 `/gse:plan` — Git Integration
 
@@ -1698,23 +1688,6 @@ Grand total: **52 files**. Generator: ~400 lines.
 | 9 | Should external source shallow clones be cached or re-cloned each time? | Performance | Cache in `.gse/cache/` with TTL. Clean on `/gse:deliver`. |
 | 10 | How to handle state recovery when user manually breaks `.gse/` or deletes branches? | Robustness | Best-effort reconstruction from git history. Warn, don't crash. |
 
----
 
-## Appendix A — Changelog
 
-> **Note:** Versions 0.1.0 through 0.8.0 were developed during an intensive design session. Future versions will follow standard release cadence.
-
-| Version | Date | Changes |
-|---------|------|---------|
-| 0.1.0 | 2026-04-10 | Initial design with raw file generation |
-| 0.2.0 | 2026-04-10 | Plugin-native architecture for Claude Code and Cursor |
-| 0.3.0 | 2026-04-10 | Full git integration: worktree isolation, guardrail hooks, version control rule, commit convention, merge strategy as Gate. |
-| 0.4.0 | 2026-04-10 | Renamed to `gse`/`GSE-One`. Dropped `/g1:` alias. |
-| 0.6.0 | 2026-04-10 | Spec v0.6 alignment. Learn, backlog, tests, P15-P16, devil-advocate agent, unified backlog, git state per-TASK. |
-| 0.7.0 | 2026-04-11 | **44-gap alignment with spec v0.7.** Eliminated worktrees.yaml (git state per-TASK in backlog). 16 principle source files (P1-P16). Added: assess skill (5.14), orchestrator decision logic with stale sprint (5.15), deploy/rollback + safety backup tags (5.16), status.yaml/checkpoint/state-loading schemas (5.17), full pushback signal tracking (5.18), doc-as-artefact, dependency audit, framework drift, team matching algorithm, concurrent access, min project size. Spelling: artefact_type. All worktrees.yaml refs replaced. Config template now covers 11 sections (~50 keys). |
-| 0.8.0 | 2026-04-11 | **Mono-plugin architecture.** `dist/` merged into single `plugin/` directory. 9 agents (added `gse-orchestrator`). Cursor rules consolidated to 1 `.mdc`. Hooks format: official event-based with platform-specific files. Settings simplified to agent reference. TIME→COMPLEXITY: `stale_sprint_days`→`stale_sprint_sessions`. Generator rewrite (~400 lines). Body parity verification for cross-platform methodology. |
-| 0.12.0 | 2026-04-12 | Added `/gse:deploy` skill (Hetzner + Coolify). 23 commands total. |
-| 0.16.0 | 2026-04-13 | **Methodology hardening from CalcApp V03 testing.** Process discipline rule. Beginner artefact approval via plain-language summaries. Git branch check in PRODUCE. Mandatory test campaign reports. Branch naming: `gse/sprint-NN/integration`. Manual testing procedure in PRODUCE. Requirements coverage analysis in REQS (9 dimensions). Dashboard: cumulative view, nested YAML parser, health scores written by review/deliver. HUG dimension #13 (user name). Compound process deviation scan. |
-| 0.17.0 | 2026-04-14 | **Requirements elicitation and quality checklist.** Added conversational elicitation (Step 0) to `/gse:reqs` — free-form user dialogue before formalization captures functional needs and implicit quality expectations. Added ISO 25010-inspired quality assurance checklist (Step 7) verifying NFR completeness across 7 dimensions (Performance, Security, Reliability, Usability, Maintainability, Accessibility, Compatibility) with gap classification (HIGH/MEDIUM/LOW). Quality coverage matrix persisted in `reqs.md` template. Test strategy updated to derive quality-driven tests from checklist gaps (`quality_gap` trace). Review checks quality checklist completion. Orchestrator guardrail updated: PRODUCE requires quality checklist run. Spec Section 6 updated with elicitation and quality assurance subsection. |
-| 0.15.0 | 2026-04-13 | **Tool registry and branding.** `~/.gse-one` registry file for tool resolution. Dashboard moved to `plugin/tools/dashboard.py` with `@gse-tool` header. install.py writes/removes registry. README branding. Kanban label readability fix. |
-| 0.14.0 | 2026-04-13 | **Major methodology hardening.** LC02 order: REQS→DESIGN→PREVIEW→TESTS→PRODUCE with Hard guardrails. Test-driven requirements (acceptance criteria mandatory). Spike mode (`artefact_type: spike`, complexity-boxed, non-deliverable). Micro mode (< 3 files). Beginner output filter in orchestrator. Project dashboard (`~/.gse-one` registry + `plugin/tools/dashboard.py` → `docs/dashboard.html`). Cross-sprint regression scan. Dependency vulnerability check at session start. Sprint archival during COMPOUND. Monorepo sub_domains. Resilience (YAML validation, context overflow, graceful degradation). Supervised mode = Gate tier override. Pre-commit self-review. P16 passive acceptance signals. Installer duplicate detection. Agile Foundations section (spec §1.2). Maintainer Guide (spec Appendix B). All 3 layers fully aligned (spec, orchestrator, skills). |
+For version history, see `CHANGELOG.md`.

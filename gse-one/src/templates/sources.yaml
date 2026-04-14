@@ -1,6 +1,6 @@
 # GSE-One External Source Registry
 # Tracks all external sources evaluated by /gse:collect (retained and skipped).
-# Aligned with spec v0.7 Section 4.4
+# Tracks all external sources evaluated by /gse:collect — see spec Section 4.4
 
 sources:
   - id: SRC-001

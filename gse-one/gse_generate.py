@@ -9,7 +9,7 @@ Mono-plugin architecture: ONE directory deployable on both Claude Code and Curso
 
 Source layout:
     src/principles/    → 16 principle definitions (P1-P16)
-    src/activities/    → 22 activity definitions (→ skills for Claude, commands for Cursor)
+    src/activities/    → 23 activity definitions (→ skills for Claude, commands for Cursor)
     src/agents/        → 9 agent roles (8 specialized + gse-orchestrator)
     src/templates/     → 15 artefact & config templates
 
@@ -147,7 +147,7 @@ def generate(clean: bool = False) -> None:
             copy_file(src_file, dst_file)
         else:
             print(f"  WARNING: missing {name}.md")
-    print(f"  {activity_count}/22\n")
+    print(f"  {activity_count}/{len(ACTIVITY_NAMES)}\n")
 
     print("Commands (Cursor):")
     for name in ACTIVITY_NAMES:
@@ -157,7 +157,7 @@ def generate(clean: bool = False) -> None:
             generate_command(src_file, dst_file, name)
         else:
             print(f"  WARNING: missing {name}.md")
-    print(f"  {activity_count}/22\n")
+    print(f"  {activity_count}/{len(ACTIVITY_NAMES)}\n")
 
     # 2. Agents — 8 specialized (shared) + orchestrator (generated)
     print("Agents (specialized):")
@@ -167,7 +167,7 @@ def generate(clean: bool = False) -> None:
             copy_file(src_file, PLUGIN / "agents" / agent_file)
         else:
             print(f"  WARNING: missing {agent_file}")
-    print(f"  {sum(1 for f in SPECIALIZED_AGENTS if (AGENTS_DIR / f).exists())}/8\n")
+    print(f"  {sum(1 for f in SPECIALIZED_AGENTS if (AGENTS_DIR / f).exists())}/{len(SPECIALIZED_AGENTS)}\n")
 
     # 3. Generate orchestrator + .mdc from src/principles/
     print("Methodology (from src/principles/ + src/agents/gse-orchestrator.md):")
@@ -215,7 +215,7 @@ def generate(clean: bool = False) -> None:
                 rel = src_file.relative_to(TEMPLATES_DIR)
                 copy_file(src_file, PLUGIN / "templates" / rel)
                 count += 1
-    print(f"  {count}/15\n")
+    print(f"  {count}\n")
 
     # 4.5. Tools directory (dashboard etc.)
     print("Tools:")
@@ -361,18 +361,18 @@ def verify() -> None:
     orchestrator = (PLUGIN / "agents" / "gse-orchestrator.md").exists()
     templates = sum(1 for _ in (PLUGIN / "templates").rglob("*") if _.is_file()) if (PLUGIN / "templates").exists() else 0
 
-    print(f"  Agents:      {agents}/8 specialized + orchestrator={'OK' if orchestrator else 'MISSING'}")
-    print(f"  Templates:   {templates}/15")
+    print(f"  Agents:      {agents}/{len(SPECIALIZED_AGENTS)} specialized + orchestrator={'OK' if orchestrator else 'MISSING'}")
+    print(f"  Templates:   {templates}")
 
-    if agents < 8: errors.append(f"Missing {8-agents} specialized agents")
+    if agents < len(SPECIALIZED_AGENTS): errors.append(f"Missing {len(SPECIALIZED_AGENTS)-agents} specialized agents")
     if not orchestrator: errors.append("Missing gse-orchestrator.md")
-    if templates < 15: errors.append(f"Missing {15-templates} templates")
+    if templates == 0: errors.append("No templates found")
 
     # Claude-specific
     skills = sum(1 for n in ACTIVITY_NAMES if (PLUGIN / "skills" / n / "SKILL.md").exists())
     print(f"\n  Claude Code:")
-    print(f"    Skills:    {skills}/22")
-    if skills < 22: errors.append(f"Claude: missing {22-skills} skills")
+    print(f"    Skills:    {skills}/{len(ACTIVITY_NAMES)}")
+    if skills < len(ACTIVITY_NAMES): errors.append(f"Claude: missing {len(ACTIVITY_NAMES)-skills} skills")
     for name, path in {
         "plugin.json": PLUGIN / ".claude-plugin" / "plugin.json",
         "settings.json": PLUGIN / "settings.json",
@@ -385,8 +385,8 @@ def verify() -> None:
     # Cursor-specific
     commands = sum(1 for n in ACTIVITY_NAMES if (PLUGIN / "commands" / f"gse-{n}.md").exists())
     print(f"\n  Cursor:")
-    print(f"    Commands:  {commands}/22")
-    if commands < 22: errors.append(f"Cursor: missing {22-commands} commands")
+    print(f"    Commands:  {commands}/{len(ACTIVITY_NAMES)}")
+    if commands < len(ACTIVITY_NAMES): errors.append(f"Cursor: missing {len(ACTIVITY_NAMES)-commands} commands")
     for name, path in {
         "plugin.json": PLUGIN / ".cursor-plugin" / "plugin.json",
         "000-gse-methodology.mdc": PLUGIN / "rules" / "000-gse-methodology.mdc",

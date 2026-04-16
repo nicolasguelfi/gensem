@@ -204,8 +204,9 @@ updated: "{iso8601}"
 ```
 
 **workflow.completed initialization:**
-- Pre-populate with COLLECT and ASSESS if LC01 already ran (read their timestamps from `status.yaml.last_activity_timestamp` or the checkpoint trail).
+- Pre-populate with COLLECT and ASSESS if LC01 already ran. Read their timestamps from `status.yaml.activity_history` filtered by `sprint == current_sprint` (authoritative source). If the history is empty or the entry is missing (e.g., migrated project), fall back to `status.yaml.last_activity_date` for the last recorded activity and leave older entries with `completed_at: null`.
 - Always append the current PLAN activity as completed.
+- Reset `status.yaml.activity_history` to `[]` for the new sprint (the prior sprint's history is archived in the previous `plan-summary.md`).
 
 **workflow.active:** Set to the next expected activity after PLAN — typically `reqs` in Full mode, `produce` in Lightweight mode.
 

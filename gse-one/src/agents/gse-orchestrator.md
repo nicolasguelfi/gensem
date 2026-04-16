@@ -328,10 +328,14 @@ After each activity completes, the orchestrator performs these steps **before pr
 ### Step 1 — Update plan.yaml workflow
 
 1. Move the current activity from `workflow.active` to `workflow.completed` with `completed_at` (ISO 8601) and short `notes`.
-2. If `workflow.pending` is non-empty:
+2. **Post-REVIEW mutation (conditional FIX insertion):** If the activity just completed is `review`:
+   - If `review.md` contains at least one finding with severity `HIGH` or `MEDIUM` (or any open finding whose resolution implies code/artefact changes) → **insert `fix` at the head of `workflow.pending`** before step 3. Record the mutation in `coherence.scope_changes` with `trigger: review`, `description: "N findings → fix inserted"`.
+   - If no such finding exists → **do not insert** `fix`; if `fix` was previously in `workflow.expected` (from a carried-over plan), move it to `workflow.skipped` with `reason: "no review findings"`.
+   This is the only activity that is dynamically inserted — all other conditional skips (`preview`, `design`) are handled at step 3 below.
+3. If `workflow.pending` is non-empty:
    - Pop the first item → set as `workflow.active`.
    - If the next activity should be conditionally skipped (e.g., `preview` for CLI, `design` for simple tasks), move it to `workflow.skipped` with a reason, then advance to the next.
-3. If `workflow.pending` is empty and all tasks are delivered:
+4. If `workflow.pending` is empty and all tasks are delivered:
    - Set `plan.yaml.status = completed`.
 
 ### Step 2 — Evaluate coherence (non-blocking)
@@ -354,8 +358,18 @@ Update `plan.yaml.coherence.last_evaluated` after each evaluation.
 
 ### Step 4 — Update status.yaml
 
-1. Set `last_activity` and `last_activity_timestamp` (these are the quick cursor; `plan.yaml.workflow` holds the full detail).
-2. Update `lifecycle_phase` if transitioning (LC01→LC02, LC02→LC03).
+1. Set `last_activity` and `last_activity_date` (quick cursor; `plan.yaml.workflow` holds the full detail).
+2. Update `current_phase` if transitioning (LC01→LC02, LC02→LC03).
+3. **Append to `status.yaml.activity_history`** a record of the completed activity:
+   ```yaml
+   activity_history:
+     - activity: {completed_activity}
+       completed_at: "{iso8601}"
+       sprint: {current_sprint}
+       notes: "{short summary}"
+   ```
+   This is the **authoritative source** for per-activity timestamps. When PLAN initializes `plan.yaml.workflow.completed` for activities that ran before PLAN itself (COLLECT, ASSESS), it reads from `activity_history` filtered by `sprint == current_sprint`.
+4. Reset `activity_history` to `[]` when `/gse:plan --strategic` promotes a new sprint (the prior sprint's history is already archived in `plan-summary.md.workflow`).
 
 ### Relationship with status.yaml
 

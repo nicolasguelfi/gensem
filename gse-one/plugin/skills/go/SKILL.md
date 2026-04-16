@@ -175,7 +175,7 @@ If the last activity ended with an error or incomplete state:
 | Lifecycle | LC01 > LC02 > LC03 | PLAN > PRODUCE > DELIVER | PRODUCE > DELIVER |
 | `.gse/` state | 4 files (config, profile, status, backlog) | 4 files | 1 file (`status.yaml` with inline profile + task list) |
 | Git strategy | `worktree` (sprint + feature branches) | `branch-only` (single feature branch from main) | direct commit (no branch creation) |
-| Sprint artefacts | Full set (plan, reqs, design, tests, review, compound) | Plan only (inline, no separate file) | None |
+| Sprint artefacts | Full set (plan-summary, reqs, design, tests, review, compound) | `.gse/plan.yaml` only (no per-activity artefact files) | None |
 | Health dashboard | 8 dimensions | 3 only (test_pass_rate, review_findings, git_hygiene) | None |
 | Complexity budget | Tracked | Not tracked | Not tracked |
 | Decision tiers | Full P7 assessment (Auto + Inform + Gate) | Simplified (Auto + Gate only) | Gate only (security/destructive) |

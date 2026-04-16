@@ -189,7 +189,7 @@ Remove backup tags older than `backup_retention_days` (default: 30):
 
 ### Step 9 — Finalize
 
-1. **Generate sprint plan snapshot** — Read `.gse/plan.yaml` and produce a read-only archive at `docs/sprints/sprint-{NN}/plan-summary.md` using the `plan-summary.md` template. The snapshot contains: goal, mode, budget (total/consumed/remaining), tasks delivered (from `backlog.yaml`), activity flow (from `workflow.completed` + `workflow.skipped` with reasons), scope changes (from `coherence.scope_changes`), coherence summary (alerts raised and whether resolved), and risks. This file is **read-only** — never read by the orchestrator, used only for human reference, COMPOUND process-deviation analysis, and sprint history.
+1. **Generate sprint plan snapshot** — Read `.gse/plan.yaml` and produce a read-only archive at `docs/sprints/sprint-{NN}/plan-summary.md` using the `plan-summary.md` template. **Inherit the artefact ID** from `plan.yaml.id` (typically `PLN-NNN`) into the snapshot's frontmatter `gse.id` field — this preserves P6 traceability across the live-plan → archive transition. The snapshot contains: goal, mode, budget (total/consumed/remaining), tasks delivered (from `backlog.yaml`), activity flow (from `workflow.completed` + `workflow.skipped` with reasons), scope changes (from `coherence.scope_changes`), coherence summary (alerts raised and whether resolved), and risks. This file is **read-only** — never read by the orchestrator, used only for human reference, COMPOUND process-deviation analysis, and sprint history.
 2. Set `plan.yaml.status: completed` and update `plan.yaml.updated` to the current timestamp.
 3. Update `status.yaml`:
    - `last_activity: deliver`

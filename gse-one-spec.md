@@ -2121,7 +2121,7 @@ docs/
 gse_version: "0.7.0"
 current_sprint: 3
 current_phase: LC02                  # LC00 | LC01 | LC02 | LC03
-plan_status: approved                # pending | approved | none
+# plan approval/state is now tracked in .gse/plan.yaml (field: status)
 
 health:
   score: 6.7
@@ -2150,6 +2150,22 @@ pushback_dismissed: 0                  # times user chose "Everything looks good
 last_activity: /gse:produce
 last_activity_date: 2026-04-10
 
+# Per-activity completion history — authoritative source for plan.yaml workflow.completed timestamps
+# Appended by the orchestrator at each activity transition. Scoped to the current sprint;
+# reset by /gse:plan --strategic when promoting a new sprint.
+activity_history:
+  - activity: collect
+    completed_at: "2026-04-08T09:15:00Z"
+    sprint: 3
+    notes: "12 files scanned"
+  - activity: assess
+    completed_at: "2026-04-08T09:30:00Z"
+    sprint: 3
+    notes: "2 gaps identified"
+  - activity: plan
+    completed_at: "2026-04-08T10:00:00Z"
+    sprint: 3
+
 # Stale sprint detection (complexity/session-based, not calendar-based)
 sessions_without_progress: 0           # incremented each /gse:go or /gse:resume with no TASK status change
 
@@ -2176,7 +2192,7 @@ The following fields are **mandatory** — tools and the dashboard depend on the
 | `gse_version` | string | GSE-One version — used by dashboard |
 | `current_sprint` | integer ≥ 0 | Current sprint number |
 | `current_phase` | `LC00` \| `LC01` \| `LC02` \| `LC03` | Current lifecycle phase — used by dashboard |
-| `plan_status` | `pending` \| `approved` \| `none` | Plan approval state |
+| `activity_history` | list of `{ activity, completed_at, sprint, notes }` | Per-activity completion log for the current sprint — authoritative source for `plan.yaml.workflow.completed` timestamps |
 | `consecutive_acceptances` | integer ≥ 0 | P16 pushback counter |
 
 **Validation rule:** After creating or updating `config.yaml` or `status.yaml`, the agent SHOULD verify that all required fields are present and non-empty. If the dashboard tool (`dashboard.py`) is available, regenerate the dashboard and verify the output does not contain placeholder values ("Unknown Project", empty phase).
@@ -2406,7 +2422,7 @@ The user can always override the proposed mode (Gate decision). Upgrading from M
 | Lifecycle | LC01 → LC02 → LC03 | PLAN → PRODUCE → DELIVER | PRODUCE → DELIVER |
 | `.gse/` state | 4 files (config, profile, status, backlog) | 4 files | 1 file only (`status.yaml` with inline profile + task list) |
 | Git strategy | worktree (sprint + feature branches) | branch-only (single feature branch, no sprint branch) | direct commit (no branch creation) |
-| Sprint artefacts | Full set (plan, reqs, design, tests, review, compound) | Plan only (inline, no separate file) | None |
+| Sprint artefacts | Full set (plan-summary, reqs, design, tests, review, compound) | `.gse/plan.yaml` only (no per-activity artefact files) | None |
 | Health dashboard | 8 dimensions | 3 of 8 (test_pass_rate, review_findings, git_hygiene) | None |
 | Complexity budget | Tracked | Not tracked | Not tracked |
 | Decision tiers | Full P7 assessment | Simplified (Auto + Gate only, no Inform) | Gate only (security/destructive actions) |

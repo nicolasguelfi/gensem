@@ -25,6 +25,7 @@ Before executing, read:
 2. `.gse/status.yaml` — current sprint number
 3. `.gse/config.yaml` — GitHub integration settings (if enabled)
 4. `.gse/profile.yaml` — user profile (apply P9 Adaptive Communication to all output)
+5. `.gse/plan.yaml` — living sprint plan (used for desync detection in the `sprint` sub-command)
 
 ## Workflow
 
@@ -67,6 +68,22 @@ Status symbols:
 #### Step 3 — Summary Line
 
 Show totals: "12 items total: 3 done, 1 in-progress, 2 planned, 6 in pool"
+
+#### Step 4 — Plan Sync Check (if `.gse/plan.yaml` exists with `status: active`)
+
+Compute the set of TASK IDs currently in the sprint from `backlog.yaml` (filter: `sprint == current_sprint` AND `status != delivered`) and compare to `plan.yaml.tasks[].id`.
+
+- **If sets are identical:** no output (silent — the plan is in sync).
+- **If sets differ** (tasks added, removed, or renamed since PLAN): display a **warning line** after the summary:
+  ```
+  ⚠  Plan out of sync: {N} task(s) added/removed since PLAN.
+     Run `/gse:plan --tactical` to sync `.gse/plan.yaml` with the backlog.
+  ```
+  For beginners, translate per P9: "Your task list has changed since we organized the work. I should re-organize it — want me to do that now?"
+
+This is an **Inform-tier** detection — it does not block backlog display or any other operation. It is the early-warning counterpart to the orchestrator's coherence check at activity transitions (which runs later, only when a transition happens).
+
+Skip this step in Micro mode (no `plan.yaml` exists) and for the `pool` sub-command (pool items are always unplanned).
 
 ### Add Mode (`add <description>`)
 

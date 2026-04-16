@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# @gse-tool dashboard 0.16.0
+# @gse-tool dashboard 0.17.0
 """
 GSE-One Dashboard Generator — Generates docs/dashboard.html from .gse/ state files.
 
@@ -11,6 +11,8 @@ Usage (via registry):
 
 The dashboard is a single self-contained HTML file showing:
   - Project state (sprint, phase, TASK kanban, complexity budget)
+  - Workflow progress (from .gse/plan.yaml — activities completed/active/pending)
+  - Coherence alerts (from .gse/plan.yaml — non-blocking plan health warnings)
   - Health radar (8 dimensions, trends)
   - REQS → TESTS traceability
   - Quality (review findings, regressions, AI integrity)
@@ -132,6 +134,93 @@ def parse_yaml_simple(filepath):
         return result
     except Exception:
         return {}
+
+
+def parse_plan_yaml(filepath):
+    """Extract dashboard-relevant fields from .gse/plan.yaml.
+
+    Returns a dict with: status, mode, goal, budget (dict),
+    workflow_active, workflow_expected (list), workflow_completed (list of activity names),
+    workflow_pending (list), workflow_skipped (list of {activity, reason}), alerts (list).
+
+    Returns None if the file does not exist. Uses targeted regex rather than
+    a full YAML parser because plan.yaml mixes scalars, inline lists, and
+    nested lists of dicts — more than parse_yaml_simple can handle.
+    """
+    if not filepath.exists():
+        return None
+    try:
+        content = filepath.read_text(encoding="utf-8")
+    except Exception:
+        return None
+
+    plan = {
+        "status": None, "mode": None, "goal": None,
+        "budget": {"total": None, "consumed": None, "remaining": None},
+        "workflow_active": None,
+        "workflow_expected": [],
+        "workflow_completed": [],
+        "workflow_pending": [],
+        "workflow_skipped": [],
+        "alerts": [],
+    }
+
+    def _scalar(key):
+        m = re.search(rf'^{key}\s*:\s*(.+?)\s*$', content, re.MULTILINE)
+        if not m:
+            return None
+        val = m.group(1).strip().strip('"').strip("'")
+        return val if val and val != "null" else None
+
+    plan["status"] = _scalar("status")
+    plan["mode"] = _scalar("mode")
+    plan["goal"] = _scalar("goal")
+
+    def _inline_list(key):
+        m = re.search(rf'^{key}\s*:\s*\[(.*?)\]\s*$', content, re.MULTILINE)
+        if not m:
+            return []
+        return [x.strip().strip('"').strip("'") for x in m.group(1).split(",") if x.strip()]
+
+    plan["workflow_expected"] = _inline_list("  expected")
+    plan["workflow_pending"] = _inline_list("  pending")
+
+    m_active = re.search(r'^  active\s*:\s*(.+?)\s*$', content, re.MULTILINE)
+    if m_active:
+        val = m_active.group(1).strip().strip('"').strip("'")
+        plan["workflow_active"] = val if val and val != "null" else None
+
+    def _section_block(section_header):
+        m = re.search(
+            rf'^  {section_header}\s*:\s*\n((?:    .+\n?)+)',
+            content, re.MULTILINE)
+        return m.group(1) if m else ""
+
+    completed_block = _section_block("completed")
+    plan["workflow_completed"] = re.findall(r'-\s*activity\s*:\s*(\S+)', completed_block)
+
+    skipped_block = _section_block("skipped")
+    for m in re.finditer(r'-\s*activity\s*:\s*(\S+)\s*\n\s*reason\s*:\s*(.+?)\s*(?=\n\s*-|\n\S|\Z)',
+                         skipped_block, re.DOTALL):
+        plan["workflow_skipped"].append({
+            "activity": m.group(1).strip(),
+            "reason": m.group(2).strip().strip('"').strip("'"),
+        })
+
+    for field in ("total", "consumed", "remaining"):
+        m = re.search(rf'^  {field}\s*:\s*(\d+(?:\.\d+)?)\s*$', content, re.MULTILINE)
+        if m:
+            try:
+                plan["budget"][field] = float(m.group(1)) if "." in m.group(1) else int(m.group(1))
+            except ValueError:
+                pass
+
+    alerts_block = _section_block("alerts")
+    if alerts_block.strip():
+        for m in re.finditer(r'-\s*(\S+)', alerts_block):
+            plan["alerts"].append(m.group(1).strip().strip('"').strip("'"))
+
+    return plan
 
 
 def count_tasks_by_status(filepath):
@@ -259,6 +348,9 @@ def collect_data():
                                     or profile.get("decision_involvement")
                                     or "collaborative")
 
+    # Living sprint plan (.gse/plan.yaml) — optional, present in Full/Lightweight modes
+    data["plan"] = parse_plan_yaml(GSE_DIR / "plan.yaml")
+
     # Backlog — cumulative: active backlog + archive
     data["task_counts"] = count_tasks_by_status(GSE_DIR / "backlog.yaml")
     archive_counts = count_tasks_by_status(GSE_DIR / "backlog-archive.yaml")
@@ -379,6 +471,53 @@ def generate_html(data, use_cdn=True):
             "active" if check_phase == current else "pending"
         )
 
+    # Plan workflow HTML
+    plan = data.get("plan")
+    workflow_html = ""
+    alerts_card_html = ""
+    if plan:
+        rows = []
+        for act in plan.get("workflow_completed", []):
+            rows.append(f'<li class="done">{act}</li>')
+        if plan.get("workflow_active"):
+            rows.append(f'<li class="active">{plan["workflow_active"]} <span class="muted">(active)</span></li>')
+        for act in plan.get("workflow_pending", []):
+            rows.append(f'<li class="pending">{act}</li>')
+        for sk in plan.get("workflow_skipped", []):
+            rows.append(f'<li class="skipped">{sk["activity"]} <span class="muted">(skipped — {sk["reason"]})</span></li>')
+        rows_html = "\n      ".join(rows) if rows else '<li class="muted">(plan.yaml present but workflow empty)</li>'
+
+        budget = plan.get("budget", {})
+        bt, bc, br = budget.get("total"), budget.get("consumed"), budget.get("remaining")
+        budget_html = ""
+        if bt is not None:
+            consumed_pct = round((bc or 0) / bt * 100) if bt else 0
+            bar_color = "#e74c3c" if consumed_pct >= 80 else "#f39c12" if consumed_pct >= 60 else "#2ecc71"
+            budget_html = f"""
+    <div class="metric"><span class="metric-label">Budget</span>
+      <span class="metric-value">{bc or 0}/{bt} pts ({consumed_pct}%)</span></div>
+    <div class="progress-bar"><div class="progress-fill" style="width:{consumed_pct}%;background:{bar_color}"></div></div>"""
+
+        status_badge = plan.get("status") or "unknown"
+        mode_label = plan.get("mode") or "?"
+        workflow_html = f"""
+  <div class="card">
+    <div class="card-title">Sprint Workflow <span class="muted">({mode_label} mode · {status_badge})</span></div>
+    <ul class="checklist">
+      {rows_html}
+    </ul>{budget_html}
+  </div>"""
+
+        alerts = plan.get("alerts", [])
+        if alerts:
+            alert_items = "".join(f'<li class="active" style="color:var(--amber)">{a}</li>' for a in alerts)
+            alerts_card_html = f"""
+  <div class="card" style="border-color:var(--amber)">
+    <div class="card-title" style="color:var(--amber)">⚠ Coherence Alerts ({len(alerts)})</div>
+    <ul class="checklist">{alert_items}</ul>
+    <div class="muted" style="margin-top:6px">Non-blocking — consider <code>/gse:plan --tactical</code> to re-plan.</div>
+  </div>"""
+
     # Review findings HTML
     findings_html = ""
     rf = data.get("review_findings", {})
@@ -427,6 +566,7 @@ def generate_html(data, use_cdn=True):
   .checklist .done::before {{ content: "\\2705 "; }}
   .checklist .active::before {{ content: "\\25B6 "; color: var(--blue); }}
   .checklist .pending::before {{ content: "\\25CB "; color: var(--muted); }}
+  .checklist .skipped::before {{ content: "\\2014 "; color: var(--muted); }}
   .kanban {{ display: flex; gap: 8px; flex-wrap: wrap; }}
   .kanban-col {{ flex: 1; min-width: 80px; text-align: center; padding: 8px; border-radius: 6px; }}
   .kanban-count {{ font-size: 1.5em; font-weight: bold; }}
@@ -504,7 +644,8 @@ def generate_html(data, use_cdn=True):
       <li class="{'done' if data['has_compound'] else 'pending'}">Capitalization (COMPOUND)</li>
     </ul>
   </div>
-
+{workflow_html}
+{alerts_card_html}
   <!-- Health Radar -->
   <div class="card">
     <div class="card-title">Project Health</div>

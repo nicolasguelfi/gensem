@@ -1,5 +1,6 @@
 ---
 gse:
+  id: PLN-001                          # inherited from .gse/plan.yaml (preserves P6 traceability)
   type: plan-summary
   sprint: 1                            # numeric sprint number
   status: done                         # always `done` — archived at delivery

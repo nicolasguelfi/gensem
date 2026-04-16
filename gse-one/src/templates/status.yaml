@@ -5,7 +5,8 @@
 gse_version: "0.9.0"
 current_sprint: 1
 current_phase: LC02                    # LC00 | LC01 | LC02 | LC03
-plan_status: approved                  # pending | approved | none
+# plan_status removed in v0.20.1 — use .gse/plan.yaml `status` field instead
+# (active | completed | abandoned). Fallback file-existence check for pre-v0.20 projects.
 
 health:
   score: 0.0                           # Composite score 0-10
@@ -33,6 +34,11 @@ pushback_dismissed: 0                  # times user chose "Everything looks good
 
 last_activity: ""                      # e.g., /gse:produce
 last_activity_date: ""                 # ISO 8601 timestamp
+
+# Per-activity completion history (appended by orchestrator at each transition).
+# Authoritative source for `workflow.completed[*].completed_at` in `.gse/plan.yaml`.
+# Scoped to the current sprint — reset when `/gse:plan --strategic` creates a new sprint.
+activity_history: []                   # list of { activity, completed_at, sprint, notes }
 
 # Stale sprint detection (complexity/session-based, not calendar-based)
 sessions_without_progress: 0           # incremented each /gse:go or /gse:resume with no TASK status change

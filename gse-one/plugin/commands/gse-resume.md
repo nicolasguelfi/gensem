@@ -21,10 +21,11 @@ Arguments: $ARGUMENTS
 
 Before executing, read (in priority order — load essential state first, defer the rest):
 1. `.gse/status.yaml` — current state (highest priority)
-2. `.gse/profile.yaml` — user profile and preferences
-3. `.gse/config.yaml` — project configuration
-4. `.gse/backlog.yaml` — sprint tasks only (current sprint filter)
-5. Remaining files loaded on demand during workflow
+2. `.gse/plan.yaml` — living sprint plan (if it exists) — source of workflow trajectory
+3. `.gse/profile.yaml` — user profile and preferences
+4. `.gse/config.yaml` — project configuration
+5. `.gse/backlog.yaml` — sprint tasks only (current sprint filter)
+6. Remaining files loaded on demand during workflow
 
 ## Workflow
 
@@ -113,9 +114,23 @@ Sprint progress:
   Health: {overall_score}/100
 ```
 
+**If `.gse/plan.yaml` exists with `status: active`,** append a workflow trajectory block:
+
+```
+  Next in plan: {workflow.active}
+  Pending:      {workflow.pending}
+  Completed:    {count} of {expected_count}
+  {if coherence.alerts is non-empty}:
+  ⚠ Alerts:     {list of active alerts}
+```
+
+This is more precise than `status.yaml.last_activity` alone (which says "where we were" but not "where we're going"). For beginners, translate the activity names per P9 Adaptive Communication (e.g., `reqs` → "writing down what the app should do", `produce` → "building").
+
 ### Step 5 — Propose Next Action
 
-Based on the checkpoint state, determine the most logical next action:
+Determine the next action using, in priority order:
+1. **Primary — `.gse/plan.yaml.workflow.active`** if `plan.yaml` exists with `status: active`. The workflow's `active` field is the declarative source of truth for "what comes next" (see orchestrator Decision Tree). This is more reliable than inferring from `last_activity`.
+2. **Fallback — checkpoint `last_activity`** if `plan.yaml` is absent (Micro mode or pre-v0.20 projects). Use the table below.
 
 | Checkpoint State | Proposed Action |
 |------------------|-----------------|

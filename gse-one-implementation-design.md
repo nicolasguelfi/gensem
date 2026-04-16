@@ -138,10 +138,10 @@ Claude ignores the `rules/` directory silently. Cursor ignores `settings.json` s
 
 ### 4.1 `/gse:plan` — Git Integration
 
-**Added to the plan skill workflow:**
+**Added to the plan skill workflow** (writes branch assignments to `.gse/plan.yaml` and `.gse/backlog.yaml`):
 
 ```markdown
-### Git Step (after Step 5 — Persist)
+### Git Step (Step 6 — Git Integration, between Step 5 "Promote to Sprint" and Step 7 "Persist Plan")
 
 Read `.gse/config.yaml` → `git.strategy`.
 
@@ -182,7 +182,7 @@ Read `.gse/config.yaml` → `git.strategy`.
 
 ### 4.2 `/gse:produce` — Git Integration
 
-**Added to the produce skill workflow:**
+**Added to the produce skill workflow** (reads branch name from `.gse/plan.yaml` tasks or `.gse/backlog.yaml` git state):
 
 ```markdown
 ### Git Step (before production begins)
@@ -1260,7 +1260,18 @@ Cleanup: delete backup tags older than `git.backup_retention_days` during delive
 gse_version: "0.7.0"
 current_sprint: 3
 current_phase: LC02
-plan_status: approved
+# plan status lives in .gse/plan.yaml (active | completed | abandoned)
+
+activity_history:
+  - activity: collect
+    completed_at: "2026-04-08T09:15:00Z"
+    sprint: 3
+  - activity: assess
+    completed_at: "2026-04-08T09:30:00Z"
+    sprint: 3
+  - activity: plan
+    completed_at: "2026-04-08T10:00:00Z"
+    sprint: 3
 
 health:
   score: 6.7

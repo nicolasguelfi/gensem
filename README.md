@@ -131,6 +131,40 @@ gse-one/
 
 All changes are made in `src/`. Never modify `plugin/` directly — it is regenerated.
 
+### Local development setup (recommended)
+
+Create a virtual environment and install dev dependencies:
+
+```bash
+python -m venv .venv
+```
+
+Activate it:
+
+```bash
+# Windows (PowerShell)
+.venv\Scripts\Activate.ps1
+
+# macOS/Linux
+source .venv/bin/activate
+```
+
+Install dev dependencies:
+
+```bash
+python -m pip install -U pip
+pip install -r requirements-dev.txt
+```
+
+### Verify changes (local)
+
+```bash
+cd gse-one/
+python gse_generate.py --clean --verify
+cd ..
+pytest -q
+```
+
 ### Regenerate the Plugin
 
 After any modification:

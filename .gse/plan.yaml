@@ -1,9 +1,8 @@
-status: active
+status: completed
 current_sprint: 0
 workflow:
-  active: integrate
-  pending:
-  pending:
+  active: null
+  pending: []
   completed:
     - activity: collect
       completed_at: "2026-04-17T00:00:00Z"
@@ -38,6 +37,9 @@ workflow:
     - activity: compound
       completed_at: "2026-04-17T00:00:00Z"
       notes: "Capitalization captured in docs/sprints/sprint-00/compound.md"
+    - activity: integrate
+      completed_at: "2026-04-17T00:00:00Z"
+      notes: "Follow-up tasks captured in backlog + docs/sprints/sprint-00/integrate.md"
   skipped:
     - activity: preview
       skipped_at: "2026-04-17T00:00:00Z"

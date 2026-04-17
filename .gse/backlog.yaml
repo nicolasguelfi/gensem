@@ -26,3 +26,16 @@ backlog:
       git:
         branch: gse/sprint-00/config/ci
 
+    - id: TASK-0005
+      title: "Docs: add troubleshooting section for Windows Python/pip/venv"
+      status: open
+      artefact_type: doc
+    - id: TASK-0006
+      title: "Stabilize dev dependencies (constraints/lock for CI)"
+      status: open
+      artefact_type: config
+    - id: TASK-0007
+      title: "Optional: add macOS to CI matrix when macOS is required"
+      status: open
+      artefact_type: config
+

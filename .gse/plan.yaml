@@ -1,9 +1,9 @@
 status: active
 current_sprint: 0
 workflow:
-  active: compound
+  active: integrate
   pending:
-    - integrate
+  pending:
   completed:
     - activity: collect
       completed_at: "2026-04-17T00:00:00Z"
@@ -35,6 +35,9 @@ workflow:
     - activity: deliver
       completed_at: "2026-04-17T00:00:00Z"
       notes: "Integrated feature branches into main and wrote plan-summary.md"
+    - activity: compound
+      completed_at: "2026-04-17T00:00:00Z"
+      notes: "Capitalization captured in docs/sprints/sprint-00/compound.md"
   skipped:
     - activity: preview
       skipped_at: "2026-04-17T00:00:00Z"

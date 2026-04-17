@@ -1,0 +1,9 @@
+profile:
+  it_expertise: intermediate
+  language:
+    chat: en
+  decision_involvement: normal
+  preferred_verbosity: concise
+  contextual_tips: true
+  consecutive_acceptances: 0
+

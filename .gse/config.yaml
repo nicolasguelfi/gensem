@@ -1,0 +1,11 @@
+project:
+  name: gensem
+  description: "GSE-One / gensem repository"
+git:
+  enabled: true
+  default_branch: main
+  worktree_dir: .worktrees
+dependency_audit: false
+lifecycle:
+  mode: full
+

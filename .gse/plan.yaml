@@ -1,0 +1,75 @@
+status: active
+current_sprint: 0
+workflow:
+  active: deliver
+  pending:
+    - compound
+    - integrate
+  completed:
+    - activity: collect
+      completed_at: "2026-04-17T00:00:00Z"
+      notes: "Repo inventory captured in docs/sprints/sprint-00/collect.md"
+    - activity: assess
+      completed_at: "2026-04-17T00:00:00Z"
+      notes: "Baseline assessment captured in docs/sprints/sprint-00/assess.md"
+    - activity: plan
+      completed_at: "2026-04-17T00:00:00Z"
+      notes: "Sprint plan drafted in docs/sprints/sprint-00/plan.md"
+    - activity: reqs
+      completed_at: "2026-04-17T00:00:00Z"
+      notes: "Testable requirements captured in docs/sprints/sprint-00/reqs.md"
+    - activity: design
+      completed_at: "2026-04-17T00:00:00Z"
+      notes: "Design decisions captured in docs/sprints/sprint-00/design.md"
+    - activity: tests
+      completed_at: "2026-04-17T00:00:00Z"
+      notes: "Test strategy drafted in docs/sprints/sprint-00/test-strategy.md"
+    - activity: produce
+      completed_at: "2026-04-17T00:00:00Z"
+      notes: "Implemented dev env, smoke tests, and CI on feature branches."
+    - activity: review
+      completed_at: "2026-04-17T00:00:00Z"
+      notes: "Review findings recorded in docs/sprints/sprint-00/review.md"
+    - activity: fix
+      completed_at: "2026-04-17T00:00:00Z"
+      notes: "REQ-1 revised to remove macOS requirement for sprint 0."
+  skipped:
+    - activity: preview
+      skipped_at: "2026-04-17T00:00:00Z"
+      reason: "CLI/tooling repo — no UI preview needed."
+goal: "Establish a repeatable, testable development loop for the gensem/GSE-One repo."
+budget:
+  total: 10
+  consumed: 0
+plan_notes:
+  scope:
+    in:
+      - "Add Python dependency/packaging setup for consistent local runs."
+      - "Add minimal automated tests for generator + dashboard."
+      - "Add CI to run checks on PRs."
+    out:
+      - "Large refactors of generator/templates."
+      - "Publishing/marketplace work."
+  order:
+    - TASK-0002
+    - TASK-0003
+    - TASK-0004
+  success_checks:
+    - "Documented local setup + single command(s) to run generator + dashboard + tests."
+    - "CI runs on PR and blocks regressions."
+coherence:
+  last_evaluated: null
+  alerts: []
+  scope_changes: []
+tasks:
+  planned:
+    - TASK-0001
+    - TASK-0002
+    - TASK-0003
+    - TASK-0004
+  in_progress:
+  done:
+    - TASK-0002
+    - TASK-0003
+    - TASK-0004
+

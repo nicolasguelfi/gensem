@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.4] - 2026-04-18
+
+Layers impacted: **spec** (docs)
+
+### Added
+- `INSTALL-OPENCODE.md` §6.1.3 — "Frontier open-weight models (via a cloud endpoint)" table: MiniMax M2.5 (80.2 % SWE-bench V.), GLM-5 (77.8), Kimi K2.5 (76.8), Step-3.5-Flash (74.4), GLM-4.7 (73.8), DeepSeek V3.2 (~73), Qwen3-Coder-480B (SWE-Pro 38.7), DeepSeek R1 (49.2). Each row gives license, MoE total/active, context, and opencode-specific usage note. Includes GSE-One-oriented recommendations (solo/cost-sensitive, privacy-critical, best-quality).
+- §8 references expanded with Scale SWE-Bench Pro leaderboard, SWE-bench.com, BenchLM, Vellum, MorphLLM.
+
 ## [0.21.3] - 2026-04-18
 
 Layers impacted: **spec** (docs)

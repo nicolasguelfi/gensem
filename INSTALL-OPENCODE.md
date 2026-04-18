@@ -129,6 +129,31 @@ With 128 GB of unified memory (Apple Silicon M3/M4 Max/Ultra) or a PC with 128 G
 - Running two models side-by-side (e.g. Qwen Coder for code + DeepSeek R1 for review) only works up to the combined footprint; unload one with `ollama stop <tag>` or LM Studio's "Eject" button before loading the other if you hit OOM.
 - Expect 5–15 tok/s on an M3 Ultra 128 GB with a 70B model at Q8, 3–8 tok/s with a 120 B+ model.
 
+#### 6.1.3 Frontier open-weight models (via a cloud endpoint)
+
+When you need the best open-source quality but don't have the RAM, use opencode's OpenAI-compatible provider config to point at a hosted endpoint (the vendor's API, Together.ai, Groq, OpenRouter, DeepInfra, etc.). These are the current top open-weight models on software-engineering benchmarks (April 2026):
+
+| Model | Org | License | Total / Active | SWE-bench Verified | Context | Notes for opencode |
+|---|---|---|---|---|---|---|
+| **MiniMax M2.5** | MiniMax | open-weight | undisclosed | **80.2 %** | 192 k | Current open-weight leader on SWE-bench; strong agentic tool use. |
+| **GLM-5** | Zhipu AI | open-weight | undisclosed | 77.8 % | 128 k | Top scorer on SWE-bench Pro and Terminal Bench among open models. |
+| **Kimi K2.5** | Moonshot AI | open-weight | ~1 T MoE | 76.8 % | 256 k | Excellent on competitive programming and front-end work; long context is a plus for GSE-One. |
+| **Step-3.5-Flash** | StepFun | open-weight | undisclosed | 74.4 % | 128 k | Balanced all-rounder; faster/cheaper than the 1 T-class models. |
+| **GLM-4.7** | Zhipu AI | open-weight | undisclosed | 73.8 % | 128 k | "Cleanest all-around coding profile" in community reviews; 94.2 HumanEval. |
+| **DeepSeek V3.2** | DeepSeek | open-weight | 671 B MoE (37 B active) | ~72–74 % | 128 k | Strong multilingual (SWE-Multilingual 70 %); widely hosted and cheap. |
+| **Qwen3-Coder-480B-A35B** | Alibaba | Apache-2.0 | 480 B MoE (35 B active) | SWE-Pro 38.7 % | 256 k | Best **pure** open coding specialist; requires a multi-GPU or ≥ 180 GB RAM to self-host. |
+| **DeepSeek R1** (full) | DeepSeek | MIT | 671 B MoE | 49.2 % | 128 k | Use as the "reviewer" model — its chain-of-thought catches issues coder models miss. |
+
+**How to point opencode at any of these:** add a provider block to `opencode.json` using the same `@ai-sdk/openai-compatible` pattern shown in §6.2, but replace `baseURL` with the endpoint URL of your chosen host (e.g. `https://api.deepseek.com/v1`, `https://api.together.xyz/v1`, `https://api.moonshot.cn/v1`). Put the API key in the hosted-provider's way (usually `options.apiKey` or an env variable). Once configured, `/models` in opencode lets you switch between local and cloud endpoints on the fly.
+
+**Recommendations for GSE-One users:**
+
+- **Solo development / cost-sensitive:** pair a strong local coder (e.g. Qwen 2.5 Coder 32B from §6.1.1 or 72B from §6.1.2) for `/gse-produce`, `/gse-fix`, with a cloud reasoner (DeepSeek V3.2 or R1) for `/gse-review`, `/gse-design`. The `opencode` `variant_cycle` keybind makes switching fast.
+- **Privacy-critical / offline:** stick to §6.1.1 or §6.1.2 entirely — no data leaves the machine.
+- **Best agentic quality, don't care about cost:** use MiniMax M2.5 or GLM-5 via their hosted API. The GSE-One guardrails still work identically since they're enforced by the opencode TS plugin, not the model.
+
+Scores above come from vendor reports and community benchmarks as of April 2026; numbers evolve fast — recheck the [Scale SWE-Bench Pro Leaderboard](https://labs.scale.com/leaderboard/swe_bench_pro_public) and [SWE-bench.com](https://www.swebench.com/) before committing to a stack.
+
 ### 6.2 Option A — Ollama
 
 ```bash
@@ -230,3 +255,8 @@ Replace the model ID with whatever LM Studio reports for your loaded model (see 
 - [Best Local LLMs to Run On Every Apple Silicon Mac in 2026](https://apxml.com/posts/best-local-llms-apple-silicon-mac)
 - [DeepSeek Models Guide — R1, V3, and Coder](https://insiderllm.com/guides/deepseek-models-guide/)
 - [GPU Requirements Guide for DeepSeek Models](https://apxml.com/posts/system-requirements-deepseek-models)
+- [Best AI for Coding 2026 — Real Benchmarks (MorphLLM)](https://www.morphllm.com/best-ai-model-for-coding)
+- [Scale SWE-Bench Pro Leaderboard](https://labs.scale.com/leaderboard/swe_bench_pro_public)
+- [SWE-bench Leaderboards](https://www.swebench.com/)
+- [Best Open Source LLM 2026 (BenchLM)](https://benchlm.ai/blog/posts/best-open-source-llm)
+- [Open Source LLM Leaderboard 2026 (Vellum)](https://www.vellum.ai/open-llm-leaderboard)

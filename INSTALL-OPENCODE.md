@@ -172,6 +172,9 @@ Scores above come from vendor reports and community benchmarks as of April 2026;
         "apiKey": "{env:OPENROUTER_API_KEY}"
       },
       "models": {
+        "anthropic/claude-opus-4.7":    { "name": "Claude Opus 4.7" },
+        "anthropic/claude-sonnet-4.6":  { "name": "Claude Sonnet 4.6" },
+        "anthropic/claude-haiku-4.5":   { "name": "Claude Haiku 4.5" },
         "mistralai/codestral-2508":     { "name": "Codestral 25.08 (Mistral)" },
         "mistralai/devstral-2512":      { "name": "Devstral 2512 (Mistral)" },
         "qwen/qwen3-coder":             { "name": "Qwen3 Coder 480B" },
@@ -191,8 +194,10 @@ Then `export OPENROUTER_API_KEY=sk-or-...` before launching opencode, or put the
 
 | OpenRouter ID | License | SWE-bench V. | Context | Input $/M | Output $/M | GSE-One fit | Best for |
 |---|---|---|---|---|---|:---:|---|
-| `minimax/minimax-m2.5` | open-weight | **80.2 %** | 197 k | $0.12 | $0.99 | ★★★★★ | Best open-weight SWE score × best price — the default "good and cheap" pick. |
-| `anthropic/claude-4.6-sonnet` | proprietary | 79.6 % | 1 M | $3.00 | $15.00 | ★★★★★ | Reference-class quality for `/gse-review`, `/gse-design`; 1 M context kills no-chunking workflows. |
+| `anthropic/claude-opus-4.7` | proprietary | **87.6 %** | 1 M | $5.00 | $25.00 | ★★★★★ | **Highest SWE-bench Verified of any model in this table.** Built for long-running async agents; default when quality > cost (`/gse-review`, `/gse-design`, complex `/gse-fix`). |
+| `minimax/minimax-m2.5` | open-weight | 80.2 % | 197 k | $0.12 | $0.99 | ★★★★★ | Best open-weight SWE score × best price — the default "good and cheap" pick. |
+| `anthropic/claude-sonnet-4.6` | proprietary | 79.6 % | 1 M | $3.00 | $15.00 | ★★★★★ | The best quality/price in the Claude line; 1 M context avoids chunking. Strong default coder for the full GSE-One lifecycle. |
+| `anthropic/claude-haiku-4.5` | proprietary | > 73 % | 200 k | $1.00 | $5.00 | ★★★★☆ | Near-frontier quality at Haiku price; ideal for fast iteration (`/gse-status`, `/gse-go`, routine `/gse-produce`). 200 k context is a minor limitation vs Sonnet/Opus. |
 | `z-ai/glm-4.5` | open-weight | ~74 % (4.5) / **77.8 %** (GLM-5) | 128 k | $0.60 | $2.20 | ★★★★☆ | Top open-weight on SWE-bench Pro and Terminal Bench. Check for `z-ai/glm-5` when listed — same ID pattern. |
 | `deepseek/deepseek-v3.2` | open-weight (MIT) | ~72–74 % | 164 k | $0.26 | $0.42 | ★★★★★ | Workhorse: 90 % of Sonnet quality for 2 % of the cost. Ideal default for `/gse-produce`. |
 | `mistralai/devstral-medium` | proprietary | 61.6 % | 128 k | $0.40 | $2.00 | ★★★★☆ | Mistral's dedicated agentic coder. Beats Gemini 2.5 Pro and GPT-4.1 on SWE-bench. |
@@ -209,11 +214,13 @@ Prices are per 1 M tokens; "proprietary" models may offer free tiers or OpenRout
 
 **Picking for GSE-One:**
 
-- **Your first try:** `minimax/minimax-m2.5` (top SWE score, < $1 per 1 M output).
-- **If you want the best possible `/gse-review`:** `anthropic/claude-4.6-sonnet` or `z-ai/glm-4.5` (wait for GLM-5 tag if listed).
-- **Cheapest acceptable quality:** `deepseek/deepseek-v3.2` as default, with `qwen/qwen3-coder` as a free-tier fallback.
-- **If you specifically want Mistral:** `mistralai/devstral-medium` for agentic work; reserve `mistralai/codestral-2508` for fill-in-the-middle / inline completions (it's not a full agentic model).
-- **Per-activity split (advanced):** use opencode's `variant_cycle` keybind to jump between a cheap coder for `/gse-produce` (DeepSeek V3.2) and a strong reviewer for `/gse-review` (Sonnet or GLM-4.5).
+- **Absolute top quality, cost no object:** `anthropic/claude-opus-4.7` — 87.6 % SWE-Verified leads the table by ~7 points. Use for `/gse-review`, `/gse-design`, and any architectural/long-running work.
+- **Best quality/price on Claude:** `anthropic/claude-sonnet-4.6` — 79.6 % SWE with 1 M context; strong default coder that also handles review well.
+- **Best open-weight, cheap:** `minimax/minimax-m2.5` — 80.2 % SWE at < $1 per 1 M output; the default "good and cheap" pick.
+- **Workhorse for `/gse-produce`:** `deepseek/deepseek-v3.2` — 90 % of Sonnet quality for ~5 % of the cost. Pair it with Opus or Sonnet for review.
+- **Fast & cheap for routine flow:** `anthropic/claude-haiku-4.5` (`/gse-status`, `/gse-go`, simple `/gse-produce`).
+- **If you specifically want Mistral:** `mistralai/devstral-medium` for agentic work; reserve `mistralai/codestral-2508` for inline completions (it's not a full agentic model).
+- **Per-activity split (advanced):** use opencode's `variant_cycle` keybind to jump between a cheap coder for `/gse-produce` (DeepSeek V3.2 or Haiku 4.5) and a strong reviewer for `/gse-review` (Opus 4.7 or Sonnet 4.6).
 
 ### 6.2 Option A — Ollama
 

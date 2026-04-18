@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.7] - 2026-04-18
+
+Layers impacted: **spec** (docs)
+
+### Added
+- `INSTALL-OPENCODE.md` §6.1.4 — Claude model family rows on OpenRouter: **Claude Opus 4.7** (★★★★★, 87.6 % SWE-Verified — new table leader), **Claude Sonnet 4.6** (★★★★★, 79.6 %) and **Claude Haiku 4.5** (★★★★☆, > 73 %). Provider snippet and GSE-One recommendations updated to reference them per activity.
+
+### Fixed
+- Corrected OpenRouter model ID for Claude Sonnet: `anthropic/claude-4.6-sonnet` → `anthropic/claude-sonnet-4.6` (OpenRouter uses the `<line>-<version>` order).
+
 ## [0.21.6] - 2026-04-18
 
 Layers impacted: **spec** (docs)

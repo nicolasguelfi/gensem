@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.20.7] - 2026-04-18
+
+Layers impacted: **spec** (trivial)
+
+### Changed
+- `CLAUDE.md` — Build pipeline now explicitly requires a `CHANGELOG.md` update between the VERSION bump and the generator run (step 2 of 6). Rationale: the v0.20.5 release shipped without a changelog entry; promoting the convention to a hard rule prevents recurrence.
+
 ## [0.20.6] - 2026-04-18
 
 Layers impacted: **production** (trivial)

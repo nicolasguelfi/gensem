@@ -22,12 +22,13 @@ This is the **gensem** repository — the source for the GSE-One plugin, an AI e
 ### Build pipeline — mandatory for every commit to main
 Every commit to main MUST follow this full pipeline:
 1. **Bump** `VERSION` (patch for fixes, minor for features)
-2. **Generate** — `cd gse-one && python3 gse_generate.py --verify`
-3. **Add all** — VERSION, manifests, all regenerated files in `plugin/`
-4. **Commit** — with `feat:`, `fix:`, `docs:`, or `chore:` prefix
-5. **Push** — `git push origin main`
+2. **Update `CHANGELOG.md`** — add a `## [X.Y.Z] - YYYY-MM-DD` block at the top with `### Added/Changed/Fixed/Removed` sections per Keep a Changelog convention (plus an optional "Layers impacted" line)
+3. **Generate** — `cd gse-one && python3 gse_generate.py --verify`
+4. **Add all** — VERSION, CHANGELOG.md, manifests, all regenerated files in `plugin/`
+5. **Commit** — with `feat:`, `fix:`, `docs:`, or `chore:` prefix, and `vX.Y.Z —` pattern in the subject
+6. **Push** — `git push origin main`
 
-Never skip a step. Never commit without regenerating. Never push without bumping.
+Never skip a step. Never commit without regenerating. Never push without bumping. Never release a version without a matching CHANGELOG entry.
 
 - Never edit files in `gse-one/plugin/` directly except `plugin/tools/` — the generator overwrites everything else from `src/`.
 - Changes to activities go in `src/activities/`, changes to agents go in `src/agents/`.

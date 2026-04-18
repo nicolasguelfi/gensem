@@ -228,6 +228,47 @@ def _remove_registry():
 # Duplicate installation detection
 # ---------------------------------------------------------------------------
 
+def _detect_claude_plugin_installed():
+    """Return True if the 'gse' plugin is registered in Claude Code.
+
+    Runs `claude plugin list` and looks for a line whose first token is 'gse'.
+    Returns False if the CLI is absent, times out, or the plugin is not listed.
+    """
+    if not command_exists("claude"):
+        return False
+    try:
+        result = subprocess.run(
+            ["claude", "plugin", "list"],
+            capture_output=True, text=True, timeout=10,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return False
+    if result.returncode != 0:
+        return False
+    for line in result.stdout.splitlines():
+        tokens = line.strip().split()
+        if tokens and tokens[0].lower() == "gse":
+            return True
+    return False
+
+
+def _has_gse_skills_in_dir(skills_dir):
+    """Return True if skills_dir contains GSE-One skills (prefixed or legacy)."""
+    if not skills_dir.is_dir():
+        return False
+    known = set(_get_skill_names())
+    for d in skills_dir.iterdir():
+        if not d.is_dir():
+            continue
+        # New prefixed layout: gse-<name>
+        if d.name.startswith("gse-") and d.name[4:] in known:
+            return True
+        # Legacy unprefixed layout (<= v0.20.4)
+        if d.name in known:
+            return True
+    return False
+
+
 def _check_duplicate_install(platform_name, mode, project_dir=None, env=None):
     """Warn if another installation mode already exists for this platform.
 
@@ -237,14 +278,19 @@ def _check_duplicate_install(platform_name, mode, project_dir=None, env=None):
 
     if platform_name == "claude":
         if mode == "plugin":
-            # Check for no-plugin install in current project
+            # Check for no-plugin install in current project (prefixed or legacy GSE skills)
             local = Path(project_dir or Path.cwd()) / ".claude" / "skills"
-            if local.is_dir() and any(local.iterdir()):
+            if _has_gse_skills_in_dir(local):
                 conflicts.append(("no-plugin (project)", str(local)))
-        elif mode == "no-plugin" and project_dir:
-            # Check for plugin install — we can't easily detect Claude plugin installs
-            # without running `claude plugin list`, so skip for Claude
-            pass
+            # Check for home-level skills (~/.claude/skills) — relevant for user scope,
+            # but also a duplicate source for any scope since home skills are always loaded.
+            home = Path.home() / ".claude" / "skills"
+            if _has_gse_skills_in_dir(home):
+                conflicts.append(("no-plugin (home)", str(home)))
+        elif mode == "no-plugin":
+            # Check for a registered 'gse' plugin via the Claude CLI
+            if _detect_claude_plugin_installed():
+                conflicts.append(("plugin (registered via claude CLI)", "claude plugin list → gse"))
 
     elif platform_name == "cursor":
         if mode == "plugin" and env:
@@ -480,8 +526,25 @@ def uninstall_claude_plugin():
 # ---------------------------------------------------------------------------
 
 def install_claude_no_plugin(project_dir):
-    """Install GSE-One artifacts directly into .claude/ of a project."""
+    """Install GSE-One artifacts directly into .claude/ of a project.
+
+    Skills are copied with a `gse-` prefix on their directory name so that
+    Claude Code exposes them as `/gse-<name>` (e.g. /gse-go) instead of the
+    bare `/<name>` that project-level skills would otherwise receive. This is
+    the closest no-plugin UX to the `/gse:<name>` namespace produced by the
+    plugin installation path, which remains the recommended mode.
+    """
     step("Claude Code — Non-plugin install")
+
+    # Non-plugin mode has a different invocation syntax than plugin mode.
+    # Make the tradeoff explicit before anything is written to disk.
+    warn("No-plugin mode — invocation syntax:")
+    warn("  Commands appear as /gse-<name> (e.g., /gse-go, /gse-plan).")
+    warn("  Plugin mode gives /gse:<name> (colon) — install as a plugin if you prefer that.")
+    if not confirm("Continue with no-plugin install?"):
+        err("Installation cancelled by user.")
+        tracker.add("Claude Code", "no-plugin", "project", str(project_dir), "FAIL", "cancelled by user")
+        return False
 
     if not _check_duplicate_install("claude", "no-plugin", project_dir=project_dir):
         tracker.add("Claude Code", "no-plugin", "project", str(project_dir), "FAIL", "cancelled (duplicate)")
@@ -490,17 +553,28 @@ def install_claude_no_plugin(project_dir):
     claude_dir = Path(project_dir) / ".claude"
     ensure_dir(claude_dir)
 
-    # Skills
+    # Skills (prefixed as gse-<name> to namespace commands in the TUI)
     skills_dst = claude_dir / "skills"
     ensure_dir(skills_dst)
     skills_src = PLUGIN_DIR / "skills"
+
+    # Clean legacy unprefixed GSE skills from a prior install (<= v0.20.4)
+    legacy_removed = 0
+    for name in _get_skill_names():
+        legacy = skills_dst / name
+        if legacy.is_dir() and (legacy / "SKILL.md").exists():
+            shutil.rmtree(legacy)
+            legacy_removed += 1
+    if legacy_removed:
+        info(f"Removed {legacy_removed} legacy unprefixed skill(s) from a previous install")
+
     count = 0
     for skill_dir in sorted(skills_src.iterdir()):
         if skill_dir.is_dir():
-            copy_tree(skill_dir, skills_dst / skill_dir.name)
+            copy_tree(skill_dir, skills_dst / f"gse-{skill_dir.name}")
             count += 1
-    ok(f"Copied {count} skills to {skills_dst}")
-    warn("Commands will be /name (e.g., /plan) instead of /gse:name")
+    ok(f"Copied {count} skills to {skills_dst} (prefixed as gse-<name>)")
+    info("Commands available as /gse-<name> (e.g., /gse-go, /gse-plan)")
 
     # Agents
     agents_dst = claude_dir / "agents"
@@ -554,11 +628,15 @@ def uninstall_claude_no_plugin(project_dir):
 
     skills_dir = claude_dir / "skills"
     if skills_dir.exists():
+        removed = 0
         for name in _get_skill_names():
-            d = skills_dir / name
-            if d.exists():
-                shutil.rmtree(d)
-        ok(f"Removed GSE-One skills from {skills_dir}")
+            # Remove both the prefixed layout (current) and the legacy unprefixed
+            # layout (<= v0.20.4) to keep uninstall idempotent across versions.
+            for candidate in (skills_dir / f"gse-{name}", skills_dir / name):
+                if candidate.exists():
+                    shutil.rmtree(candidate)
+                    removed += 1
+        ok(f"Removed {removed} GSE-One skill(s) from {skills_dir}")
 
     agents_dir = claude_dir / "agents"
     if agents_dir.exists():

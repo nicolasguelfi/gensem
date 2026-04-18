@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.20.6] - 2026-04-18
+
+Layers impacted: **production** (trivial)
+
+### Changed
+- CHANGELOG catch-up release — documents the v0.20.5 fix that shipped without a changelog entry
+
+## [0.20.5] - 2026-04-18
+
+Layers impacted: **production** (minor)
+
+### Fixed
+- Claude Code no-plugin install: skills are now copied as `gse-<name>/` so commands appear as `/gse-<name>` in the TUI (e.g. `/gse-go`, `/gse-plan`) instead of the bare `/<name>` that project-level skills would otherwise receive — closest no-plugin UX to the `/gse:<name>` namespace produced by plugin mode
+
+### Changed
+- `install.py` — no-plugin mode now requires explicit confirmation of the naming trade-off before writing anything to disk
+- `install.py` — legacy unprefixed skill directories from a prior install (≤ v0.20.4) are cleaned up automatically before the new prefixed layout is written
+- `install.py` — `uninstall_claude_no_plugin` removes both prefixed (current) and unprefixed (legacy) layouts, making reinstall idempotent across versions
+
+### Added
+- Duplicate detection for Claude Code plugin mode now also checks `~/.claude/skills/` (home-level) in addition to the current project, catching conflicts for user-scope installs across all projects
+- Duplicate detection for Claude Code no-plugin mode now probes `claude plugin list` to detect a registered `gse` plugin (previously skipped)
+- New helpers `_detect_claude_plugin_installed()` and `_has_gse_skills_in_dir()` in `install.py`
+
 ## [0.20.4] - 2026-04-17
 
 Layers impacted: **spec** (moderate), **design** (moderate), **source** (minor)

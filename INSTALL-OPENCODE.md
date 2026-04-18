@@ -133,16 +133,16 @@ With 128 GB of unified memory (Apple Silicon M3/M4 Max/Ultra) or a PC with 128 G
 
 When you need the best open-source quality but don't have the RAM, use opencode's OpenAI-compatible provider config to point at a hosted endpoint (the vendor's API, Together.ai, Groq, OpenRouter, DeepInfra, etc.). These are the current top open-weight models on software-engineering benchmarks (April 2026):
 
-| Model | Org | License | Total / Active | SWE-bench Verified | Context | Notes for opencode |
-|---|---|---|---|---|---|---|
-| **MiniMax M2.5** | MiniMax | open-weight | undisclosed | **80.2 %** | 192 k | Current open-weight leader on SWE-bench; strong agentic tool use. |
-| **GLM-5** | Zhipu AI | open-weight | undisclosed | 77.8 % | 128 k | Top scorer on SWE-bench Pro and Terminal Bench among open models. |
-| **Kimi K2.5** | Moonshot AI | open-weight | ~1 T MoE | 76.8 % | 256 k | Excellent on competitive programming and front-end work; long context is a plus for GSE-One. |
-| **Step-3.5-Flash** | StepFun | open-weight | undisclosed | 74.4 % | 128 k | Balanced all-rounder; faster/cheaper than the 1 T-class models. |
-| **GLM-4.7** | Zhipu AI | open-weight | undisclosed | 73.8 % | 128 k | "Cleanest all-around coding profile" in community reviews; 94.2 HumanEval. |
-| **DeepSeek V3.2** | DeepSeek | open-weight | 671 B MoE (37 B active) | ~72–74 % | 128 k | Strong multilingual (SWE-Multilingual 70 %); widely hosted and cheap. |
-| **Qwen3-Coder-480B-A35B** | Alibaba | Apache-2.0 | 480 B MoE (35 B active) | SWE-Pro 38.7 % | 256 k | Best **pure** open coding specialist; requires a multi-GPU or ≥ 180 GB RAM to self-host. |
-| **DeepSeek R1** (full) | DeepSeek | MIT | 671 B MoE | 49.2 % | 128 k | Use as the "reviewer" model — its chain-of-thought catches issues coder models miss. |
+| Model | Org | License | Total / Active | SWE-bench V. | Context | GSE-One fit | Notes for opencode |
+|---|---|---|---|---|---|:---:|---|
+| **MiniMax M2.5** | MiniMax | open-weight | undisclosed | **80.2 %** | 192 k | ★★★★★ | Current open-weight leader on SWE-bench; strong agentic tool use. |
+| **GLM-5** | Zhipu AI | open-weight | undisclosed | 77.8 % | 128 k | ★★★★★ | Top scorer on SWE-bench Pro and Terminal Bench among open models. |
+| **Kimi K2.5** | Moonshot AI | open-weight | ~1 T MoE | 76.8 % | 256 k | ★★★★☆ | Excellent on competitive programming and front-end work; longest context of the table. |
+| **Step-3.5-Flash** | StepFun | open-weight | undisclosed | 74.4 % | 128 k | ★★★☆☆ | Balanced all-rounder; faster/cheaper than the 1 T-class models. |
+| **GLM-4.7** | Zhipu AI | open-weight | undisclosed | 73.8 % | 128 k | ★★★★☆ | "Cleanest all-around coding profile" in community reviews; 94.2 HumanEval. |
+| **DeepSeek V3.2** | DeepSeek | open-weight | 671 B MoE (37 B active) | ~72–74 % | 128 k | ★★★★★ | Workhorse: 90 % of frontier quality at a fraction of the cost. Strong multilingual (SWE-Multilingual 70 %). |
+| **Qwen3-Coder-480B-A35B** | Alibaba | Apache-2.0 | 480 B MoE (35 B active) | SWE-Pro 38.7 % | 256 k | ★★★☆☆ | Best **pure** open coding specialist; weaker on full SWE-Verified → pair with a reviewer model. |
+| **DeepSeek R1** (full) | DeepSeek | MIT | 671 B MoE | 49.2 % | 128 k | ★★★☆☆ | Not a coder — use as the "reviewer" model for `/gse-review` / `/gse-design`: its chain-of-thought catches issues coder models miss. |
 
 **How to point opencode at any of these:** add a provider block to `opencode.json` using the same `@ai-sdk/openai-compatible` pattern shown in §6.2, but replace `baseURL` with the endpoint URL of your chosen host (e.g. `https://api.deepseek.com/v1`, `https://api.together.xyz/v1`, `https://api.moonshot.cn/v1`). Put the API key in the hosted-provider's way (usually `options.apiKey` or an env variable). Once configured, `/models` in opencode lets you switch between local and cloud endpoints on the fly.
 
@@ -189,19 +189,21 @@ Then `export OPENROUTER_API_KEY=sk-or-...` before launching opencode, or put the
 
 **Best SWE / coding models on OpenRouter (April 2026):**
 
-| OpenRouter ID | License | SWE-bench Verified | Context | Input $/M | Output $/M | Best for |
-|---|---|---|---|---|---|---|
-| `minimax/minimax-m2.5` | open-weight | **80.2 %** | 197 k | $0.12 | $0.99 | Best open-weight SWE score × best price — the default "good and cheap" pick. |
-| `anthropic/claude-4.6-sonnet` | proprietary | 79.6 % | 1 M | $3.00 | $15.00 | Reference-class quality for `/gse-review`, `/gse-design`; 1 M context kills no-chunking workflows. |
-| `z-ai/glm-4.5` | open-weight | ~74 % (4.5) / **77.8 %** (GLM-5) | 128 k | $0.60 | $2.20 | Top open-weight on SWE-bench Pro and Terminal Bench. Check for `z-ai/glm-5` when available — same ID pattern. |
-| `deepseek/deepseek-v3.2` | open-weight (MIT) | ~72–74 % | 164 k | $0.26 | $0.42 | The workhorse: 90 % of Sonnet quality for 2 % of the cost. Ideal default for `/gse-produce`. |
-| `mistralai/devstral-medium` | proprietary | 61.6 % | 128 k | $0.40 | $2.00 | Mistral's dedicated agentic coder. Beats Gemini 2.5 Pro and GPT-4.1 on SWE-bench. |
-| `mistralai/devstral-2512` | open-weight (Apache-2.0) | ~60 % | 256 k | $0.40 | $2.00 | **State-of-the-art open agentic coding model.** Long context, strong tool use. |
-| `qwen/qwen3-coder` | Apache-2.0 | SWE-Pro ~39 % | 262 k | $0.22 | $1.00 | Cheapest frontier open coding model; 480 B MoE / 35 B active. Often on the free tier of OpenRouter (`qwen/qwen3-coder:free`) with tighter rate limits. |
-| `moonshotai/kimi-k2.5` | open-weight | 76.8 % | 256 k | ~$0.30 | ~$1.20 | Front-end specialist; 85 % on LiveCodeBench. |
-| **`mistralai/codestral-2508`** | proprietary | ~2 % (SWE-Pro) | 256 k | $0.30 | $0.90 | **Fill-in-the-middle specialist.** Not for full agentic flows — great for `/gse-produce` autocomplete inside an existing file. 86.6 % HumanEval, 91.2 % MBPP. |
-| `mistralai/mistral-large-2512` | proprietary | ~65 % | 262 k | $0.50 | $1.50 | General-purpose strong all-rounder with very long context. |
-| `mistralai/devstral-small` | open-weight (Apache-2.0) | ~55 % | 128 k | $0.10 | $0.30 | Cheapest agentic coder on OpenRouter; degrades on multi-file edits. |
+| OpenRouter ID | License | SWE-bench V. | Context | Input $/M | Output $/M | GSE-One fit | Best for |
+|---|---|---|---|---|---|:---:|---|
+| `minimax/minimax-m2.5` | open-weight | **80.2 %** | 197 k | $0.12 | $0.99 | ★★★★★ | Best open-weight SWE score × best price — the default "good and cheap" pick. |
+| `anthropic/claude-4.6-sonnet` | proprietary | 79.6 % | 1 M | $3.00 | $15.00 | ★★★★★ | Reference-class quality for `/gse-review`, `/gse-design`; 1 M context kills no-chunking workflows. |
+| `z-ai/glm-4.5` | open-weight | ~74 % (4.5) / **77.8 %** (GLM-5) | 128 k | $0.60 | $2.20 | ★★★★☆ | Top open-weight on SWE-bench Pro and Terminal Bench. Check for `z-ai/glm-5` when listed — same ID pattern. |
+| `deepseek/deepseek-v3.2` | open-weight (MIT) | ~72–74 % | 164 k | $0.26 | $0.42 | ★★★★★ | Workhorse: 90 % of Sonnet quality for 2 % of the cost. Ideal default for `/gse-produce`. |
+| `mistralai/devstral-medium` | proprietary | 61.6 % | 128 k | $0.40 | $2.00 | ★★★★☆ | Mistral's dedicated agentic coder. Beats Gemini 2.5 Pro and GPT-4.1 on SWE-bench. |
+| `mistralai/devstral-2512` | open-weight (Apache-2.0) | ~60 % | 256 k | $0.40 | $2.00 | ★★★★☆ | **State-of-the-art open agentic coding model.** Long context, strong tool use. |
+| `qwen/qwen3-coder` | Apache-2.0 | SWE-Pro ~39 % | 262 k | $0.22 | $1.00 | ★★★☆☆ | Cheapest frontier open coding model; 480 B MoE / 35 B active. Weak on full SWE — good for `/gse-produce`, not `/gse-review`. Free tier (`qwen/qwen3-coder:free`) with tighter rate limits. |
+| `moonshotai/kimi-k2.5` | open-weight | 76.8 % | 256 k | ~$0.30 | ~$1.20 | ★★★★☆ | Front-end specialist; 85 % on LiveCodeBench; 256 k context is comfortable for GSE-One's AGENTS.md overhead. |
+| **`mistralai/codestral-2508`** | proprietary | ~2 % (SWE-Pro) | 256 k | $0.30 | $0.90 | ★★☆☆☆ | **Fill-in-the-middle specialist.** Not for full agentic flows — niche use only (inline completion inside an existing file). 86.6 % HumanEval, 91.2 % MBPP. |
+| `mistralai/mistral-large-2512` | proprietary | ~65 % | 262 k | $0.50 | $1.50 | ★★★☆☆ | General-purpose strong all-rounder with very long context; less specialized than Devstral Medium for coding agents. |
+| `mistralai/devstral-small` | open-weight (Apache-2.0) | ~55 % | 128 k | $0.10 | $0.30 | ★★★☆☆ | Cheapest agentic coder on OpenRouter; degrades on multi-file edits — fine for small projects only. |
+
+> **Legend — GSE-One fit stars:** ★★★★★ excellent across all 23 activities (default pick) · ★★★★☆ strong, minor tradeoff (e.g. shorter context, one weaker activity) · ★★★☆☆ works for a subset of activities (pair with a complementary model) · ★★☆☆☆ niche only — not recommended as primary · ★☆☆☆☆ avoid for GSE-One. Ratings weight **tool-calling reliability**, **context ≥ 128 k**, **SWE-bench Verified**, and **multi-step reasoning** — the four capabilities GSE-One relies on for its full lifecycle.
 
 Prices are per 1 M tokens; "proprietary" models may offer free tiers or OpenRouter credits — recheck on the provider page.
 

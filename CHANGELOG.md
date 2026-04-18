@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.6] - 2026-04-18
+
+Layers impacted: **spec** (docs)
+
+### Added
+- `INSTALL-OPENCODE.md` §6.1.3 and §6.1.4 — new "GSE-One fit" column (1–5 stars) on both model tables (frontier open-weight via cloud, OpenRouter). Ratings weight tool-calling reliability, context ≥ 128 k, SWE-bench Verified, and multi-step reasoning — the four capabilities GSE-One relies on for its full 23-activity lifecycle. Legend explains the scale under the OpenRouter table.
+
+### Changed
+- Clarified in the OpenRouter table that ★★☆☆☆ models (e.g. Codestral 25.08) are niche-only for inline completion, not recommended as primary for GSE-One agentic flow.
+
 ## [0.21.5] - 2026-04-18
 
 Layers impacted: **spec** (docs)

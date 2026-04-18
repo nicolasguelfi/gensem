@@ -92,6 +92,8 @@ opencode talks to any OpenAI-compatible endpoint, so Ollama and LM Studio both w
 
 opencode runs an agentic loop with tool calls. A model that can't reliably call tools will silently fail. Pick from this short list — all have been observed to work for opencode-style workflows. **Context window ≥ 64k tokens** is strongly recommended by the opencode docs.
 
+#### 6.1.1 Commodity hardware (8–32 GB)
+
 | Model (Ollama tag) | Params | Min VRAM/RAM | Notes |
 |---|---|---|---|
 | `qwen3-coder` (a.k.a. Qwen3-Coder-Next) | 80B MoE (3B active) | 8 GB | Best efficiency/quality ratio in 2026; designed for agent tool-calling. |
@@ -104,6 +106,28 @@ opencode runs an agentic loop with tool calls. A model that can't reliably call 
 **What to avoid for opencode:** Qwen 3 14B (plain), Devstral Small 2 in agent mode, GPT-OSS 20B in default (non-thinking) mode — reports of tool-call failures and instruction drift. Pick a larger or MoE variant if you have the VRAM.
 
 Ollama tags evolve; run `ollama search coder` to see what's current.
+
+#### 6.1.2 High-RAM workstations (≥ 128 GB)
+
+With 128 GB of unified memory (Apple Silicon M3/M4 Max/Ultra) or a PC with 128 GB DDR5 + a capable GPU, you can run the frontier-class open models at quality-preserving quantization. On Apple Silicon, prefer the **MLX** runtime (LM Studio has a toggle; with Ollama stick to its default): it's consistently 20–30 % faster than llama.cpp on large models.
+
+| Model (Ollama tag) | Total / Active | Recommended quant | RAM footprint | Notes |
+|---|---|---|---|---|
+| `qwen2.5-coder:72b` | 72B dense | Q8 | ~75 GB | **Best coding specialist at this tier.** Solid tool-calling, Python-first. |
+| `llama3.3:70b` at Q8 | 70B dense | Q8 | ~75 GB | Bumping the 32 GB-tier pick to Q8 meaningfully improves complex reasoning and multi-file edits. |
+| `deepseek-r1:70b` (distill) | 70B dense | Q8 | ~75 GB | R1-style chain-of-thought at 70B; pair with a coder model for best review/debug results. |
+| `mistral-large:123b` | 123B dense | Q5 | ~85 GB | 128k context, strong generalist, well-behaved on tool calls. |
+| `llama4-scout` | 109B MoE (17B active) | Q6 | ~85 GB | 10M-token context, multimodal, fast thanks to MoE — leave ~30 GB headroom for context. |
+| `qwen3:235b-a22b` | 235B MoE (22B active) | Q4 | ~120 GB | Frontier-class general model; tight on 128 GB — keep context ≤ 32k and close other heavy apps. |
+
+**Still out of reach at 128 GB** (for reference — don't try these without ≥ 180 GB):
+- `qwen3-coder:480b-a35b` (Qwen3-Coder-480B) — ~240 GB at Q4, the current best open coding model but needs a multi-GPU rig or a 256 GB Mac Studio.
+- `deepseek-v3` / `deepseek-r1:671b` (full 671B MoE) — ~400 GB at Q4; same story.
+
+**Tips for 128 GB setups:**
+- Budget 15–25 % of RAM for the KV cache (context) — a 32k context on a 70B model can add 6–10 GB on top of the weights.
+- Running two models side-by-side (e.g. Qwen Coder for code + DeepSeek R1 for review) only works up to the combined footprint; unload one with `ollama stop <tag>` or LM Studio's "Eject" button before loading the other if you hit OOM.
+- Expect 5–15 tok/s on an M3 Ultra 128 GB with a 70B model at Q8, 3–8 tok/s with a 120 B+ model.
 
 ### 6.2 Option A — Ollama
 
@@ -198,7 +222,11 @@ Replace the model ID with whatever LM Studio reports for your loaded model (see 
 **Model research sources (April 2026):**
 - [opencode — Providers](https://opencode.ai/docs/providers/)
 - [opencode — Models](https://opencode.ai/docs/models/)
+- [opencode — Tools](https://opencode.ai/docs/tools/)
 - [Ollama × opencode integration](https://docs.ollama.com/integrations/opencode)
 - [Best Local AI Coding Models 2026](https://localaimaster.com/models/best-local-ai-coding-models)
 - [Best LLMs for opencode — Tested Locally](https://dev.to/rosgluk/best-llms-for-opencode-tested-locally-499l)
 - [OpenCode CLI Guide 2026 — Local LLMs](https://yuv.ai/learn/opencode-cli)
+- [Best Local LLMs to Run On Every Apple Silicon Mac in 2026](https://apxml.com/posts/best-local-llms-apple-silicon-mac)
+- [DeepSeek Models Guide — R1, V3, and Coder](https://insiderllm.com/guides/deepseek-models-guide/)
+- [GPU Requirements Guide for DeepSeek Models](https://apxml.com/posts/system-requirements-deepseek-models)

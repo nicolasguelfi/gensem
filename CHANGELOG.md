@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.3] - 2026-04-18
+
+Layers impacted: **spec** (docs)
+
+### Added
+- `INSTALL-OPENCODE.md` §6.1.2 — "High-RAM workstations (≥ 128 GB)" tier with Qwen 2.5 Coder 72B (Q8), Llama 3.3 70B (Q8), DeepSeek R1 70B distill, Mistral Large 123B (Q5), Llama 4 Scout (Q6), Qwen3 235B-A22B (Q4). Includes RAM-footprint estimates, MLX performance note for Apple Silicon, expected tok/s, and a "still out of reach at 128 GB" list (Qwen3-Coder 480B, DeepSeek V3/R1 full).
+- §6.1 renamed §6.1.1 to "Commodity hardware (8–32 GB)" for clarity against the new tier.
+- Extra references added to §8 (Apple Silicon guide, DeepSeek models guide, DeepSeek GPU requirements, opencode Tools doc).
+
 ## [0.21.2] - 2026-04-18
 
 Layers impacted: **spec** (docs, trivial)

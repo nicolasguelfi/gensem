@@ -154,6 +154,65 @@ When you need the best open-source quality but don't have the RAM, use opencode'
 
 Scores above come from vendor reports and community benchmarks as of April 2026; numbers evolve fast — recheck the [Scale SWE-Bench Pro Leaderboard](https://labs.scale.com/leaderboard/swe_bench_pro_public) and [SWE-bench.com](https://www.swebench.com/) before committing to a stack.
 
+#### 6.1.4 Via OpenRouter (unified gateway)
+
+[OpenRouter](https://openrouter.ai) aggregates 300+ models behind a single OpenAI-compatible endpoint, so you only manage one API key and can switch between models with `/models` in opencode. Especially handy when you want to A/B a coder against a reviewer, or try a model for a session without opening another vendor account.
+
+**Config snippet** — add to `opencode.json`:
+
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "openrouter": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "OpenRouter",
+      "options": {
+        "baseURL": "https://openrouter.ai/api/v1",
+        "apiKey": "{env:OPENROUTER_API_KEY}"
+      },
+      "models": {
+        "mistralai/codestral-2508":     { "name": "Codestral 25.08 (Mistral)" },
+        "mistralai/devstral-2512":      { "name": "Devstral 2512 (Mistral)" },
+        "qwen/qwen3-coder":             { "name": "Qwen3 Coder 480B" },
+        "deepseek/deepseek-v3.2":       { "name": "DeepSeek V3.2" },
+        "minimax/minimax-m2.5":         { "name": "MiniMax M2.5" },
+        "z-ai/glm-4.5":                 { "name": "GLM-4.5 (Zhipu)" },
+        "moonshotai/kimi-k2.5":         { "name": "Kimi K2.5 (Moonshot)" }
+      }
+    }
+  }
+}
+```
+
+Then `export OPENROUTER_API_KEY=sk-or-...` before launching opencode, or put the literal key in `apiKey` (less safe).
+
+**Best SWE / coding models on OpenRouter (April 2026):**
+
+| OpenRouter ID | License | SWE-bench Verified | Context | Input $/M | Output $/M | Best for |
+|---|---|---|---|---|---|---|
+| `minimax/minimax-m2.5` | open-weight | **80.2 %** | 197 k | $0.12 | $0.99 | Best open-weight SWE score × best price — the default "good and cheap" pick. |
+| `anthropic/claude-4.6-sonnet` | proprietary | 79.6 % | 1 M | $3.00 | $15.00 | Reference-class quality for `/gse-review`, `/gse-design`; 1 M context kills no-chunking workflows. |
+| `z-ai/glm-4.5` | open-weight | ~74 % (4.5) / **77.8 %** (GLM-5) | 128 k | $0.60 | $2.20 | Top open-weight on SWE-bench Pro and Terminal Bench. Check for `z-ai/glm-5` when available — same ID pattern. |
+| `deepseek/deepseek-v3.2` | open-weight (MIT) | ~72–74 % | 164 k | $0.26 | $0.42 | The workhorse: 90 % of Sonnet quality for 2 % of the cost. Ideal default for `/gse-produce`. |
+| `mistralai/devstral-medium` | proprietary | 61.6 % | 128 k | $0.40 | $2.00 | Mistral's dedicated agentic coder. Beats Gemini 2.5 Pro and GPT-4.1 on SWE-bench. |
+| `mistralai/devstral-2512` | open-weight (Apache-2.0) | ~60 % | 256 k | $0.40 | $2.00 | **State-of-the-art open agentic coding model.** Long context, strong tool use. |
+| `qwen/qwen3-coder` | Apache-2.0 | SWE-Pro ~39 % | 262 k | $0.22 | $1.00 | Cheapest frontier open coding model; 480 B MoE / 35 B active. Often on the free tier of OpenRouter (`qwen/qwen3-coder:free`) with tighter rate limits. |
+| `moonshotai/kimi-k2.5` | open-weight | 76.8 % | 256 k | ~$0.30 | ~$1.20 | Front-end specialist; 85 % on LiveCodeBench. |
+| **`mistralai/codestral-2508`** | proprietary | ~2 % (SWE-Pro) | 256 k | $0.30 | $0.90 | **Fill-in-the-middle specialist.** Not for full agentic flows — great for `/gse-produce` autocomplete inside an existing file. 86.6 % HumanEval, 91.2 % MBPP. |
+| `mistralai/mistral-large-2512` | proprietary | ~65 % | 262 k | $0.50 | $1.50 | General-purpose strong all-rounder with very long context. |
+| `mistralai/devstral-small` | open-weight (Apache-2.0) | ~55 % | 128 k | $0.10 | $0.30 | Cheapest agentic coder on OpenRouter; degrades on multi-file edits. |
+
+Prices are per 1 M tokens; "proprietary" models may offer free tiers or OpenRouter credits — recheck on the provider page.
+
+**Picking for GSE-One:**
+
+- **Your first try:** `minimax/minimax-m2.5` (top SWE score, < $1 per 1 M output).
+- **If you want the best possible `/gse-review`:** `anthropic/claude-4.6-sonnet` or `z-ai/glm-4.5` (wait for GLM-5 tag if listed).
+- **Cheapest acceptable quality:** `deepseek/deepseek-v3.2` as default, with `qwen/qwen3-coder` as a free-tier fallback.
+- **If you specifically want Mistral:** `mistralai/devstral-medium` for agentic work; reserve `mistralai/codestral-2508` for fill-in-the-middle / inline completions (it's not a full agentic model).
+- **Per-activity split (advanced):** use opencode's `variant_cycle` keybind to jump between a cheap coder for `/gse-produce` (DeepSeek V3.2) and a strong reviewer for `/gse-review` (Sonnet or GLM-4.5).
+
 ### 6.2 Option A — Ollama
 
 ```bash
@@ -260,3 +319,8 @@ Replace the model ID with whatever LM Studio reports for your loaded model (see 
 - [SWE-bench Leaderboards](https://www.swebench.com/)
 - [Best Open Source LLM 2026 (BenchLM)](https://benchlm.ai/blog/posts/best-open-source-llm)
 - [Open Source LLM Leaderboard 2026 (Vellum)](https://www.vellum.ai/open-llm-leaderboard)
+- [OpenRouter — Best AI Models for Coding](https://openrouter.ai/collections/programming)
+- [OpenRouter — Mistral models](https://openrouter.ai/mistralai)
+- [OpenRouter rankings (April 2026)](https://www.digitalapplied.com/blog/openrouter-rankings-april-2026-top-ai-models-data)
+- [Codestral 25.01 benchmarks review](https://www.index.dev/blog/mistral-ai-coding-challenges-tests)
+- [Codestral Guide: Specs, Benchmarks & Local Deployment (2026)](https://ucstrategies.com/news/codestral-guide-specs-benchmarks-local-deployment-2026/)

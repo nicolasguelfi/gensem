@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.5] - 2026-04-18
+
+Layers impacted: **spec** (docs)
+
+### Added
+- `INSTALL-OPENCODE.md` §6.1.4 — "Via OpenRouter (unified gateway)" with a ready-to-paste `opencode.json` provider snippet and a table of the top coding/SWE models on OpenRouter as of April 2026: MiniMax M2.5, Claude 4.6 Sonnet, Zhipu GLM-4.5, DeepSeek V3.2, Mistral Devstral (Medium/2512/Small), Qwen3-Coder, Kimi K2.5, **Codestral 25.08**, Mistral Large 3. Each row gives exact model ID, license, SWE-bench Verified score, context, input/output price per 1 M tokens, and best-fit GSE-One activity. Explicit note that Codestral is a fill-in-the-middle specialist, not a full agentic model.
+- §8 references expanded with OpenRouter programming collection, Mistral provider page, OpenRouter rankings (April 2026), Codestral benchmarks review, and Codestral local deployment guide.
+
 ## [0.21.4] - 2026-04-18
 
 Layers impacted: **spec** (docs)

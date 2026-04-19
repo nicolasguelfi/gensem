@@ -34,12 +34,59 @@ For each planned task in the current sprint, determine the appropriate preview t
 
 | Task Domain | Preview Type | Method |
 |-------------|-------------|--------|
-| Web frontend, UI component | **UI preview** | Wireframe description |
+| Web frontend, UI component | **UI preview** | Wireframe description OR scaffold (see Step 1.5) |
 | REST/GraphQL endpoint | **API preview** | Request/response examples |
 | System structure, modules | **Architecture preview** | Component diagram |
 | Database, schema, models | **Data model preview** | Entity list with relationships |
-| User-facing feature | **Feature preview** | User story walkthrough |
+| User-facing feature | **Feature preview** | User story walkthrough OR scaffold (see Step 1.5) |
 | External source import | **Import preview** | Side-by-side original vs planned |
+
+### Step 1.5 — Preview Variant Selection (Gate, spec §3 + design Preview Variants)
+
+Before generating previews, the agent presents a Gate to select the preview variant, applied uniformly to the UI / feature-walkthrough previews of this sprint. Other preview types (API, architecture, data, import) remain static — they don't benefit from a scaffold.
+
+**Skip condition:** if this sprint has no UI nor feature-walkthrough preview targets (only API / data / architecture / import), skip this step silently and proceed to Step 2 with all-static previews.
+
+**Gate:**
+
+```
+How should the UI / feature previews of this sprint be produced?
+
+1. Static description (lightweight, throwaway)
+   → Wireframes, ASCII diagrams, user story walkthroughs in preview.md.
+     Simple to iterate, no framework setup cost.
+
+2. Scaffold-as-preview (runnable minimal project, becomes PRODUCE base)
+   → A minimal runnable project using the chosen framework (Vite+React,
+     Streamlit, Next.js, React Native, etc.). Placeholder code marked with
+     PREVIEW: comments (// PREVIEW: in JS/TS, # PREVIEW: in Python, etc.).
+     The scaffold is the starting point for PRODUCE — no throwaway code.
+     Evidence of success: the build command exits 0.
+
+3. Discuss — I'll lay out the trade-offs.
+```
+
+**Agent recommendation** (read `config.yaml → project.domain`):
+
+| Domain | Recommended | Rationale |
+|--------|-------------|-----------|
+| `web` | scaffold (2) | Modern JS/TS scaffolds (Vite, Next.js) are fast; setup cost recovered at PRODUCE. |
+| `mobile` | scaffold (2) | RN / Flutter scaffolds deliver the component shell. |
+| `api`, `cli`, `library`, `scientific`, `data` | static (1) | Text description is more informative than an empty scaffold for these domains. |
+
+Present the recommendation with confidence tag (P15). If the domain is `web` or `mobile` but the user is a beginner, add a plain-language explanation of what each variant means before asking.
+
+**On option 1 (static):**
+- Record `preview_variant: static` in `preview.md` frontmatter.
+- Proceed to Step 2 and use static description methods for all preview types.
+
+**On option 2 (scaffold-as-preview):**
+- Record `preview_variant: scaffold` and `scaffold_path` (path where the scaffold lives, e.g., `./` or `frontend/`) in `preview.md` frontmatter.
+- In Step 2, for UI and feature previews, instead of writing an ASCII wireframe, the agent creates the minimal scaffold (using the framework indicated by `project.domain` + user preferences + existing tooling). Placeholder code is marked with `PREVIEW:` comments (language-idiomatic: `//`, `#`, `<!-- -->`, `/* */`). Each comment includes a descriptor (what will replace it, ideally with a TASK- reference).
+- Build evidence: run the scaffold's build/type-check command (e.g., `npm run build`, `pytest --collect-only`) and capture the exit code. Success = preview validated.
+- Other preview types (API / architecture / data / import) STILL use static description — the scaffold applies only to UI and feature walkthroughs.
+
+**On option 3 (Discuss):** explain the difference, the cost/benefit, and re-present options 1 and 2.
 
 ### Step 2 — Generate Previews
 

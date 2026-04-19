@@ -75,6 +75,19 @@ On option 1: invoke the mode-appropriate opening sequence inline; after promotio
 
 ### Step 1 — Select Task
 
+**If the preceding PREVIEW used the scaffold-as-preview variant** (detectable by `preview_variant: scaffold` in `docs/sprints/sprint-{NN}/preview.md` frontmatter), perform an **Inform-tier scan** of residual placeholder markers before task selection:
+
+```bash
+grep -rn "PREVIEW:" --include="*.py" --include="*.ts" --include="*.js" \
+  --include="*.tsx" --include="*.jsx" --include="*.html" --include="*.css" \
+  --include="*.rb" --include="*.go" --include="*.rs" --include="*.java" \
+  --include="*.kt" --include="*.swift" --include="*.yaml" --include="*.yml" .
+```
+
+Report the count per file (one-line summary) and remind the user that these placeholders should be replaced during PRODUCE. This is NOT a guardrail — it's a visibility cue. The user decides when/how to replace them during the TASKs selected below.
+
+If the count is zero (all placeholders already replaced in a previous PRODUCE pass), mention it briefly and move on.
+
 Read `backlog.yaml` and identify tasks for the current sprint with `status: planned` or `status: ready`.
 
 If multiple tasks are pending:

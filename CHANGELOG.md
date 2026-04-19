@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.33.0] - 2026-04-19
+
+Layers impacted: **spec**, **design**, **implementation** (activities preview + produce)
+
+### Added
+- **Scaffold-as-preview** as an officially-supported PREVIEW variant (AMÉL-09 from training feedback). New Step 1.5 "Preview Variant Selection" Gate at the start of `/gse:preview` lets the user pick between:
+  - **(1) static description** — wireframes, ASCII diagrams, user story walkthroughs written into `preview.md` (default for API / CLI / library / scientific / data previews).
+  - **(2) scaffold-as-preview** — minimal runnable project using the chosen framework (Vite+React, Streamlit, Next.js, etc.) that becomes the base for the following `/gse:produce`. Placeholder code marked with `PREVIEW:` comments (language-idiomatic: `//`, `#`, `<!-- -->`, `/* */`). Build evidence: exit 0 on the framework's build command.
+- **Agent recommendation** per project domain (web/mobile → scaffold recommended; api/cli/library/scientific → static recommended).
+- **`PREVIEW:` comment convention** documented: each marker must include a descriptor explaining what will replace it, ideally with a TASK- reference.
+- **`/gse:produce` Step 1 scan** — when the sprint used scaffold-as-preview, a grep-based Inform-tier scan of residual `PREVIEW:` markers is presented at task selection as a visibility cue (not a guardrail).
+- **`preview_variant` and `scaffold_path` fields** added to the preview artefact frontmatter for traceability.
+- New *Preview Variants — Design Mechanics* subsection in `gse-one-implementation-design.md` detailing when each variant applies, the comment convention per language family, and integration with PRODUCE.
+- `/gse:preview` command description in spec §3 updated to mention the two variants.
+
+### Scope for v0.33
+- Scaffold-as-preview applies only to UI and feature walkthrough preview types. API / architecture / data model / import previews remain static (they describe concepts that don't benefit from a runnable scaffold).
+
+### Fixed
+- Silent scaffold-as-preview improvisation observed in training sessions (learner05 justified it as DEC-011 methodology deviation; learner06 and learner10 did it implicitly without formal documentation). The pattern is now a first-class variant with a clear contract, preventing the "is this a deviation?" ambiguity.
+
 ## [0.32.0] - 2026-04-19
 
 Layers impacted: **spec**, **design**, **implementation** (activity design + sprint template)

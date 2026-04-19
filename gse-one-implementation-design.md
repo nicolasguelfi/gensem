@@ -1971,6 +1971,85 @@ Prevents the silent-duplication failure mode: a state that is logically single b
 - Agent overlooks a shared state piece that should have been formalized → the omission will surface in `/gse:review` (multiple components handling the same logical state independently) or in user testing. The next sprint's design should add the missing entry.
 - Agent inflates the list with trivial state (local component state, ephemeral UI state) → the Rationale field acts as a filter: if it's hard to write a one-sentence reason for sharing, the state probably shouldn't be in this table.
 
+**Preview Variants — Design Mechanics (spec §3 `/gse:preview` + Step 1.5 Variant Selection):**
+
+`/gse:preview` officially supports two variants, selected at activity start:
+
+| Variant | When appropriate | Output | Runnable? |
+|---------|-----------------|--------|-----------|
+| **static description** | All domains, default for API / CLI / library / scientific / data / arch previews | Wireframes, API examples, ASCII diagrams in `docs/sprints/sprint-{NN}/preview.md`. Throwaway. | No — just a description. |
+| **scaffold-as-preview** | Web / mobile projects with modern framework (Vite, Next.js, Streamlit, React Native, etc.). Recommended when the scaffold cost is recovered at `/gse:produce`. | Minimal runnable project at the project root (or a sub-directory). Placeholder code marked with `PREVIEW:` comments. The scaffold becomes the starting base for `/gse:produce`. | Yes — `npm run build` / `python -m <tool>` exit 0 is the validation evidence. |
+
+**Variant selection (Step 1.5 Gate):**
+
+```
+Question: How should the preview be produced?
+
+1. Static description (lightweight, throwaway, any domain)
+2. Scaffold-as-preview (runnable minimal project, becomes PRODUCE base)
+3. Discuss
+```
+
+Default recommendation based on `config.yaml → project.domain`:
+
+| Domain | Recommended | Rationale |
+|--------|-------------|-----------|
+| `web` | scaffold | modern JS/TS frameworks have fast scaffolds; cost recovered at PRODUCE |
+| `mobile` | scaffold | RN/Flutter scaffolds deliver the component shell; PRODUCE fills the logic |
+| `api` | static | API contracts are better shown as request/response examples |
+| `cli` | static | CLI design is about command structure + output format — text is sufficient |
+| `library` | static | interface design is best shown as signatures + usage examples |
+| `scientific`, `data` | static | notebooks/scripts don't need a UI scaffold; mocked data tables suffice |
+
+**Placeholder comment convention (scaffold-as-preview only):**
+
+Code that is known to be placeholder and must be replaced at PRODUCE is marked with `PREVIEW:` comments, idiomatic per language:
+
+| Language family | Syntax | Example |
+|-----------------|--------|---------|
+| JS, TS, C, C++, Go, Rust, Java, Kotlin, Swift | `//` | `// PREVIEW: mock data — replaced by real store in TASK-005` |
+| Python, Ruby, shell, R, YAML | `#` | `# PREVIEW: hardcoded today's date — real parser added in TASK-007` |
+| HTML, XML | `<!-- -->` | `<!-- PREVIEW: placeholder text — copy provided by TASK-003 -->` |
+| CSS, SCSS | `/* */` | `/* PREVIEW: rough layout — final design in TASK-008 */` |
+
+**Rules for `PREVIEW:` markers:**
+
+- The marker MUST include a descriptor explaining what will replace it (not just `PREVIEW:`).
+- Ideally, the descriptor cites the TASK ID that will replace it.
+- The agent grep-scans for `PREVIEW:` at PRODUCE start (see below) to remind the user what remains.
+
+**Integration with `/gse:produce`:**
+
+When the current sprint used `scaffold-as-preview` (detectable by the presence of `## Scaffold` or similar section in `preview.md` + `PREVIEW:` comments in the codebase), `/gse:produce` Step 1 (Select Task) includes an **Inform-tier** scan:
+
+```bash
+grep -rn "PREVIEW:" --include="*.py" --include="*.ts" --include="*.js" --include="*.html" --include="*.css" [...] .
+```
+
+The scan produces a one-shot reminder list of placeholder sites still awaiting replacement. Not a guardrail — just a visibility cue. The user decides when/how to replace them during PRODUCE work.
+
+**Variant scope (which preview types apply):**
+
+Only **UI** and **feature walkthrough** previews are candidates for scaffold-as-preview. The other types (API contracts, architecture diagrams, data models, import comparisons) remain static — they describe concepts that don't benefit from a runnable scaffold.
+
+**Persistence:**
+
+The chosen variant is recorded in the preview artefact's frontmatter:
+
+```yaml
+---
+...
+preview_variant: static | scaffold
+scaffold_path: ""  # populated only if variant: scaffold, e.g., "./" or "frontend/"
+---
+```
+
+**Failure modes:**
+
+- Agent picks `scaffold` for a domain where it's inappropriate (e.g., library) → DEC-NNN documenting the deviation, user can reverse.
+- Scaffold build fails → the PREVIEW variant cannot be validated; agent asks the user whether to debug the scaffold (continues PREVIEW) or revert to static.
+- User forgets to replace all `PREVIEW:` markers before DELIVER → the DELIVER review flags them via the same grep; explicit DEC- required to ship code with remaining placeholders.
+
 
 
 **Exempt / skip conditions:**

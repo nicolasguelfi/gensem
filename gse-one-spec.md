@@ -2323,7 +2323,10 @@ GSE-One generates a self-contained HTML dashboard at `docs/dashboard.html` that 
 python3 "$(cat ~/.gse-one)/tools/dashboard.py"              # generate once (CDN mode)
 python3 "$(cat ~/.gse-one)/tools/dashboard.py" --watch      # live updates on file changes
 python3 "$(cat ~/.gse-one)/tools/dashboard.py" --no-cdn     # offline mode
+python3 "$(cat ~/.gse-one)/tools/dashboard.py" --if-stale   # regen only if state is newer (used by hooks)
 ```
+
+**Automatic regeneration policy:** the dashboard is kept in sync with project state without manual intervention. Every time sprint state (sprint plan, backlog, status, profile) or a sprint artefact (requirements, design, test strategy, review, release notes, compound notes, decisions, etc.) is modified, the dashboard regenerates. This is enforced by a cross-platform tool-invocation hook that fires on every editor write, with an internal debounce (configurable, default 5 seconds) so bursts of writes trigger at most one regeneration per debounce window. Activities that mark major milestones (`/gse:hug`, `/gse:go`, `/gse:produce`, `/gse:review`, `/gse:deliver`, `/gse:compound`) additionally trigger an explicit regeneration at the end of their workflow, guaranteeing a fresh dashboard at every checkpoint even if the hook is unavailable. **Failure visibility:** if a regeneration attempt fails, the failure is recorded and surfaced as a visible red warning banner at the top of the dashboard on the next successful regeneration — users never discover staleness silently.
 
 **Output:** `docs/dashboard.html` — committed to git, viewable in any browser, servable via GitHub Pages. Auto-refreshes every 30 seconds. Manual refresh button included.
 

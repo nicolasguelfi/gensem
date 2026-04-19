@@ -24,6 +24,33 @@
             "command": "python3 -c \"import os,re; t=os.environ.get('CLAUDE_TOOL_INPUT',''); f=os.path.join('.gse','status.yaml'); c=open(f).read() if t.startswith('git push') and os.path.isfile(f) else ''; m=re.search(r'review_findings_open:\\s*(\\d+)',c); o=int(m.group(1)) if m else 0; (o>0) and print('WARNING: '+str(o)+' open review findings')\""
           }
         ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import os,subprocess,datetime,json; r=os.path.expanduser('~/.gse-one'); p=open(r).read().strip() if os.path.isfile(r) else ''; t=os.path.join(p,'tools','dashboard.py') if p else ''; res=subprocess.run(['python3',t,'--if-stale'],capture_output=True,text=True) if os.path.isfile(t) else None; (res and res.returncode!=0) and os.makedirs('.gse',exist_ok=True) or None; (res and res.returncode!=0) and open(os.path.join('.gse','.dashboard-error.yaml'),'w').write('timestamp: \\\"'+datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')+'\\\"\\nmessage: '+json.dumps('dashboard.py exited with code '+str(res.returncode))+'\\ntraceback: |\\n  '+(res.stderr or '(no stderr)').replace(chr(10),chr(10)+'  '))\""
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import os,subprocess,datetime,json; r=os.path.expanduser('~/.gse-one'); p=open(r).read().strip() if os.path.isfile(r) else ''; t=os.path.join(p,'tools','dashboard.py') if p else ''; res=subprocess.run(['python3',t,'--if-stale'],capture_output=True,text=True) if os.path.isfile(t) else None; (res and res.returncode!=0) and os.makedirs('.gse',exist_ok=True) or None; (res and res.returncode!=0) and open(os.path.join('.gse','.dashboard-error.yaml'),'w').write('timestamp: \\\"'+datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')+'\\\"\\nmessage: '+json.dumps('dashboard.py exited with code '+str(res.returncode))+'\\ntraceback: |\\n  '+(res.stderr or '(no stderr)').replace(chr(10),chr(10)+'  '))\""
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import os,subprocess,datetime,json; r=os.path.expanduser('~/.gse-one'); p=open(r).read().strip() if os.path.isfile(r) else ''; t=os.path.join(p,'tools','dashboard.py') if p else ''; res=subprocess.run(['python3',t,'--if-stale'],capture_output=True,text=True) if os.path.isfile(t) else None; (res and res.returncode!=0) and os.makedirs('.gse',exist_ok=True) or None; (res and res.returncode!=0) and open(os.path.join('.gse','.dashboard-error.yaml'),'w').write('timestamp: \\\"'+datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')+'\\\"\\nmessage: '+json.dumps('dashboard.py exited with code '+str(res.returncode))+'\\ntraceback: |\\n  '+(res.stderr or '(no stderr)').replace(chr(10),chr(10)+'  '))\""
+          }
+        ]
       }
     ]
   }

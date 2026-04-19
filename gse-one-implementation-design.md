@@ -1318,6 +1318,45 @@ The spec-level *Sprint Freeze* guardrail materializes as follows:
 
 **Persistence:** no new field is added to `.gse/status.yaml`. The source of truth for sprint freeze is `.gse/plan.yaml.status`. `current_sprint` in `.gse/status.yaml` continues to hold the number of the sprint in progress, whether frozen or active.
 
+**Dashboard Sync — Design Mechanics (spec §7 automatic regeneration policy):**
+
+The *automatic regeneration policy* declared in the spec materializes as two complementary mechanisms, plus a failure-surfacing subsystem.
+
+**1. Hook-based regeneration (primary mechanism):**
+- Trigger: any invocation of an editor tool (`Edit`, `Write`, `MultiEdit`) on any file.
+- Action: the hook invokes `python3 "$(cat ~/.gse-one)/tools/dashboard.py" --if-stale`. The `--if-stale` flag makes the tool self-arbitrating: it reads the debounce window from `.gse/config.yaml → dashboard.regen_debounce_seconds` (default: 5 seconds, fallback if the field is absent or malformed), compares the max mtime of `.gse/**/*.yaml` and `docs/sprints/**/*.md` against the mtime of `docs/dashboard.html`, and regenerates only if state is newer AND the last regeneration is older than the debounce window.
+- Cross-platform realization (**three separate matcher entries** per platform for maximum portability — no regex reliance, ensures identical behavior on Claude Code, Cursor, and opencode including local-model setups):
+  - Claude Code: `plugin/hooks/hooks.claude.json` → `PostToolUse` with three entries: `matcher: "Edit"`, `matcher: "Write"`, `matcher: "MultiEdit"`, each sharing the same command.
+  - Cursor: `plugin/hooks/hooks.cursor.json` → `postToolUse` with the same three entries.
+  - opencode: inside `plugin/opencode/plugins/gse-guardrails.ts`, the `tool.execute.after` handler dispatches on `input?.tool ∈ {"edit", "write", "multiedit"}` via a plain `includes()` check.
+- All three implementations call the same Python tool (`dashboard.py --if-stale`), guaranteeing identical behavior across platforms.
+
+**2. Explicit-call regeneration (secondary, belt-and-suspenders):**
+- Six activities call `dashboard.py` explicitly at the end of their workflow: `/gse:hug`, `/gse:go`, `/gse:produce`, `/gse:review`, `/gse:deliver`, `/gse:compound`. These are kept as-is — they provide a guaranteed pulse at every major checkpoint even if the hook is unavailable (e.g., platform does not register the hook, tool registry `~/.gse-one` is missing).
+- These explicit calls do NOT use `--if-stale`. They unconditionally regenerate, which is acceptable: the debounce in `--if-stale` prevents the hook from firing right after, avoiding double work.
+
+**3. Failure visibility (ensures users are never silently misinformed):**
+- When `dashboard.py` encounters an internal exception (YAML parse error, file I/O failure, template error, etc.), its top-level `try/except` writes a marker file `.gse/.dashboard-error.yaml` containing a timestamp, a human-readable message, and a traceback.
+- When the hook wrapper (the Python one-liner invoked by the PostToolUse hook) detects a non-zero exit code from the `dashboard.py` subprocess (e.g., `dashboard.py` crashed before reaching its own exception handler), it writes a minimal marker: `timestamp`, `message: "dashboard.py exited with code N"`, and the captured stderr. This is the double-defense layer — it covers catastrophic failures where `dashboard.py` cannot write the marker itself.
+- On the next successful dashboard regeneration, `dashboard.py` reads `.gse/.dashboard-error.yaml` if present, injects a prominent red warning banner at the top of the generated HTML with the recorded timestamp and message, then deletes the marker. The banner reappears only if a new failure occurs.
+- Marker file format:
+  ```yaml
+  timestamp: "2026-04-19T14:32:15Z"
+  message: "YAML parse error in .gse/plan.yaml at line 42"
+  traceback: |
+    Traceback (most recent call last):
+    ...
+  ```
+
+**Configuration:** a new field `dashboard.regen_debounce_seconds` is added to the `config.yaml` template (default: 5). The field is optional; if absent, `dashboard.py --if-stale` falls back to 5 seconds.
+
+**Failure modes and fallbacks:**
+- Tool registry `~/.gse-one` missing → hook exits silently (`os.path.isfile` guard), no marker, no user error — same behavior as any other `~/.gse-one`-dependent tool.
+- `.gse/` missing in the current working directory (e.g., user is editing a non-GSE project with the plugin installed globally) → `dashboard.py --if-stale` exits 0 silently without creating any files. The hook wrapper does not treat this as a failure and does not write an error marker.
+- `dashboard.py` fails inside its logic → marker written by the try/except; user sees banner on next regen.
+- `dashboard.py` fails before try/except (very rare — syntax/import error) → hook wrapper captures non-zero exit and writes minimal marker.
+- Hook wrapper itself fails → no marker (but this is a Python one-liner with no dependencies; extremely unlikely).
+
 **Checkpoint schema (spec §12.5):**
 ```yaml
 timestamp: 2026-04-11T16:30:00

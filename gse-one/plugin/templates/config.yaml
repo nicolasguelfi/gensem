@@ -107,3 +107,9 @@ deploy:
   datacenter: fsn1                     # fsn1 | nbg1 | hel1
   app_type: auto                       # auto | python | streamlit | static
   health_check_timeout: 120            # seconds
+
+# --- Section 13: Dashboard ---
+dashboard:
+  regen_debounce_seconds: 5            # debounce window for automatic dashboard regeneration
+                                       # (spec §7 automatic regeneration policy). Raise for
+                                       # bursty projects, lower for ultra-reactive feedback.

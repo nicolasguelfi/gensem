@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.0] - 2026-04-19
+
+Layers impacted: **spec**, **design**, **implementation** (tool `dashboard.py`, generator hooks, opencode TS plugin, config template)
+
+### Added
+- **Automatic dashboard regeneration via editor hooks** (AMÉL-02 from training feedback) — `docs/dashboard.html` is now kept in sync with project state automatically. A cross-platform `PostToolUse` hook with **three separate matcher entries** (`Edit`, `Write`, `MultiEdit`) fires on every editor write and invokes `dashboard.py --if-stale`, which regenerates only if sprint state is newer than the existing dashboard, with a **configurable debounce window** (default: 5 seconds). The three-matcher approach ensures portability across Claude Code, Cursor, and opencode (including local-model setups) without relying on regex matcher support. Covers the 17 previously-uncovered activities.
+- New `--if-stale` flag on `dashboard.py` with self-arbitrating mtime comparison.
+- New `dashboard.regen_debounce_seconds` field in the `config.yaml` template (default: 5).
+- **Failure visibility** — on internal exception, `dashboard.py` writes `.gse/.dashboard-error.yaml`. On next successful regeneration, a prominent red warning banner is injected at the top of the dashboard HTML, then the marker is cleared. A hook-wrapper double-defense covers the case where `dashboard.py` cannot start at all (subprocess non-zero exit writes a minimal marker).
+- Opencode TS plugin extended to dispatch on `edit`/`write`/`multiedit` with the same marker-writing behavior on subprocess failure.
+
+### Changed
+- The 6 existing explicit regeneration calls in `hug`, `go`, `produce`, `review`, `deliver`, `compound` are preserved as belt-and-suspenders — the new hook is complementary, not substitutive.
+
+### Fixed
+- Dashboard staleness: previously 17 of 23 activities left the dashboard untouched, causing learners to see outdated sprint/phase/activity info between checkpoints (observed during training sessions learner02 and learner05).
+
 ## [0.23.0] - 2026-04-19
 
 Layers impacted: **spec**, **design**, **implementation** (activities task/produce/fix/review + orchestrator)

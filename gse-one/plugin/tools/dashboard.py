@@ -20,13 +20,15 @@ The dashboard is a single self-contained HTML file showing:
 """
 
 import argparse
+import html
 import json
 import os
 import re
 import subprocess
 import sys
 import time
-from datetime import datetime
+import traceback as tb_module
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -54,6 +56,83 @@ ROOT = find_project_root()
 GSE_DIR = ROOT / ".gse"
 DOCS_DIR = ROOT / "docs"
 DEFAULT_OUTPUT = DOCS_DIR / "dashboard.html"
+ERROR_MARKER = GSE_DIR / ".dashboard-error.yaml"
+
+
+# ---------------------------------------------------------------------------
+# Debounce config + error-marker helpers (AMÉL-02 / spec §7 policy)
+# ---------------------------------------------------------------------------
+
+def _read_debounce_seconds(default=5.0):
+    """Read dashboard.regen_debounce_seconds from .gse/config.yaml.
+    Falls back to `default` if the file, section, or field is absent/malformed.
+    """
+    cfg = GSE_DIR / "config.yaml"
+    if not cfg.is_file():
+        return default
+    try:
+        text = cfg.read_text(encoding="utf-8")
+        in_dashboard = False
+        for line in text.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("dashboard:"):
+                in_dashboard = True
+                continue
+            if in_dashboard:
+                if stripped and not line.startswith((" ", "\t")):
+                    # Left the dashboard: section
+                    in_dashboard = False
+                    continue
+                m = re.match(r"regen_debounce_seconds:\s*([\d.]+)", stripped)
+                if m:
+                    return float(m.group(1))
+    except Exception:
+        pass
+    return default
+
+
+def _write_error_marker(message, traceback_str=None):
+    """Write .gse/.dashboard-error.yaml with timestamp and error details.
+    Best-effort — swallow any I/O error since we're already in a failure path.
+    """
+    try:
+        if traceback_str is None:
+            traceback_str = tb_module.format_exc()
+        ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        content = (
+            f"timestamp: \"{ts}\"\n"
+            f"message: {json.dumps(str(message))}\n"
+            f"traceback: |\n"
+        )
+        for line in str(traceback_str).splitlines():
+            content += f"  {line}\n"
+        ERROR_MARKER.parent.mkdir(parents=True, exist_ok=True)
+        ERROR_MARKER.write_text(content, encoding="utf-8")
+    except Exception:
+        pass  # best-effort — never raise from error handler
+
+
+def _read_and_clear_error_marker():
+    """Return (timestamp, message) if an error marker exists, else (None, None).
+    Deletes the marker on successful read so the banner does not persist."""
+    if not ERROR_MARKER.is_file():
+        return None, None
+    try:
+        text = ERROR_MARKER.read_text(encoding="utf-8")
+        ts_m = re.search(r'timestamp:\s*"?([^"\n]+)"?', text)
+        # message may be JSON-escaped (quoted string on single line) or plain
+        msg_m = re.search(r'message:\s*(.+?)$', text, re.MULTILINE)
+        ts = ts_m.group(1).strip() if ts_m else "unknown time"
+        msg_raw = msg_m.group(1).strip() if msg_m else "unknown error"
+        # Try to decode as JSON string (quoted), else keep raw
+        try:
+            msg = json.loads(msg_raw) if msg_raw.startswith('"') else msg_raw
+        except Exception:
+            msg = msg_raw
+        ERROR_MARKER.unlink()
+        return ts, msg
+    except Exception:
+        return None, None
 
 
 # ---------------------------------------------------------------------------
@@ -742,14 +821,69 @@ def _chart_js_script(labels_json, values_json):
 # ---------------------------------------------------------------------------
 
 def generate(output_path, use_cdn=True):
-    """Generate the dashboard HTML file."""
+    """Generate the dashboard HTML file. Consumes any pending error marker
+    and injects a red warning banner at the top of the page if present."""
     data = collect_data()
-    html = generate_html(data, use_cdn=use_cdn)
+    html_content = generate_html(data, use_cdn=use_cdn)
+
+    # Consume error marker (if any) and inject failure banner
+    err_ts, err_msg = _read_and_clear_error_marker()
+    if err_ts:
+        banner = (
+            '<div style="background:#c0392b;color:#fff;padding:16px;margin:16px;'
+            'border-radius:8px;font-weight:600;font-family:system-ui,sans-serif">'
+            f'⚠ Dashboard regeneration previously failed at {html.escape(err_ts)} — '
+            f'{html.escape(str(err_msg))}. State files may have been edited after the '
+            'failure; this dashboard reflects the most recent successful regeneration.'
+            '</div>'
+        )
+        html_content = html_content.replace("<body>", f"<body>\n{banner}", 1)
+
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(html, encoding="utf-8")
+    output_path.write_text(html_content, encoding="utf-8")
     print(f"  Dashboard generated: {output_path}")
     return output_path
+
+
+def if_stale(output_path, use_cdn=True):
+    """Regenerate only if sprint state is newer than the existing dashboard,
+    with configurable debounce window. Non-fatal on failure — writes
+    .gse/.dashboard-error.yaml on any exception."""
+    try:
+        debounce = _read_debounce_seconds(default=5.0)
+        out = Path(output_path)
+        if out.exists():
+            dash_mtime = out.stat().st_mtime
+            if time.time() - dash_mtime < debounce:
+                return
+        else:
+            dash_mtime = 0
+
+        state_max = 0.0
+        if GSE_DIR.exists():
+            for f in GSE_DIR.rglob("*.yaml"):
+                if f.is_file():
+                    try:
+                        state_max = max(state_max, f.stat().st_mtime)
+                    except OSError:
+                        pass
+        sprints_dir = DOCS_DIR / "sprints"
+        if sprints_dir.exists():
+            for f in sprints_dir.rglob("*.md"):
+                if f.is_file():
+                    try:
+                        state_max = max(state_max, f.stat().st_mtime)
+                    except OSError:
+                        pass
+
+        if state_max <= dash_mtime:
+            return
+
+        generate(output_path, use_cdn=use_cdn)
+    except Exception as e:
+        _write_error_marker(str(e))
+        raise
 
 
 def watch(output_path, use_cdn=True):
@@ -786,20 +920,40 @@ def main():
                         help="Offline mode — no external CDN dependencies")
     parser.add_argument("--watch", "-w", action="store_true",
                         help="Watch mode — regenerate on file changes")
+    parser.add_argument("--if-stale", dest="if_stale", action="store_true",
+                        help="Regenerate only if sprint state is newer than the dashboard "
+                             "(configurable debounce via .gse/config.yaml → "
+                             "dashboard.regen_debounce_seconds, default 5s). "
+                             "Used by PostToolUse hooks.")
 
     args = parser.parse_args()
     use_cdn = not args.no_cdn
 
     if not GSE_DIR.exists():
+        # --if-stale is meant to be called from PostToolUse hooks that may fire
+        # in any cwd (including non-GSE projects). Exit silently with code 0
+        # so the hook wrapper does not treat it as a failure and does not
+        # write an error marker — we are simply in a directory that is not a
+        # GSE-managed project, which is normal and expected.
+        if args.if_stale:
+            sys.exit(0)
         print(f"  No .gse/ directory found at {ROOT}")
         print("  Run /gse:go to initialize the project first.")
         sys.exit(1)
 
-    if args.watch:
-        generate(args.output, use_cdn=use_cdn)
-        watch(args.output, use_cdn=use_cdn)
-    else:
-        generate(args.output, use_cdn=use_cdn)
+    try:
+        if args.if_stale:
+            if_stale(args.output, use_cdn=use_cdn)
+        elif args.watch:
+            generate(args.output, use_cdn=use_cdn)
+            watch(args.output, use_cdn=use_cdn)
+        else:
+            generate(args.output, use_cdn=use_cdn)
+    except Exception as e:
+        # Top-level safety net: write error marker and re-raise so the caller
+        # (hook wrapper or CI) sees the non-zero exit.
+        _write_error_marker(str(e))
+        raise
 
 
 if __name__ == "__main__":

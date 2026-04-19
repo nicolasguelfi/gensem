@@ -258,7 +258,7 @@ The orchestrator enters a conversational capture mode to record the user's plain
    - **Users** — single user / small shared pool / public / specific role
    - **Boundaries** — what's explicitly out of scope (e.g., no sync, no server, no auth)
 
-5. **Identify open questions** — The agent lists its own remaining ambiguities (the *Open questions* section of the artefact). The user may add or dismiss. Each question is tagged with its natural resolution home (ASSESS / scope-lock / REQS / DESIGN).
+5. **Identify open questions** — The agent lists its own remaining ambiguities (the *Open Questions* section of the artefact). The user may add or dismiss. Each question is structured per the P6 schema: `id: OQ-NNN`, `question`, `resolves_in` (ASSESS | PLAN | REQS | DESIGN), `impact` (scope-shaping | behavioral | architectural | cosmetic), `status: pending`, `raised_at: INT-001`. These questions will be automatically picked up at the entry of the designated activity via the activity-entry scan.
 
 6. **Write the intent artefact** — Create `docs/intent.md` atomically using the template at `gse-one/src/templates/intent.md`. Frontmatter: `id: INT-001`, `artefact_type: intent`, `sprint: 0`, `status: approved`, `created: <today>`. Sections: Description (verbatim quote), Reformulated understanding, Users, Boundaries, Open questions. Commit this artefact as `gse(intent): capture initial project intent`.
 

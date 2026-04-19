@@ -24,7 +24,8 @@ The depth of the REQS activity depends on the project mode (`config.yaml → lif
 
 | Step | Full mode | Lightweight mode |
 |------|-----------|-----------------|
-| Step 0 — Conversational elicitation | Yes | Yes |
+| Step 0 — Open Questions Gate (activity-entry scan) | Yes | Yes (only if pending OQ with `resolves_in: REQS` exists) |
+| Step 0.5 — Conversational elicitation | Yes | Yes |
 | Step 1 — Scope determination | Yes | Yes (simplified) |
 | Step 2 — Functional requirements (test-driven) | Yes | Yes (fewer REQs expected: 2-5 concise items) |
 | Step 3 — Non-functional requirements | Yes | Optional (agent proposes key NFRs, user decides) |
@@ -50,7 +51,17 @@ Before executing, read:
 
 ## Workflow
 
-### Step 0 — Conversational Elicitation
+### Step 0 — Open Questions Gate (activity-entry scan, spec P6)
+
+Before any requirement elicitation, scan for pending Open Questions (`OQ-`) whose `resolves_in: REQS`.
+
+1. **Enumerate sources** — list `docs/intent.md` (always) and `docs/sprints/sprint-{NN}/*.md` for the current sprint if it exists.
+2. **Parse `## Open Questions`** sections. Extract entries where `status: pending` AND `resolves_in: REQS`.
+3. **If zero matches** → skip this step, proceed to Step 0.5 (Conversational Elicitation).
+4. **If ≥ 1 match** → enter the Open Questions Gate per the user's `decision_involvement` (see `/gse:plan` Step 0 for the canonical three-mode description — `autonomous` / `collaborative` / `supervised`). Resolutions are recorded in the origin artefact's `## Open Questions` entry in place (status flipped to `resolved`, all fields populated). Resolutions typically seed REQ-NNN acceptance criteria in the upcoming elicitation — the agent carries the resolved answers into the conversational elicitation as pre-validated input.
+5. Proceed to Step 0.5.
+
+### Step 0.5 — Conversational Elicitation
 
 Before formalizing requirements, engage the user in a free-form conversation about their needs. This phase captures intent in natural language before imposing structure, and surfaces both functional needs and implicit quality expectations.
 

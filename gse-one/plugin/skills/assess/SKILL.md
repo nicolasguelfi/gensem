@@ -29,6 +29,16 @@ Before executing, read:
 
 ## Workflow
 
+### Step 0 — Open Questions Gate (activity-entry scan, spec P6)
+
+Before running the gap analysis, scan for pending Open Questions (`OQ-`) whose `resolves_in: ASSESS`.
+
+1. **Enumerate sources** — list `docs/intent.md` (always) and `docs/sprints/sprint-{NN}/*.md` for the current sprint if it exists.
+2. **Parse `## Open Questions`** sections. Extract entries where `status: pending` AND `resolves_in: ASSESS`.
+3. **If zero matches** → skip this step, proceed to Step 1.
+4. **If ≥ 1 match** → enter the Open Questions Gate per the user's `decision_involvement` (see `/gse:plan` Step 0 for the canonical three-mode description — `autonomous` / `collaborative` / `supervised`). Resolutions are recorded in the origin artefact's `## Open Questions` entry (status flipped to `resolved`, all fields populated). Substantial resolutions produce a `DEC-NNN`.
+5. Proceed to Step 1.
+
 ### Step 1 — Gather Inputs
 
 Collect all inputs needed for the analysis:

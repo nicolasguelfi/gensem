@@ -1612,8 +1612,8 @@ author: pair
 
 _Optional section. Lists ambiguities to resolve in downstream activities, each tagged with its natural home._
 
-- {question 1} — natural home: **ASSESS** | **scope-lock** | **REQS** | **DESIGN**
-- {question 2} — natural home: ...
+- **OQ-001** — single user or multi-user? (`resolves_in: PLAN`, `impact: scope-shaping`, `status: pending`)
+- **OQ-002** — which categories at start? (`resolves_in: REQS`, `impact: behavioral`, `status: pending`)
 ```
 
 **Field semantics:**
@@ -1641,6 +1641,104 @@ _Optional section. Lists ambiguities to resolve in downstream activities, each t
 - `/gse:reqs` reads the intent artefact to cross-check that all user-stated goals are covered by at least one REQ. Requirements get `traces.derives_from: [INT-001, ...]`.
 
 **Pivot / re-capture command:** out of scope for v0.28 — will be added later as `/gse:intent --pivot` or similar. For now, if the user wants to replace the intent, they manually archive `docs/intent.md` and re-run `/gse:go` on a greenfield-looking project (or use `/gse:hug --update` to reset the first-project flag).
+
+**Open Questions Resolution — Design Mechanics (spec P6 Open Questions + activity-entry scan):**
+
+The *Open Questions* mechanism is the operational backbone that makes the `resolves_in` tag useful across the lifecycle.
+
+**Artefact location:** open questions live in a dedicated `## Open Questions` markdown section at the end of the artefact that raises them. Typical origin artefacts:
+- `docs/intent.md` — questions raised during Intent Capture (greenfield projects)
+- `docs/sprints/sprint-{NN}/assess.md` — questions raised by gap analysis
+- `docs/sprints/sprint-{NN}/reqs.md` — questions discovered during requirements elicitation
+- `docs/sprints/sprint-{NN}/design.md` — questions deferred to later DESIGN decisions
+
+**Format (markdown, human-readable, lightly parseable):**
+
+Each entry is a bullet with sub-fields on indented lines:
+
+```markdown
+## Open Questions
+
+- **OQ-001** — single user or multi-user?
+  - resolves_in: PLAN
+  - impact: scope-shaping
+  - status: pending
+  - raised_at: INT-001
+
+- **OQ-002** — which categories at start?
+  - resolves_in: REQS
+  - impact: behavioral
+  - status: pending
+  - raised_at: INT-001
+```
+
+Once resolved, the entry is updated in place (status flipped, resolution fields populated):
+
+```markdown
+- **OQ-001** — single user or multi-user?
+  - resolves_in: PLAN
+  - impact: scope-shaping
+  - status: resolved
+  - raised_at: INT-001
+  - resolved_at: "2026-04-19T14:32:00Z"
+  - resolved_in: PLAN
+  - answer: "single user, no accounts"
+  - answered_by: user
+  - confidence: Verified
+  - traces: [DEC-005]
+```
+
+**Activity-entry scan implementation:**
+
+At Step 0 of `/gse:assess`, `/gse:plan`, `/gse:reqs`, and `/gse:design`, the agent:
+
+1. **Enumerate sources** — list all artefacts that may carry `## Open Questions` sections:
+   - Always: `docs/intent.md`
+   - If `.gse/status.yaml → current_sprint` ≥ 1: `docs/sprints/sprint-{NN}/*.md` for the current sprint
+2. **Parse each section** — for each source file, scan for the `## Open Questions` heading and parse the bullet entries. Extract `id`, `resolves_in`, `impact`, `status`.
+3. **Filter** — keep only entries with `status: pending` AND `resolves_in == <current_activity>`.
+4. **Short-circuit** — if the filtered list is empty, skip Step 0 entirely and proceed to Step 1.
+5. **Enter Open Questions Gate** — otherwise, present the questions according to the user's `decision_involvement` mode (see below).
+
+**Gate behavior by `decision_involvement`:**
+
+| Mode | Behavior |
+|------|----------|
+| `autonomous` | The agent generates proposed answers using (a) the intent artefact, (b) the project profile (domain, team context), (c) GSE convention defaults (e.g., browser-local storage for solo single-user web apps). For low-impact questions (`impact: behavioral` or `cosmetic`), the answers are applied silently and reported as Inform-tier. For high-impact questions (`impact: scope-shaping` or `architectural`), a Gate is raised per question for explicit user validation. |
+| `collaborative` (default) | Per-question or per-theme Gate. Agent proposes answer + rationale + consequence horizons (P8). User validates, modifies, or rejects. `answered_by: user` after confirmation, `answered_by: agent` if user accepts verbatim (recorded as meta-decision). Theme batching (P9) activates when ≥ 3 questions — the agent groups them by detected theme (e.g., *users & data / domain model / UX & output*) to reduce cognitive load. |
+| `supervised` | Each question is a neutral full Gate — the agent does not pre-answer. It presents the question, lists candidate options if relevant, and waits for the user's answer. `answered_by: user`. This mode is strictly more demanding — use it for high-stakes projects or first-time learners of the methodology. |
+
+**Recording resolutions (all modes):**
+
+For each resolved question, the agent:
+
+1. Updates the origin artefact's `## Open Questions` entry in place (sets `status: resolved`, fills `resolved_at`, `resolved_in`, `answer`, `answered_by`, `confidence`, `traces`).
+2. If the resolution is substantial (scope-shaping OR architectural OR otherwise judged non-trivial), creates a `DEC-NNN` entry in `docs/sprints/sprint-{NN}/decisions.md` with `traces.derives_from: [OQ-NNN]` and a short rationale.
+3. If the resolution has `impact: scope-shaping` AND the current sprint plan exists (`.gse/plan.yaml`), propagates the sizing delta: update affected TASK entries in `backlog.yaml`, and if the total exceeds the sprint budget, triggers a `/gse:plan --tactical` Gate.
+
+**Mode mapping to spec P7 tiers:**
+
+| Mode | Low-impact question | High-impact question |
+|------|--------------------|---------------------|
+| `autonomous` | Auto (Inform-tier logged) | Gate (escalated) |
+| `collaborative` | Inform or Gate (per agent judgment, default Gate) | Gate |
+| `supervised` | Gate | Gate |
+
+**Provenance and cross-activity flow:**
+
+- A question raised in `INT-001` with `resolves_in: PLAN` will be resolved at the first `/gse:plan --strategic` call — not before, not after.
+- A question raised in `docs/sprints/sprint-02/assess.md` with `resolves_in: DESIGN` will wait until `/gse:design` of the same sprint.
+- If an activity is skipped in the current sprint's workflow (e.g., `/gse:preview` skipped for a CLI project), questions targeting that activity roll forward to the next lifecycle boundary where they make sense, or are escalated as a warning at DELIVER.
+
+**Failure modes:**
+
+- Malformed `## Open Questions` section (missing fields, invalid `resolves_in` values) → agent reports a parse warning, skips the malformed entry, continues with the rest. The user is asked to fix the file if the malformed entry is ambiguous.
+- A question has `resolves_in: PLAN` but no `/gse:plan` is ever called (Micro mode) → the question remains `pending` until `/gse:compound` or `/gse:deliver`, which surface pending OQs as a reminder in the release notes.
+- A question is resolved outside the agent (user edits the file manually) → the next activity-entry scan reads the updated status and respects it.
+
+**Scope-resolve as Step 0 of `/gse:plan`:** the transversal activity-entry scan IS the scope-resolve mechanism. `/gse:plan --strategic` Step 0 scans for `resolves_in: PLAN` questions; if any have `impact: scope-shaping`, the Gate explicitly frames them as "scope-shaping questions — resolve before sprint selection". No separate `/gse:scope` skill is introduced.
+
+
 
 **Exempt / skip conditions:**
 - Existing project (non-greenfield) → no Intent Capture; inferred implicit from existing artefacts.

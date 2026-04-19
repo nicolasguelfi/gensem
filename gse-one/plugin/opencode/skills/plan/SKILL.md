@@ -31,7 +31,30 @@ Before executing, read:
 
 Used to create a new sprint by selecting items from the backlog pool.
 
-#### Step 0 — Previous Sprint Analysis (Sprint N+1 only)
+#### Step 0 — Open Questions Gate (activity-entry scan, spec P6)
+
+Before selecting items or creating the plan, scan for pending Open Questions (`OQ-`) whose `resolves_in: PLAN`.
+
+1. **Enumerate sources** — list `docs/intent.md` (always) and `docs/sprints/sprint-{NN}/*.md` for the current sprint if it exists.
+2. **Parse `## Open Questions`** sections across those files. Extract entries where `status: pending` AND `resolves_in: PLAN`.
+3. **If zero matches** → skip this step, proceed to Step 0.5.
+4. **If ≥ 1 match** → enter the Open Questions Gate. Behavior depends on `profile.yaml → dimensions.decision_involvement`:
+
+   - **`autonomous`**: the agent generates proposed answers using intent + project profile + GSE conventions. Low-impact questions (`impact: behavioral` | `cosmetic`) are applied as Inform-tier, resolutions recorded with `answered_by: agent`. High-impact questions (`impact: scope-shaping` | `architectural`) are escalated to a Gate for explicit user validation.
+
+   - **`collaborative`** (default): per-question Gate — agent proposes answer + rationale + consequence horizons (P8). User validates or modifies. If ≥ 3 questions, batch by theme (e.g., *users & data / domain model / UX & output*) for readability. `answered_by: user` after confirmation.
+
+   - **`supervised`**: each question is a neutral Gate — no pre-answer. User provides the answer directly. `answered_by: user`.
+
+5. **Record resolutions** — for each resolved question:
+   - Update the origin artefact's `## Open Questions` entry **in place**: set `status: resolved`, fill `resolved_at`, `resolved_in: PLAN`, `answer`, `answered_by`, `confidence` (P15 tag), `traces`.
+   - If the resolution is substantial (`impact: scope-shaping` or `impact: architectural`), create a `DEC-NNN` in `docs/sprints/sprint-{NN}/decisions.md` with `traces.derives_from: [OQ-NNN]` and a short rationale.
+
+6. **Scope-shaping propagation** — for any question resolved with `impact: scope-shaping`, refresh `backlog.yaml` task sizings affected by the resolution. If an assigned sprint exists and the change would push the plan over budget, raise a tactical replan notice (Inform-tier).
+
+7. Proceed to Step 0.5 (Previous Sprint Analysis, if applicable), then Step 1 (Present Pool).
+
+#### Step 0.5 — Previous Sprint Analysis (Sprint N+1 only)
 
 If this is NOT the first sprint (`current_sprint > 1`):
 

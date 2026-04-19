@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.29.0] - 2026-04-19
+
+Layers impacted: **spec**, **design**, **implementation** (orchestrator + 5 activities + intent template)
+
+### Added
+- **Open Questions mechanism — first-class concept** (AMÉL-08 + AMÉL-07 retrofit) — Ambiguities raised in artefacts are now structured entries with a full schema: `id` (new prefix `OQ-`), `question`, `resolves_in` (ASSESS | PLAN | REQS | DESIGN), `impact` (scope-shaping | behavioral | architectural | cosmetic), `status`, provenance (`raised_at`), and on resolution `resolved_at`, `resolved_in`, `answer`, `answered_by`, `confidence`, `traces`. Schema formalized in spec P6.
+- **Activity-entry scan (transversal rule)** — The four lifecycle activities `/gse:assess`, `/gse:plan`, `/gse:reqs`, `/gse:design` each begin with a new **Step 0 Open Questions Gate** that scans `docs/intent.md` and the current sprint's artefacts for pending `OQ-` whose `resolves_in` matches the current activity. Resolutions are recorded in place (origin artefact updated, status flipped).
+- **Scope-resolve absorbed as `/gse:plan` Step 0** — No separate `/gse:scope` skill is introduced. Open questions tagged `impact: scope-shaping` with `resolves_in: PLAN` are resolved at the beginning of `/gse:plan --strategic`, before item selection. Respects P5 (planning transversality) and keeps the catalog at 23 activities.
+- **Mode-calibrated interaction via `decision_involvement`** — The Open Questions Gate behavior adapts to the HUG profile field: `autonomous` (agent pre-answers, Gate only for high-impact), `collaborative` (per-question Gate with agent proposal, default), `supervised` (neutral Gate, no pre-answer). Reuses existing infrastructure — no new mode concept introduced.
+- New `OQ-` prefix added to spec P6 traceability table, `Open Question` glossary entry, `Activity-entry scan` glossary entry.
+- New **Open Questions Resolution Invariant** section in the orchestrator listing concerned activities, scan mechanics, and mode behavior.
+- New **Open Questions Resolution — Design Mechanics** subsection in `gse-one-implementation-design.md` detailing source enumeration, markdown format (human-readable bullet list with sub-fields), parsing rules, recording format, scope-shaping propagation, and failure modes.
+
+### Changed
+- **Retrofit AMÉL-07 terminology** — The informal term `natural home` introduced in v0.28 is **renamed to `resolves_in`** across all artefacts (spec, design, orchestrator, template, go.md) and given a formal schema. The valid values are now `ASSESS | PLAN | REQS | DESIGN` (previously included the informal `scope-lock`, which is removed — scope-resolve is folded into PLAN Step 0).
+- `gse-one/src/templates/intent.md` — Open Questions section rewritten as structured markdown entries (not plain bullet list), consumable by the activity-entry scan.
+- `/gse:go` Step 7 Intent Capture — updates the wording to reflect the new `resolves_in` / `impact` fields.
+- `/gse:plan --strategic` Step 0 renamed from "Previous Sprint Analysis" to "Open Questions Gate" (now primary); the previous analysis becomes Step 0.5.
+- `/gse:reqs` — new Step 0 "Open Questions Gate"; previous "Conversational Elicitation" renumbered to Step 0.5. Mode-Specific Ceremony table updated accordingly.
+- `/gse:assess`, `/gse:design` — new Step 0 "Open Questions Gate" inserted before their first existing step.
+
+### Fixed
+- Greenfield experts (training session learner05) previously had to improvise ad-hoc scope-lock elicitation outside the lifecycle (DEC-003 methodology deviation, 9-question ad-hoc elicitation). With the Open Questions mechanism + activity-entry scan, scope-shaping questions now flow from Intent Capture → `/gse:plan` Step 0 automatically, respecting the methodology.
+
 ## [0.28.0] - 2026-04-19
 
 Layers impacted: **spec**, **design**, **implementation** (activities go/collect + orchestrator + new template)

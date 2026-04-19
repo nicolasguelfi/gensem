@@ -34,9 +34,18 @@ traces:
 - {thing 2 — e.g., "no server component, browser-local only"}
 - {thing 3 — e.g., "no real-time collaboration"}
 
-## Open questions
+## Open Questions
 
-_Optional section. List ambiguities to resolve in downstream activities. Tag each with its natural resolution home._
+_Optional section. Structured ambiguities auto-consumed by the **activity-entry scan** (spec P6). Each entry is scanned at the first step of `/gse:assess`, `/gse:plan`, `/gse:reqs`, or `/gse:design` based on its `resolves_in` tag._
 
-- {question 1} — natural home: **ASSESS** | **scope-lock** | **REQS** | **DESIGN**
-- {question 2} — natural home: ...
+- **OQ-001** — {question 1}
+  - resolves_in: ASSESS | PLAN | REQS | DESIGN
+  - impact: scope-shaping | behavioral | architectural | cosmetic
+  - status: pending
+  - raised_at: INT-001
+
+- **OQ-002** — {question 2}
+  - resolves_in: ...
+  - impact: ...
+  - status: pending
+  - raised_at: INT-001

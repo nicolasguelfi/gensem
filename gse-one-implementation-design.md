@@ -1357,6 +1357,45 @@ The *automatic regeneration policy* declared in the spec materializes as two com
 - `dashboard.py` fails before try/except (very rare — syntax/import error) → hook wrapper captures non-zero exit and writes minimal marker.
 - Hook wrapper itself fails → no marker (but this is a Python one-liner with no dependencies; extremely unlikely).
 
+**Git Identity Verification — Design Mechanics (spec P12.6 Git Identity Gate):**
+
+The *Git Identity Verification* invariant declared in the spec materializes as a preflight check in activities that create commits programmatically.
+
+**Detection logic:**
+1. Run `git --version` to confirm git is installed. If exit code is non-zero (typically 127), abort the activity with: *"git is not installed on this system. GSE-One requires git — please install it first."* No Gate is shown.
+2. Query identity at both scopes:
+   - Global: `git config --global user.name`, `git config --global user.email`.
+   - Local: `git config --local user.name`, `git config --local user.email` (only meaningful inside a git repo; outside, these return non-zero — treat as "absent").
+3. If both name AND email are set at EITHER scope (global OR local) → identity OK, proceed with the commit.
+4. If any of the four required values is missing → trigger the Git Identity Gate.
+
+**Gate options → concrete actions:**
+
+| Option | Shell command(s) | Prompt to user |
+|--------|------------------|----------------|
+| 1. Set global identity | `git config --global user.name "<name>"` + `git config --global user.email "<email>"` | Ask for name, then email (one at a time for beginners). Validate email format (`@` + dotted domain). |
+| 2. Set local identity  | `git config --local user.name "<name>"` + `git config --local user.email "<email>"` | Same prompts as option 1. |
+| 3. Quick placeholder   | `git config --local user.name "GSE User"` + `git config --local user.email "user@local"` | No prompt. After execution, print a reminder: *"Placeholder identity set locally for this project. If you plan to share or push this repo, run `/gse:hug --update` or update manually with `git config --global user.name/email`."* |
+| 4. I'll set it myself  | (none) | Agent prints a copy-paste block with the two `git config --global ...` commands and waits for user confirmation ("done" / "ok"). On confirmation, the agent re-runs detection. If identity still missing, the agent re-presents the Gate. |
+| 5. Discuss             | (none) | Agent explains the scope difference (global = all your projects; local = this project only; placeholder = disposable for throwaway work), the fact that commits on pushed branches are publicly visible, then re-presents options 1-4. |
+
+**Email validation rule (options 1 and 2):** the agent accepts the email if it contains exactly one `@`, with a non-empty local part before `@` and a domain part after `@` that contains at least one `.` with non-empty labels on both sides of that dot. On validation failure, the agent re-prompts with: *"That doesn't look like a valid email address. Could you enter it again? (e.g., you@example.com)"*. No external validation (no DNS lookup).
+
+**Placeholder reminder (option 3):** the reminder fires once, immediately after the placeholder is set. It is NOT repeated on subsequent activities — we rely on the user's awareness. This reflects the "cheap escape hatch for quick tests" intent of option 3; making it noisy would defeat its purpose.
+
+**Activities that MUST invoke the preflight:**
+- `/gse:hug` Step 4 — foundational commit
+- `/gse:go` Step 2.7 — auto-fix commit when baseline is missing
+
+Additional activities that SHOULD invoke the preflight in future releases (tracked as AMÉL follow-ups):
+- `/gse:pause` — auto-commits of uncommitted work
+- `/gse:deliver` — merge commits on `main`
+- `/gse:task`, `/gse:produce`, `/gse:fix` — feature branch commits
+
+**Implementation pattern:** the preflight is NOT extracted into a separate shared file. Each concerned activity SKILL.md inlines the detection + Gate sequence in its Step 4 / Step 2.7 / Step 0 block. Rationale: inlining avoids indirection when the agent reads a skill and removes dependency on loading additional context. The orchestrator documents the canonical invariant (single source of truth for the Gate shape and options).
+
+**Exempt activities:** read-only and planning activities that do not create commits (`/gse:status`, `/gse:health`, `/gse:backlog`, `/gse:learn`, `/gse:resume`, `/gse:collect`, `/gse:assess`, `/gse:plan`, `/gse:reqs`, `/gse:design`, `/gse:preview`, `/gse:tests`, `/gse:review`, `/gse:compound`, `/gse:integrate`, `/gse:deploy`).
+
 **Checkpoint schema (spec §12.5):**
 ```yaml
 timestamp: 2026-04-11T16:30:00

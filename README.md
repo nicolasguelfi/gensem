@@ -98,6 +98,8 @@ opencode
 
 In opencode, type: `/gse-go`.
 
+> **Note (git init):** The `git init` step above creates a fresh, independent repository for YOUR project inside `my-project/` — it is distinct from the `.git/` folder inside the `gensem/` clone, which tracks the plugin source. The two repositories do not interact. If this is your first time using git on this machine, GSE-One will help you configure your git identity (name + email) automatically the first time it creates a commit — no prerequisite `git config` needed.
+
 ### Plugin mode (alternative)
 
 To install via the platform's plugin system (prefixed commands `/gse:*` on Claude, `/gse-*` on Cursor/opencode):

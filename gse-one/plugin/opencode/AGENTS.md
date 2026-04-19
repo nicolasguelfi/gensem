@@ -1,5 +1,5 @@
 <!-- GSE-ONE START -->
-<!-- gse-one-version: 0.24.0 -->
+<!-- gse-one-version: 0.25.0 -->
 # GSE-One Methodology (opencode edition)
 
 This section is managed by GSE-One. Edit `gse-one/src/` and regenerate — do not hand-edit between the START/END markers.
@@ -67,6 +67,23 @@ The Gate offers exactly three options — *Start next sprint now* (default) / *C
 **Exempt activities** (no Sprint Freeze preflight required): `/gse:compound`, `/gse:integrate`, `/gse:pause`, `/gse:resume`, `/gse:go`, `/gse:status`, `/gse:health`, `/gse:backlog`, `/gse:learn`, `/gse:hug`, `/gse:collect`, `/gse:assess`, `/gse:plan --strategic`, `/gse:deploy`, `/gse:deliver`.
 
 Rationale: once a sprint has been delivered, its scope, budget, and traceability are immutable — retroactive additions corrupt sprint-level metrics, muddle release boundaries, and defeat the "Built by AI, Governed by Humans" promise. Opening a successor sprint is cheap; preserving sprint integrity is essential.
+
+**Git Identity Verification Invariant:** Any activity about to create a git commit programmatically MUST first verify that a git identity is configured — either globally (`git config --global user.name` + `user.email`) or locally to the current repository (`git config --local user.name` + `user.email`). If neither scope has both name AND email set, the activity MUST present the **Git Identity Gate** with five options: *(1) Set global identity* (default, recommended) / *(2) Set local identity* (this project only) / *(3) Quick placeholder* (local, throwaway — sets `GSE User` / `user@local` and prints a one-shot reminder to replace it before sharing the repo) / *(4) I'll set it myself* (agent provides copy-paste commands and waits for user confirmation) / *(5) Discuss*. Beginners see plain-language translations per P9 ("your signature", "just for this folder", "a disposable signature", "I'll give you commands to type"). When collecting an email (options 1 and 2), the agent validates basic format (`@` + dotted domain) and re-prompts on failure.
+
+**Activities that MUST invoke the preflight** (any that create commits programmatically):
+- `/gse:hug` Step 4 — foundational commit
+- `/gse:go` Step 2.7 — auto-fix commit when baseline is missing
+- `/gse:pause` — auto-commits of uncommitted work
+- `/gse:deliver` — merge commits on `main`
+- `/gse:task`, `/gse:produce`, `/gse:fix` — feature branch commits
+
+**Exempt activities** (no commits): `/gse:status`, `/gse:health`, `/gse:backlog`, `/gse:learn`, `/gse:resume`, `/gse:collect`, `/gse:assess`, `/gse:plan`, `/gse:reqs`, `/gse:design`, `/gse:preview`, `/gse:tests`, `/gse:review`, `/gse:compound`, `/gse:integrate`, `/gse:deploy`.
+
+**Failure mode:** if `git` itself is not installed (exit code non-zero on `git --version`), the activity aborts gracefully with *"git is not installed — GSE-One requires git, please install it first"*. No Gate is shown.
+
+For the current release (v0.25.0), only `/gse:hug` Step 4 and `/gse:go` Step 2.7 implement the preflight — other activities (pause, deliver, task, produce, fix) will follow in subsequent releases (tracked as AMÉL follow-ups).
+
+Rationale: git identity is a pre-commit prerequisite the agent cannot assume is set, especially on fresh machines, classroom laptops, or CI containers. Letting the commit fail silently leaves the user with an opaque git error and a broken foundational setup. A single-Gate resolution is educational, non-destructive, and reversible.
 
 ## Command Reference
 

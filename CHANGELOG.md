@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.0] - 2026-04-19
+
+Layers impacted: **spec**, **design**, **implementation** (activities hug/go + orchestrator), **docs** (README)
+
+### Added
+- **Git Identity Verification guardrail** (AMÉL-04 from training feedback) — `/gse:hug` Step 4 and `/gse:go` Step 2.7 now verify that a git identity (user name + email) is configured globally OR locally before attempting the foundational / auto-fix commit. If missing, the agent presents a 5-option Git Identity Gate: *Set global* (default) / *Set local* / *Quick placeholder* (sets `GSE User` / `user@local` locally, with a one-shot reminder to replace before sharing) / *I'll set it myself* / *Discuss*. Email format validation (`@` + dotted domain) on options 1 and 2. Prevents silent commit failures on fresh machines, classroom laptops, and CI containers.
+- New *Git Identity Verification Invariant* section in the orchestrator listing writing vs exempt activities and the Gate shape.
+- New *Git Identity Verification — Design Mechanics* subsection in `gse-one-implementation-design.md` mapping conceptual terms to concrete `git config` commands, with the email validation rule and the placeholder reminder policy.
+- Enriched P12.0 *Foundational commit* rule in the spec with explicit identity precondition; new rule P12.6 formalizes the Git Identity Gate.
+
+### Changed
+- README quickstart (shared note after all 3 platform options) now clarifies that `git init` in `my-project/` creates an independent repository, distinct from the `.git/` of the gensem clone, and that GSE-One handles git identity setup automatically on first commit. Addresses the "when should git init happen?" ambiguity raised in training feedback (learner05).
+
+### Fixed
+- Silent commit failure on fresh machines when `user.name` / `user.email` are not configured (learner03 training session: first commit blocked, had to run `git config` commands manually before proceeding).
+
 ## [0.24.0] - 2026-04-19
 
 Layers impacted: **spec**, **design**, **implementation** (tool `dashboard.py`, generator hooks, opencode TS plugin, config template)

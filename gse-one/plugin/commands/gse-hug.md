@@ -184,14 +184,47 @@ Verify the project environment is ready. **This step is blocking** — do NOT me
      ```
    - **For intermediate/advanced users:** Ask concisely: "No git repo detected here. Should I run `git init`?"
    - **Wait for response** — Do NOT proceed or mention next steps until the user responds.
-   - If yes: run `git init`, create initial `.gitignore`, then create a **foundational commit** on `main`:
+   - If yes: run `git init`, create initial `.gitignore`, **apply the Git Identity Verification preflight** (see below), then create a **foundational commit** on `main`:
      ```bash
      git init
      # create .gitignore with project-appropriate entries
+     # [Git Identity Verification preflight — see below]
      git add .gitignore
      git commit -m "chore: initialize repository"
      ```
      This foundational commit is **mandatory** — without it, `main` is not a valid branch reference and all subsequent branching operations (P12) will fail. If a system permission dialog appears, the user has already been told what to do.
+
+     **Git Identity Verification preflight (Hard guardrail, spec P12.6):** Before running `git commit`, verify that a git identity is configured.
+     1. **Check git installation** — Run `git --version`. If exit code is non-zero (git not installed), abort with: *"git is not installed on this system. GSE-One requires git — please install it first."* No Gate is shown.
+     2. **Query identity at both scopes:**
+        - `git config --global user.name` and `git config --global user.email`
+        - `git config --local user.name` and `git config --local user.email`
+     3. **If both name AND email are set at either scope (global OR local)** → identity is OK, proceed to the commit.
+     4. **If any value is missing** → present the **Git Identity Gate**:
+
+        > **Question:** I need a git identity to save commits — none is set on this machine, globally or for this project. How should I proceed?
+        >
+        > **Options:**
+        > 1. **Set global identity** (recommended) — I'll configure git with your name and email, so all your projects on this machine can commit. I'll ask for your name and email.
+        > 2. **Set local identity (this project only)** — I'll configure git for this project only. Your global setup is unchanged. I'll ask for your name and email.
+        > 3. **Quick placeholder (local, for a quick test)** — I'll set `GSE User` / `user@local` for this project only. Good for throwaway experiments; change later with options 1 or 2.
+        > 4. **I'll set it myself** — Here are the commands to run in your terminal:
+        >    ```
+        >    git config --global user.name "Your Name"
+        >    git config --global user.email "you@example.com"
+        >    ```
+        >    Let me know when you're done — I'll re-check and continue.
+        > 5. **Discuss** — Explain the scope difference and security considerations.
+
+        **Beginner translations** (per P9 Adaptive Communication): option 1 → "set up your signature for all your projects"; option 2 → "just for this folder"; option 3 → "a disposable signature for this quick test"; option 4 → "I'll give you two commands to type yourself".
+
+     5. **On option 1 or 2:** ask for the user's name, then ask for the email (one at a time for beginners, grouped for intermediate/expert). **Validate the email** (must contain exactly one `@` with a non-empty local part and a dotted domain with non-empty labels on both sides of the dot — e.g. `you@example.com`). On invalid email, re-prompt: *"That doesn't look like a valid email address. Could you enter it again? (e.g., you@example.com)"*. Once valid, run:
+        - Option 1: `git config --global user.name "<name>"` and `git config --global user.email "<email>"`
+        - Option 2: `git config --local user.name "<name>"` and `git config --local user.email "<email>"`
+        Re-verify identity, then proceed to the commit.
+     6. **On option 3:** run `git config --local user.name "GSE User"` and `git config --local user.email "user@local"`. Immediately print a single reminder: *"Placeholder identity set locally for this project. If you plan to share this repo or push to a remote, replace it via `/gse:hug --update` or directly with `git config --global user.name` / `user.email`."* Do not repeat the reminder on subsequent activities. Proceed to the commit.
+     7. **On option 4:** print the two `git config --global ...` commands as a copy-paste block, wait for user confirmation ("done" / "ok" / "c'est fait"), then re-run the identity detection. If still missing, re-present the Gate (options 1-5).
+     8. **On option 5:** explain (scope difference between global/local, visibility of commits on pushed branches, throwaway nature of option 3), then re-present options 1-4.
    - If no: acknowledge and continue without git. Note that some GSE features (branching, version control guardrails) will be unavailable.
 2. **Create `.gse/` directory** — If it does not exist:
    - Create `.gse/` with subdirectories: `profiles/`

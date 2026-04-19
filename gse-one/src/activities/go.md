@@ -85,6 +85,7 @@ If `.gse/config.yaml` → `git.strategy` is `worktree` or `branch-only`:
    git rev-parse --verify main
    ```
 2. **If this fails** (no commits on `main`) — **Hard guardrail**: the repository was initialized but has no foundational commit. This blocks all branching operations.
+   - **Git Identity Verification preflight (Hard guardrail, spec P12.6):** Before any auto-fix commit, apply the Git Identity Verification preflight as defined in `/gse:hug` Step 4 (detection logic + Git Identity Gate with 5 options: set global / set local / quick placeholder / I'll set it myself / discuss). If the identity is missing, resolve it through the Gate before proceeding. This guarantees the auto-fix commit below will not fail silently on fresh machines, classroom laptops, or CI containers.
    - If `.gitignore` exists but is not committed: auto-fix by committing it: `git add .gitignore && git commit -m "chore: initialize repository"`.
    - If no files exist to commit: create `.gitignore` and commit it.
    - For beginners: "I need to save a first checkpoint in version control before we can organize the work properly. I'll do it now."

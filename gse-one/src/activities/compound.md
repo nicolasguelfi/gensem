@@ -74,22 +74,110 @@ Analyze the sprint for project-level learnings:
 
 ### Step 2 — Axe 2: Methodology Capitalization
 
-Analyze what worked and what did not in the GSE-One methodology itself during this sprint:
+Analyze what worked and what did not in the GSE-One methodology itself during this sprint, then route the observations through a closure Gate.
 
-1. **Effective practices** — Which GSE-One activities, principles, or agent perspectives added value?
-2. **Friction points** — Where did the methodology slow down or add unnecessary ceremony?
-3. **Missing capabilities** — What did the user need that GSE-One does not provide?
-4. **Improvement proposals** — Concrete, actionable suggestions for GSE-One evolution
+#### 2.1 — Gather observations from the sprint
 
-**Filtering criteria** (only propose issues that meet ALL):
-- Actionable — has a clear implementation path
-- Observed in 2+ sprints OR confirmed by user as important
-- Not already reported (check existing issues if possible)
+Sources to scan (in order):
 
-If proposals pass the filter:
-1. Read `plugin.json` to get the `repository` field for the GSE-One repo
-2. Present proposals to user (Gate): "I identified {N} methodology improvements. Shall I create issues on the GSE-One repository?"
-3. If accepted, prepare issue drafts (actual creation happens in `/gse:integrate`)
+| Source | What to extract |
+|--------|-----------------|
+| `docs/sprints/sprint-{NN}/review.md` | Findings tagged `[METHOD-FEEDBACK]` (process-level, not product-level) |
+| `docs/sprints/sprint-{NN}/decisions.md` | DEC- entries with attribute `type: methodology-deviation` |
+| `.gse/status.yaml → activity_history[*].notes` | Free-text notes describing methodology friction |
+| Agent conversation memory for this sprint | Recurring user questions, explicit frustrations, ad-hoc deviations, Gates that felt awkward, Inform notes that surprised the user |
+
+For each observation, the agent records:
+- Raw text of the observation (verbatim user quote if available)
+- Source reference (RVW-NNN, DEC-NNN, activity name, or "conversation")
+- Suggested theme label (e.g., "scope-lock ergonomy", "dashboard freshness", "git identity setup")
+- Severity heuristic (HIGH = blocked the user / MEDIUM = slowed down / LOW = minor inconvenience)
+
+#### 2.2 — Synthesize into themes
+
+Group observations by theme. The agent is explicit about what was merged. Multiple observations of the same theme become ONE consolidated theme entry.
+
+Derive for each theme:
+- **Effective practices** (what worked well within this theme)
+- **Friction points** (what slowed down)
+- **Missing capabilities** (what was absent)
+- **Improvement proposal** (concrete, actionable)
+
+#### 2.3 — Closure Gate (3 options)
+
+Present the user with:
+
+```
+I've consolidated {N} methodology observations from this sprint, grouped
+into {M} themes. How should I route them?
+
+1. Export as a local feedback document only
+   → docs/sprints/sprint-{NN}/methodology-feedback.md
+   You can share or submit it manually (email, chat, issue tracker).
+
+2. Propose GitHub tickets (quality-filtered, theme-grouped, deduplicated)
+   → I'll walk you through each proposed issue for validation before
+     submission to the GSE-One plugin repository via /gse:integrate Axe 2.
+
+3. Both — export AND propose tickets.
+
+4. Discuss — I'll show a one-line-per-observation summary first.
+```
+
+**If no observations were gathered** (rare, but possible on a smooth sprint) → skip the Gate silently with: *"No methodology observations worth escalating this sprint."*
+
+**If the user has opted out of upstream feedback** (e.g., `github.enabled: false` in `config.yaml`, or `plugin.json` has no `repository` field) → options 2 and 3 are hidden; only option 1 (local export) is offered.
+
+#### 2.4 — On option 1 or 3 (local export)
+
+Write `docs/sprints/sprint-{NN}/methodology-feedback.md` with the structure defined in the implementation design (Methodology Feedback — Design Mechanics). The file is a standalone, shareable artefact with:
+
+- Summary (1-3 sentences)
+- Observations grouped by theme (observation, source refs, user quote if relevant, proposed improvement)
+
+Inform the user: *"Methodology feedback exported to `docs/sprints/sprint-{NN}/methodology-feedback.md`. You can share this file through any channel (email, chat, manual issue)."*
+
+#### 2.5 — On option 2 or 3 (ticket proposals — quality filter)
+
+Apply the **hard constraints** before proposing:
+
+1. **Concrete** — drop themes whose observations don't cite at least one specific example (file, timestamp, user quote, artefact ID). Alternatively, ask the user to specify.
+2. **Theme-grouped** — one ticket per theme, never per micro-friction. Be explicit about what was merged.
+3. **Dedup** — before proposing each ticket, run:
+   ```
+   gh issue list --repo <upstream> --state open --search "<theme keywords>" --json number,title
+   ```
+   Annotate each proposal with its dedup status (`No match` / `Potential match: #NNN` / `dedup unverified (gh unavailable)`).
+4. **Cap** — read `config.yaml → compound.max_proposed_issues_per_sprint` (default: 3). If more themes qualify than the cap allows, prioritize by severity (HIGH > MEDIUM > LOW) and consolidate the rest into the local export only.
+5. **Per-ticket Gate** — present each proposed ticket individually:
+   ```
+   **Proposed ticket {i} of {N}:**
+
+   Title: {~60 chars}
+   Label: enhancement | bug | documentation
+   Body:
+     Context: {what the user was trying to do}
+     Observation: {what went wrong or was awkward + source refs}
+     Proposed change: {actionable}
+     Sources: {list of refs}
+   Dedup check: {as above}
+
+   Options:
+   1. Approve — queue for /gse:integrate Axe 2 submission.
+   2. Edit — adjust title/body/label before queueing.
+   3. Skip — exclude this ticket.
+   4. Discuss.
+   ```
+
+6. **Prepare the handoff** — write approved tickets to `.gse/compound-tickets-draft.yaml` for `/gse:integrate` Axe 2 to consume.
+
+#### 2.6 — Persist summary in `compound.md`
+
+Record a short methodology section in `docs/sprints/sprint-{NN}/compound.md` with:
+- Count of observations collected
+- Count of themes
+- Route chosen (export / tickets / both / none)
+- References to the `methodology-feedback.md` and `compound-tickets-draft.yaml` files if produced
 
 ### Step 3 — Axe 3: Competency Capitalization
 

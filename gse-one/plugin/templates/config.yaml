@@ -113,3 +113,11 @@ dashboard:
   regen_debounce_seconds: 5            # debounce window for automatic dashboard regeneration
                                        # (spec §7 automatic regeneration policy). Raise for
                                        # bursty projects, lower for ultra-reactive feedback.
+
+# --- Section 14: Compound (end-of-sprint capitalization) ---
+compound:
+  max_proposed_issues_per_sprint: 3    # Hard cap on methodology tickets proposed to upstream
+                                       # per sprint (spec COMPOUND Axe 2). Raise only if a
+                                       # sprint genuinely generates independent themes.
+                                       # Excess themes consolidate into the local feedback
+                                       # export instead of becoming tickets.

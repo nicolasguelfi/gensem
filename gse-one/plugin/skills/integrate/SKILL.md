@@ -50,29 +50,30 @@ Route project-level learnings into operational configuration:
 
 ### Step 2 — Axe 2: Methodology Integration
 
-Route methodology feedback to the GSE-One repository:
+Route methodology feedback to the GSE-One repository. This step consumes the ticket draft prepared by `/gse:compound` Axe 2.
 
-1. Read methodology proposals from `compound.md`
-2. For each proposal, present to user (Gate):
-   - Title: "{proposal title}"
-   - Description: "{what was observed and what should change}"
-   - Label: `enhancement` or `bug` (depending on nature)
-   - "Shall I create this issue on the GSE-One repository?"
+1. **Read the draft** — look for `.gse/compound-tickets-draft.yaml` prepared by the most recent `/gse:compound` Axe 2 run. Each entry was already validated by the user during COMPOUND's per-ticket Gate (approve / edit / skip) with quality filters applied (concrete, theme-grouped, deduplicated, capped).
+   - **If the file is absent** (user chose option 1 "local export only" in COMPOUND, or COMPOUND was skipped): skip this step with an Inform note: *"No GitHub ticket proposals to process — Axe 2 handoff file absent."*
+   - **If the file is present**: proceed.
 
-3. If user accepts:
+2. **Final confirmation Gate** — list the approved tickets one last time (title + label + one-line body preview) and ask: *"Submit {N} methodology issues to the GSE-One repository ({repo_url})?"*
+   - Options: *Submit all* / *Review individually again* / *Cancel* / *Discuss*.
+
+3. **On submission**, for each approved ticket:
    ```
    gh issue create \
      --repo {repository_from_plugin.json} \
-     --title "{proposal title}" \
-     --body "{detailed description with sprint context}" \
-     --label "enhancement"
+     --title "{title}" \
+     --body "{body}" \
+     --label "{label}"
    ```
+   Capture the returned issue URL.
 
-4. Record created issue URLs in `docs/sprints/sprint-{NN}/compound.md` under a "Submitted Issues" section.
+4. **Record created issue URLs** in `docs/sprints/sprint-{NN}/compound.md` under a "Submitted Issues" section. Cross-link: each source observation in the sprint artefacts gets a pointer to the created issue URL for bidirectional traceability.
 
-5. If user declines a proposal:
-   - Record as "Deferred" in `compound.md`
-   - Do not re-propose unless observed again in a future sprint
+5. **Clean up** — after successful submission, delete `.gse/compound-tickets-draft.yaml` (the handoff is consumed). If submission partially failed (e.g., rate limit), keep the draft with remaining entries for a retry.
+
+6. **Skipped / cancelled proposals** — not re-proposed unless the same theme is observed again in a future sprint. Recorded in `compound.md` as "Deferred" with the source observation references.
 
 ### Step 3 — Axe 3: Competency Integration
 

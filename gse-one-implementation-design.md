@@ -1798,6 +1798,148 @@ Fields that only affect internal agent behavior (e.g., `interaction.verbosity`, 
 - Template file not found (cannot compute origin) → skip the origin classification, emit the note without it: *"Config applied: `<field>` = `<value>` (to change: /gse:hug --update or edit .gse/config.yaml)"*
 - Config field missing from config.yaml (should not happen — HUG always fills defaults) → agent emits a warning and falls back to the methodology default value before proceeding.
 
+**Methodology Feedback — Design Mechanics (spec §3 COMPOUND Axe 2 + P14 methodology self-improvement):**
+
+The methodology-feedback flow operates entirely inside `/gse:compound` Axe 2 and `/gse:integrate` Axe 2. No new skill, no new artefact type, no new profile flag.
+
+**Source material (scanned during COMPOUND Axe 2):**
+
+| Source | What to look for |
+|--------|------------------|
+| `docs/sprints/sprint-{NN}/review.md` | Findings tagged `[METHOD-FEEDBACK]` (process-level issues, not product-level) |
+| `docs/sprints/sprint-{NN}/decisions.md` | DEC- entries with attribute `type: methodology-deviation` (the agent deviated from the methodology and logged why) |
+| `.gse/status.yaml → activity_history[*].notes` | Free-text notes attached to activity completions |
+| Conversation context | Friction points, user explicit complaints, or recurring questions the agent encountered during the sprint (agent subjective memory) |
+
+**Convention for logging during the sprint:** the agent adds a `[METHOD-FEEDBACK]` tag or `type: methodology-deviation` attribute whenever it observes a process-level friction, deviation, or improvement opportunity. The tag is **optional** — the agent is not required to log every friction. It is a signal that compound Axe 2 can consume. For v0.31, the tag convention is documented; its broader adoption in `/gse:review` and `/gse:fix` can follow in future releases if the source coverage proves insufficient.
+
+**Closure Gate at end of Axe 2 (3 options):**
+
+After synthesizing the observations into themes, the agent presents:
+
+```
+I've consolidated N methodology observations from this sprint, grouped into M themes.
+How should I route them?
+
+1. Export as a local feedback document only
+   → docs/sprints/sprint-{NN}/methodology-feedback.md
+   You can share or submit it manually (email, chat, issue tracker).
+
+2. Propose GitHub tickets (quality-filtered, theme-grouped, deduplicated)
+   → I'll walk you through each proposed issue for validation before
+     submission to the GSE-One plugin repository via /gse:integrate Axe 2.
+
+3. Both — export AND propose tickets.
+
+4. Discuss — I'll show a one-line-per-observation summary first.
+```
+
+**Output A — local export file:**
+
+Written at `docs/sprints/sprint-{NN}/methodology-feedback.md` when option 1 or 3 is chosen. Structure:
+
+```markdown
+---
+artefact_type: methodology-feedback
+title: "Sprint {NN} — Methodology Feedback"
+sprint: {NN}
+created: "{YYYY-MM-DD}"
+status: exported
+---
+
+# Sprint {NN} — Methodology Feedback
+
+## Summary
+
+{1-3 sentences giving the overall experience of this sprint with the methodology}
+
+## Observations grouped by theme
+
+### Theme 1: {name}
+
+**Observation:** {specific, with context — file, step, quote, or artefact ref}
+
+**Source:** {list of artefact references — RVW-NNN, DEC-NNN, activity in activity_history, …}
+
+**User quote** (if relevant): *"{verbatim}"*
+
+**Proposed improvement:** {actionable suggestion}
+
+### Theme 2: ...
+```
+
+**Output B — ticket proposals (Gate path):**
+
+For each theme that passes the quality filter, the agent presents a per-theme Gate:
+
+```
+**Proposed ticket 1 of N:**
+
+Title: {~60 chars, imperative or descriptive}
+Label: enhancement | bug | documentation
+Body:
+  Context: {what the user was trying to do}
+  Observation: {what went wrong or was awkward, with source refs}
+  Proposed change: {actionable suggestion}
+  Sources: {list of RVW/DEC/activity refs from the sprint}
+Dedup check: {"No open issue matching keywords" | "Potential match found: #NNN"}
+
+Options:
+1. Approve — I'll create this issue via /gse:integrate Axe 2.
+2. Edit — adjust title/body/label before creating.
+3. Skip — exclude this ticket.
+4. Discuss.
+```
+
+**Quality filter rules (hard constraints applied before proposing):**
+
+| Rule | Check |
+|------|-------|
+| Concrete | The observation must cite at least one specific example (file path, timestamp, user quote, or artefact ID). Vague complaints ("it felt confusing") are dropped or requested for specification. |
+| Theme-grouped | Multiple observations belonging to the same theme (e.g., "scope-lock ergonomy") are merged into a single ticket. The agent is explicit about which observations were grouped. |
+| Deduplicated | Before proposing, the agent runs `gh issue list --repo <upstream> --state open --search "<theme keywords>"` and flags matches. If `gh` is unavailable, the agent proceeds with a "dedup unverified" marker and leaves the decision to the user. |
+| Cap | No more than `config.yaml → compound.max_proposed_issues_per_sprint` (default: **3**) tickets proposed per sprint. If more themes qualify, the agent prioritizes by impact (HIGH > MEDIUM > LOW severity from source findings) and consolidates the rest into the local export only. |
+| User-validated | Each proposal goes through a per-ticket Gate. No silent creation. |
+
+**Dedup algorithm:**
+
+```
+# pseudo
+for each proposed_theme:
+    keywords = extract_keywords(proposed_theme.title)
+    try:
+        existing = shell("gh issue list --repo <upstream> --state open --search '{keywords}' --json number,title")
+        if existing:
+            proposed_theme.dedup_note = f"Potential match: {existing}"
+        else:
+            proposed_theme.dedup_note = "No open issue matching keywords"
+    except ShellError:
+        proposed_theme.dedup_note = "dedup unverified (gh unavailable)"
+```
+
+**Link with `/gse:integrate` Axe 2:**
+
+Compound prepares the tickets as a draft set (stored transiently in `.gse/compound-tickets-draft.yaml` for handoff). `/gse:integrate` Axe 2 reads this file and executes the user-approved `gh issue create` calls. No change to integrate's skeleton — just the input quality is now higher.
+
+**Configuration:**
+
+New field in `config.yaml`:
+
+```yaml
+compound:
+  max_proposed_issues_per_sprint: 3    # Hard cap. Raise only if sprint generates genuinely independent themes.
+```
+
+**Skipping behavior:**
+
+- If no observations are collected (rare — typically happens on a very smooth sprint), the Gate is skipped silently and Axe 2 concludes with "No methodology observations worth escalating this sprint."
+- If the user has opted out of upstream feedback entirely (e.g., `github.enabled: false`), only option 1 (local export) is offered; options 2 and 3 are hidden.
+
+**Failure modes:**
+
+- `plugin.json` has no `repository` field → options 2/3 are disabled; only local export is offered. Inform note displayed.
+- `gh` command not installed or not authenticated → options 2/3 can still be proposed, but ticket creation in `/gse:integrate` will fail at runtime. The agent warns the user before proposing.
+
 
 
 **Exempt / skip conditions:**

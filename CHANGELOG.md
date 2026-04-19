@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.31.0] - 2026-04-19
+
+Layers impacted: **spec**, **design**, **implementation** (activities compound/integrate + config template)
+
+### Added
+- **Methodology feedback routing via `/gse:compound` Axe 2** (AMÉL-14 from training feedback). Instead of introducing a new `/gse:journal` skill, the existing `/gse:compound` Axe 2 is enriched with a closure Gate offering three options: *(1) Export as a local feedback document only* (produces `docs/sprints/sprint-{NN}/methodology-feedback.md` — shareable markdown, no GitHub interaction), *(2) Propose GitHub tickets* (quality-filtered, theme-grouped, deduplicated, capped by `compound.max_proposed_issues_per_sprint`, each validated by the user individually), *(3) Both*. Users who opt out of upstream feedback (no `github.repo` configured) only see option 1.
+- New `compound.max_proposed_issues_per_sprint` config field (default: **3**) — hard cap to prevent upstream ticket spam. Excess themes consolidate into the local export.
+- Quality rules for ticket proposals: concrete (cites at least one specific example), theme-grouped (one ticket per theme), deduplicated via `gh issue list` (fallback: "dedup unverified" marker), capped, user-validated per ticket.
+- `.gse/compound-tickets-draft.yaml` handoff file between COMPOUND and INTEGRATE Axe 2 — ensures tickets are validated at COMPOUND, then submitted at INTEGRATE without re-opening the choice.
+- New *Methodology Feedback — Design Mechanics* subsection in `gse-one-implementation-design.md`.
+- Sources scanned by Axe 2: RVW findings tagged `[METHOD-FEEDBACK]`, DEC- entries with `type: methodology-deviation`, `status.yaml → activity_history[*].notes`, and agent conversation memory.
+
+### Changed
+- Spec §3 `/gse:compound` command description updated to reference the 3-option Gate.
+- Spec §2 P14 Methodology self-improvement section rewritten to describe the new flow (local export + curated tickets + quality rules).
+- `/gse:compound` Step 2 (Axe 2) fully rewritten with explicit sub-steps: gather observations → synthesize themes → closure Gate → local export / ticket Gate / persist summary.
+- `/gse:integrate` Step 2 (Axe 2) rewritten to consume the draft file produced by COMPOUND, with a final confirmation Gate and cleanup on successful submission.
+
+### Fixed
+- Ad-hoc student-notes improvisation observed in training session learner05 (participant manually requested and structured a `docs/student_notes.md`). The formalized COMPOUND Axe 2 export now provides a first-class path for this feedback without introducing a new skill or daily-journaling mechanism. Quality cap prevents the ticket-pollution anti-pattern when feeding upstream.
+
 ## [0.30.0] - 2026-04-19
 
 Layers impacted: **spec**, **design**, **implementation** (orchestrator + activities produce/task)

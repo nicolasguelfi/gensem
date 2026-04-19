@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.32.0] - 2026-04-19
+
+Layers impacted: **spec**, **design**, **implementation** (activity design + sprint template)
+
+### Added
+- **Shared State section in design artefact** (AMÉL-06 from training feedback) — The sprint design template (`gse-one/src/templates/sprint/design.md`) gains a new mandatory `## Shared State` section between Data Model and Technology Choices. Each entry captures: name (conceptual), scope (components/pages), mechanism (framework-appropriate storage + sync), rationale (one sentence), traces (REQ IDs). When no shared state applies, an explicit disclaimer line is mandatory — empty section is not permitted.
+- **New Step 2.5 "Shared State Identification"** in `/gse:design` between Component Decomposition and Interface Contracts. Walks through component pairs and asks whether each reads/writes state that must stay consistent. Populates the design artefact's Shared State section with an algorithm, examples, and domain-adapted expectations (web/mobile: 1-5 entries typical; CLI/library: often zero; API: request context, session).
+- New *Shared State — Design Mechanics* subsection in `gse-one-implementation-design.md`.
+- `/gse:design` command description in spec §3 updated to mention shared state identification.
+
+### Fixed
+- Silent duplication of state across components (training session learner06: 3 independent Streamlit month widgets instead of one shared `st.session_state["selected_month"]`, despite REQS stating "filter by month on all pages"). The design artefact now formalizes shared state as a first-class decision, surfacing the question at DESIGN time rather than after the fact.
+
 ## [0.31.0] - 2026-04-19
 
 Layers impacted: **spec**, **design**, **implementation** (activities compound/integrate + config template)

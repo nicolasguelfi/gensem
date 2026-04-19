@@ -73,6 +73,42 @@ Rules for decomposition:
 - Components communicate through explicit interfaces (no direct field access)
 - Circular dependencies are forbidden (hard guardrail)
 
+### Step 2.5 — Shared State Identification
+
+For each piece of state (data, selection, session, filter, auth context, etc.) that must be **visible or consistent across multiple components or pages**, formalize it in the `## Shared State` section of `design.md`. The common failure mode is silent duplication: each component invents its own instance of what is logically one piece of state, leading to inconsistency (e.g., a month filter widget that must be synchronized across 3 pages but lives as 3 independent state slots).
+
+**Algorithm:**
+
+1. Walk through the REQs and the component decomposition from Step 2.
+2. For each component pair, ask: *"Do they read or write any state that must stay consistent between them?"*
+3. If yes, add an entry to `## Shared State`:
+
+   | Name | Scope (components) | Mechanism | Rationale | Traces |
+   |------|-------------------|-----------|-----------|--------|
+   | `selected_month` | Dashboard, Expenses, Budgets | framework session state (e.g., Streamlit `st.session_state`, React context, URL query param) | Month filter must be consistent across all views | REQ-003, REQ-005 |
+   | `current_user` | All pages | session cookie + server-side store | Identity needed everywhere for authorization | REQ-001 |
+
+4. **If no shared state applies** (e.g., CLI tool, pure library, strictly independent components), write the explicit disclaimer:
+   *"No shared state identified — components are independent."*
+
+   **Never leave the section empty.** An empty section is indistinguishable from "we didn't think about it". The explicit disclaimer confirms the question was considered.
+
+**Fields semantics:**
+
+- **Name** — the conceptual state name, not an implementation detail (`selected_month`, not `SelectedMonthProvider.state`).
+- **Scope** — list of components/pages/modules that read or write this state.
+- **Mechanism** — how it is stored and synchronized (session state, URL param, global store, event bus, context, etc.). Choose the framework-appropriate mechanism.
+- **Rationale** — one sentence on why this state must be shared (not duplicated).
+- **Traces** — REQ IDs that motivate the sharing (e.g., a REQ saying "filter applies to all views").
+
+**Domain adaptation (P9):**
+
+- **Web / mobile projects** — typically has 1 to 5 shared state entries (selections, user identity, theme, navigation).
+- **CLI / library / scientific projects** — often zero. The disclaimer line is common and legitimate.
+- **API / backend projects** — usually has shared state in the form of request context, session, DB connection pool.
+
+**Persist** the completed section as part of the design artefact.
+
 ### Step 3 — Interface Contracts
 
 For each component, define its public interface:

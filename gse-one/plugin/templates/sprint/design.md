@@ -74,6 +74,19 @@ _Key entities and their relationships for this sprint's scope._
 |-------------|-------------------------|------------------------|
 |             |                         |                        |
 
+## Shared State
+
+_State that must be visible or consistent across multiple components/pages.
+Formalize each piece: what it is, who reads/writes it, how it's stored, why it's shared.
+This section is **mandatory**: if no shared state exists, write the explicit disclaimer line below._
+
+| Name | Scope (components) | Mechanism | Rationale | Traces |
+|------|-------------------|-----------|-----------|--------|
+|      |                   |           |           |        |
+
+_If no shared state applies to this sprint: replace the table with:_
+**_No shared state identified — components are independent._**
+
 ## Technology Choices
 
 | Area          | Choice       | Rationale                        | Alternatives Considered |

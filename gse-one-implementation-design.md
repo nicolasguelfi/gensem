@@ -1940,6 +1940,37 @@ compound:
 - `plugin.json` has no `repository` field → options 2/3 are disabled; only local export is offered. Inform note displayed.
 - `gh` command not installed or not authenticated → options 2/3 can still be proposed, but ticket creation in `/gse:integrate` will fail at runtime. The agent warns the user before proposing.
 
+**Shared State — Design Mechanics (spec §3 `/gse:design` + design template section):**
+
+Prevents the silent-duplication failure mode: a state that is logically single but implemented as N independent instances across components (e.g., a month filter that must be consistent across 3 pages but lives as 3 independent `st.selectbox` widgets — observed in training feedback).
+
+**Artefact location:** a mandatory `## Shared State` section in `docs/sprints/sprint-{NN}/design.md`, between `## Data Model` and `## Technology Choices`. The section is populated during `/gse:design` Step 2.5.
+
+**Row fields:**
+
+| Field | Content |
+|-------|---------|
+| `Name` | Conceptual state name (`selected_month`, not `SelectedMonthProvider.state`). |
+| `Scope` | List of components/pages/modules that read or write the state. |
+| `Mechanism` | Framework-appropriate storage + synchronization (session state, URL param, global store, context, event bus, cookie, DB, etc.). |
+| `Rationale` | One sentence explaining why the state must be shared (not duplicated). |
+| `Traces` | REQ IDs that motivate the sharing. |
+
+**Mandatory disclaimer for empty case:** when no shared state applies (CLI tools, pure libraries, strictly independent components), the section contains the literal sentence *"No shared state identified — components are independent."*. An empty section is not permitted — it would be indistinguishable from an oversight.
+
+**Activation heuristic (in `/gse:design` Step 2.5):** after Step 2 (Component Decomposition), the agent walks through each component pair and asks *"Do they read or write any state that must stay consistent between them?"* If yes → row in the table. If no → move on. At the end, if the table is empty, the disclaimer is written.
+
+**Domain adaptation (P9):**
+
+- Web / mobile projects — typically 1-5 entries (selections, user identity, theme, navigation).
+- CLI / library / scientific — often zero, disclaimer line is legitimate.
+- API / backend — usually a few (request context, session, connection pool).
+
+**Failure modes:**
+
+- Agent overlooks a shared state piece that should have been formalized → the omission will surface in `/gse:review` (multiple components handling the same logical state independently) or in user testing. The next sprint's design should add the missing entry.
+- Agent inflates the list with trivial state (local component state, ephemeral UI state) → the Rationale field acts as a filter: if it's hard to write a one-sentence reason for sharing, the state probably shouldn't be in this table.
+
 
 
 **Exempt / skip conditions:**

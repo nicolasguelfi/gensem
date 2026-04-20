@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.35.0] - 2026-04-20
+
+Layers impacted: **spec**, **design**, **implementation** (test pyramid + tests activity)
+
+### Added
+- **Policy tests as a first-class pyramid level** (AMÉL-13 from training feedback). New "Policy" column in the spec §6 test pyramid (5% baseline across all domains, raisable to 10-15% for strict-architecture projects). Policy tests enforce **structural rules** on the codebase via static analysis: architecture layering (e.g., `src/domain/** must not import src/ui/**`), license compliance (`no GPL dependency`), naming conventions, file-size limits, docstring requirements, dependency rules.
+- New *Policy tests — Design Mechanics* subsection in `gse-one-implementation-design.md` with tooling suggestions per language (`pytest-archon`, `grimp`, `ts-arch`, `dependency-cruiser`, `ArchUnit`, `go-arch-lint`, `cargo-deny`, `license-checker`, etc.) and the rationale for making Policy first-class rather than a subset of Other.
+- New *Policy test derivation* section in `/gse:tests` Step 1 — automatic scan of `design.md` (Architecture Overview / Component Diagram / Shared State) and `decisions.md` (DEC- entries with architectural intent) to propose policy tests as Inform-tier suggestions. Each accepted proposal becomes a TST-NNN with `level: policy` and `traces: { enforces: [DEC-NNN, ...] }`.
+- Distinction clarified: **Policy** = purely structural (static scan, no runtime); **Other** = dynamic-constraint checks attached to behavioral tests (accessibility, performance, compatibility, hardware simulation, data quality).
+
+### Changed
+- Spec §6.1 pyramid table: Policy column inserted before Other. Unit and Other percentages lightly rebalanced across all 8 domains to make room for Policy's 5% baseline. Totals preserved.
+- `/gse:tests` command description in spec §3 now mentions Policy as a covered test level.
+- `/gse:tests --strategy` Step 1 description updated: test strategy is now derived from **three sources** (validation from REQS, verification from DESIGN, policy from DESIGN+DECISIONS structural rules).
+
+### Rationale
+Observed training feedback (learner05): *"Policy tests don't fit the unit/integration/e2e pyramid. These are real tests that guard the codebase's shape, not its behaviour. Promote to a first-class level."* Matches observed industry practice in mature codebases (ArchUnit in Java, ts-arch in TypeScript, pytest-archon in Python). Making Policy explicit in the pyramid forces honest budgeting at strategy time and surfaces the architecture-enforcement concern that would otherwise stay invisible.
+
 ## [0.34.1] - 2026-04-20
 
 Layers impacted: **spec**, **implementation** (activity preview — documentation clarification only, no new mechanism)

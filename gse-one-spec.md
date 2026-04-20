@@ -1168,7 +1168,7 @@ The agent also creates backlog items **automatically** during other activities (
 | `/gse:reqs` | **Requirements** | Define product functions and qualities (FR & NFR). Begins with conversational elicitation (Step 0) to capture user intent in natural language before formalization. Includes user stories with testable acceptance criteria for validation testing. Ends with a quality assurance checklist (ISO 25010 inspired) verifying NFR completeness and measurability |
 | `/gse:design` | **Design** | Define architecture decisions, component decomposition, interface contracts, **shared state identification** (state that must be consistent across components/pages — mandatory section with an explicit disclaimer if none), and technical choices. Produces design artefacts traced to requirements. All significant choices are logged to the decision journal |
 | `/gse:preview` | **Preview** | Simulate and show what the planned artefacts will look like before building them. Two variants are officially supported and chosen at activity start via a Gate: **(a) static description** (default, any domain) — wireframes, API contracts, component diagrams, user story walkthroughs written into the preview artefact, throwaway; **(b) scaffold-as-preview** (recommended for web/mobile) — minimal runnable project (framework scaffold) that becomes the base for the following `/gse:produce`, with placeholder code marked by `PREVIEW:` comments (idiomatic per language: `//`, `#`, `<!-- -->`) for later replacement. The variant choice is adapted to the project domain (web/mobile → scaffold recommended; api/cli/library/scientific → static recommended). **Sprint-level skip:** PREVIEW is legitimately skipped when the current sprint contains no user-visible or demonstrable task (foundation sprints doing infrastructure only) — recorded in `plan.yaml → workflow.skipped`, no deviation. Preview-ahead (previewing future-sprint tasks from the current sprint) is explicitly NOT supported — PREVIEW is just-in-time. See Section 5. |
-| `/gse:tests` | **Tests** | Define test strategy, write tests, set up test environment, execute test campaigns, and produce test evidence. Covers verification (unit, integration) and validation (acceptance, E2E, visual). Adapts the test pyramid to the project domain. Installs required tools (test frameworks, browsers, coverage tools). Produces test campaign reports with screenshots and optional video. See Section 6 |
+| `/gse:tests` | **Tests** | Define test strategy, write tests, set up test environment, execute test campaigns, and produce test evidence. Covers verification (unit, integration), validation (acceptance, E2E, visual), **policy** (static structural enforcement: architecture layering, license compliance, conventions — see Section 6), and dynamic constraints (accessibility, performance, compatibility). Adapts the test pyramid to the project domain. Installs required tools (test frameworks, browsers, coverage tools). Produces test campaign reports with screenshots and optional video. See Section 6 |
 | `/gse:produce` | **Produce** | **Create feature branch + worktree** for the task, then execute the production plan in the isolated worktree. All code, tests, and docs are committed to the feature branch. Tests are executed after production and results are attached as evidence. |
 | `/gse:deliver` | **Deliver** | **Merge** reviewed feature branches into the sprint branch, merge sprint branch into `main`, tag release, generate changelog. **Optionally deploy:** if `git.post_tag_hook` is configured, execute the deployment command after tagging. If deployment fails, propose rollback (Gate). Clean up branches and worktrees (see Section 10.3) |
 
@@ -1424,18 +1424,20 @@ The `/gse:reqs` activity includes two mechanisms that feed into the test strateg
 
 The agent proposes a test distribution adapted to the project type (from `config.yaml → project.domain`):
 
-| Domain | Unit | Integration | E2E / Visual | Acceptance | Other |
-|--------|------|-------------|--------------|------------|-------|
-| **Web frontend** | 20% | 20% | 30% | 20% | 10% (a11y, perf) |
-| **API backend** | 50% | 25% | 5% | 10% | 10% (load, security) |
-| **CLI tool** | 60% | 20% | 5% | 10% | 5% (compat) |
-| **Data pipeline** | 40% | 30% | 0% | 20% | 10% (data quality) |
-| **Mobile** | 25% | 20% | 30% | 15% | 10% (device compat) |
-| **Library / SDK** | 70% | 20% | 0% | 5% | 5% (compat, docs) |
-| **Embedded** | 50% | 25% | 0% | 10% | 15% (hardware sim) |
-| **Scientific** | 40% | 20% | 0% | 30% | 10% (data quality) |
+| Domain | Unit | Integration | E2E / Visual | Acceptance | Policy | Other |
+|--------|------|-------------|--------------|------------|--------|-------|
+| **Web frontend** | 20% | 20% | 30% | 20% | 5% | 5% (a11y, perf) |
+| **API backend** | 45% | 25% | 5% | 10% | 5% | 10% (load, security) |
+| **CLI tool** | 55% | 20% | 5% | 10% | 5% | 5% (compat) |
+| **Data pipeline** | 35% | 30% | 0% | 20% | 5% | 10% (data quality) |
+| **Mobile** | 20% | 20% | 30% | 15% | 5% | 10% (device compat) |
+| **Library / SDK** | 65% | 20% | 0% | 5% | 5% | 5% (compat, docs) |
+| **Embedded** | 45% | 25% | 0% | 10% | 5% | 15% (hardware sim) |
+| **Scientific** | 35% | 20% | 0% | 30% | 5% | 10% (data quality) |
 
-The **Other** column groups constraint-level tests that don't fit a pyramid level (accessibility, performance, load, compatibility, hardware simulation, data quality). They attach as additional checks on existing test levels rather than forming a new level.
+The **Policy** column — added in v0.35 — groups tests that **enforce structural rules** on the codebase (architecture, licenses, conventions) rather than verify behavior. A policy test scans the static state of the code (imports, dependencies, naming, file size) and produces a deterministic pass/fail that fails CI when a rule is violated. Examples: *"src/domain/** must not import src/ui/**"*, *"no GPL-licensed dependency"*, *"all public functions must have a docstring"*, *"no file > 500 lines"*. Policy tests run fast (static analysis, no runtime) and guard the codebase's **shape**, not its behaviour. The 5% baseline is indicative — projects with strict layered architecture, regulated licensing, or strong convention enforcement may raise it to 10-15%.
+
+The **Other** column groups **dynamic-constraint** tests attached to existing levels: accessibility (attached to E2E), performance / load (attached to integration or E2E), compatibility (attached to E2E across targets), hardware simulation (attached to integration), data quality (attached to integration). Distinction from Policy: Other verifies behavioral constraints under dynamic execution; Policy verifies structural rules via static scan.
 
 The pyramid is a **starting point** — the agent adjusts based on actual project needs and presents deviations as Inform-tier decisions.
 

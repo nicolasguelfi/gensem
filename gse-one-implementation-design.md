@@ -2123,6 +2123,60 @@ At start of `/gse:tests --run` or `/gse:produce`:
 - Compare current framework (from package manifest) with `config.yaml → testing.framework`
 - If different → Inform: "Framework changed from X to Y. Update config?"
 
+**Policy tests — Design Mechanics (spec §6 Policy column):**
+
+Policy tests enforce **structural rules** on the codebase via static analysis. They are a first-class test level in the pyramid (5% baseline, adjustable 10-15% for strict architecture projects), distinct from the Other column which contains dynamic-constraint checks.
+
+**Categories of policy tests:**
+
+| Category | Rule examples |
+|----------|---------------|
+| Architecture layering | `src/domain/** must not import src/ui/**`; `no circular imports`; `public API lives only in src/api/` |
+| License compliance | `no GPL-licensed dependency`; `all deps must have license metadata` |
+| Naming conventions | `all public functions start with lowercase`; `test files match pattern test_*.py` |
+| File / module constraints | `no file > 500 lines`; `no function > 50 lines`; `no module with > 20 imports` |
+| Dependency rules | `no deprecated packages`; `dev deps not imported in src/`; `version pins match policy` |
+| Docstring / documentation | `all public functions must have a docstring`; `all public classes must have an example` |
+
+**Tooling per language (suggestions, not prescriptive):**
+
+| Language | Tools |
+|----------|-------|
+| Python | `pytest-archon` (architecture), `grimp` (import graph), `pip-licenses` (licenses), `ruff` (conventions) |
+| TypeScript / JavaScript | `ts-arch` / `dependency-cruiser` (architecture), `license-checker` (licenses), `eslint` with custom rules |
+| Java | `ArchUnit` (architecture), `license-maven-plugin` (licenses) |
+| Go | `go-arch-lint` (architecture), `go-licenses` |
+| Rust | `cargo-deny` (licenses, deps, advisories), custom macros for architecture |
+| Language-agnostic | Custom grep / AST scanners in shell or Python as CI scripts |
+
+**Integration in `/gse:tests`:**
+
+At strategy definition time (Step 1 of `/gse:tests --strategy`), the agent scans:
+
+- `docs/sprints/sprint-{NN}/design.md` — specifically the *Architecture Overview*, *Component Diagram*, and *Shared State* sections. If layered architecture is documented (e.g., "domain layer / storage layer / UI layer") → propose a policy test enforcing the layering.
+- `docs/sprints/sprint-{NN}/decisions.md` — DEC- entries with architectural rules (e.g., "DEC-005: framework-free domain module") → propose a policy test enforcing the rule.
+- `config.yaml → project.domain` — apply the baseline Policy percentage from the pyramid.
+
+Proposals are presented as Inform-tier suggestions with concrete tool recommendations for the project's language. The user accepts, adjusts, or declines. Each accepted policy test gets its own TST-NNN artefact with `level: policy` in its frontmatter.
+
+**Execution characteristics:**
+
+Policy tests must be:
+- **Fast** — full run in seconds (static scan, no runtime)
+- **Deterministic** — pass/fail is a function of code state, not environment
+- **Actionable on failure** — the message names the violating file + the rule + the fix hint
+
+Run at the same points as other test levels (pre-commit hook, CI pipeline, `/gse:tests --run`). Failures block `/gse:produce` / `/gse:deliver` per the existing test-pass-rate guardrails.
+
+**Why a first-class level and not a subset of Other:**
+
+- **Other** contains *dynamic-constraint* checks attached to behavioral tests (e.g., an E2E test that also measures page load time). It is a modifier on behavioral tests.
+- **Policy** is *purely structural* — no runtime, no behavior involved. It guards the codebase's shape. Confusing the two leads to under-budgeting and invisible architecture erosion.
+
+Making Policy a first-class pyramid column forces its explicit allocation during strategy planning, which matches observed practice in mature codebases (see learner05 training feedback: *"Policy tests are surprisingly cheap and powerful — a ~60-line AST scan permanently enforces architecture decisions"*).
+
+---
+
 **Complexity budget ranges (G-025):**
 Use the spec §8.1 range table. Agent selects within range based on context, presents as Inform. One point captures **coupled effort + complexity for the AI + user pair** (spec P10 / §8.1) with an indicative temporal anchor of 1 pt ≈ 1 pair-session hour. For maintenance work (refactoring, tests, docs, renaming, bug-fixing), apply the **Cost Assessment Grid for Maintenance Work** from spec Appendix B: four criteria (fan-out, review burden, rework risk, coupling) → 0 pt / 1 pt / 2-5 pt per item. The pre-v0.34 "zero-cost items" blanket rule is deprecated — agents must size maintenance activities case-by-case.
 

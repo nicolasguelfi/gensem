@@ -40,9 +40,10 @@ Before executing, read:
 
 ### Step 1 — Strategy (`--strategy`)
 
-**Test strategy is derived from two sources:**
+**Test strategy is derived from three sources:**
 - **Validation tests** (acceptance, E2E) → derived from **REQS acceptance criteria** (Given/When/Then). Each acceptance criterion in `reqs.md` becomes a TST- artefact with `traces.validates: [REQ-NNN]`. These verify the app does what the user asked.
 - **Verification tests** (unit, integration) → derived from **DESIGN decisions** (DES-). These verify the code is built correctly (interfaces, module boundaries, data contracts).
+- **Policy tests** (new in v0.35, spec §6 Policy column) → derived from **structural rules** captured in `design.md` (Component Diagram, Shared State, Architecture Overview) and in `decisions.md` (DEC- entries with architectural intent). These guard the codebase's shape via static analysis (no runtime). Examples: layering enforcement, license compliance, naming conventions, file-size limits. Baseline 5% of the pyramid, raisable to 10-15% for strict-architecture projects.
 
 **Prerequisite:** REQS must exist with testable acceptance criteria. DESIGN should exist if applicable. If either is missing, report and redirect to the missing activity.
 
@@ -94,6 +95,28 @@ REQ-003 — Filter expenses by month
 ```
 
 For beginners: "For each feature you confirmed in the requirements, I'll create a test that checks it works exactly as described."
+
+#### Policy test derivation (from DESIGN and DECISIONS — new in v0.35)
+
+For each structural rule in `design.md` or `decisions.md`, propose a corresponding policy test:
+
+1. **Scan `design.md`** — specifically *Architecture Overview*, *Component Diagram*, and *Shared State* sections. If layered architecture is documented (e.g., "domain layer / storage layer / UI layer"), propose a policy test enforcing the layering.
+2. **Scan `decisions.md`** — DEC- entries with architectural intent (e.g., *"DEC-005: framework-free domain module"*). Each such decision becomes a candidate policy test.
+3. **Apply domain baseline** — read `config.yaml → project.domain` and use the Policy percentage from the spec §6.1 pyramid (default: 5%). Adjust upward if the project has strict architecture or licensing requirements.
+
+**Proposals are Inform-tier** — each candidate policy test is presented with:
+- The rule being enforced (one sentence)
+- The source (DEC-NNN or design section)
+- A concrete tool recommendation based on the project language (see the design doc "Policy tests — Design Mechanics" table: `pytest-archon` for Python, `ts-arch` for TypeScript, `ArchUnit` for Java, etc.)
+
+The user accepts, adjusts, or declines each proposal. Each accepted policy test gets its own TST-NNN artefact with `level: policy` in its frontmatter and `traces: { enforces: [DEC-NNN, design-section-ref] }`.
+
+**Policy tests must be:**
+- **Fast** — full run in seconds (static scan, no runtime)
+- **Deterministic** — pass/fail is a function of code state, not environment
+- **Actionable on failure** — the error message names the violating file + the rule + a fix hint
+
+They run at the same trigger points as other test levels (pre-commit hook, CI, `/gse:tests --run`).
 
 #### Quality-driven tests (from REQS quality checklist)
 

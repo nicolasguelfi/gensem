@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.37.4] - 2026-04-20
+
+Layers impacted: **design**, **implementation** (generator, config template, integrate/compound, orchestrator)
+
+### Fixed
+- **Upstream repository URL corrected.** The hardcoded manifest URL pointed to `https://github.com/gse-one/gse-one` (non-existent) — replaced by the real upstream `https://github.com/nicolasguelfi/gensem` via a new `UPSTREAM_REPO` constant in `gse_generate.py` (single source of truth, propagated to all three manifests). Observed impact: `/gse:integrate` Axe 2 could not submit methodology feedback (learner10 training session hit the dead URL).
+- **opencode manifest gained the repository field.** `opencode.json` now carries `gse.repository` alongside `gse.version`, so `/gse:integrate` Axe 2 works uniformly on opencode. Previously the Axe 2 flow was silently disabled on opencode because the methodology mandated reading `plugin.json → repository`, a file absent on that platform.
+
+### Added
+- **User-level override for the feedback target** — new `github.upstream_repo` field in `config.yaml` (default empty). When set, it takes precedence over the plugin manifest. Supports private forks, corporate issue trackers, and training-environment redirections without editing the shipped plugin.
+- **Formal resolution order** for Axe 2 documented in `orchestrator.md`, `integrate.md`, `compound.md`, and `gse-one-implementation-design.md`: (1) `config.yaml → github.upstream_repo` if set, (2) plugin manifest (`plugin.json → repository` on Claude/Cursor, `opencode.json → gse.repository` on opencode), (3) skip Axe 2 with an Inform note.
+- **Privacy acknowledgment strengthened in the final submission Gate.** The Gate before `gh issue create` now states explicitly that issues are public and visible to anyone with repo access, surfacing consequences before submission (P4 consequence visibility).
+
+### Rationale
+Learner10 deferred methodology feedback during `/gse:integrate` because the repo URL failed to resolve. Initial analysis proposed adding a new `upstream.issues_url` field, but a critical relecture found that the `repository` field already existed in plugin manifests and was referenced by the methodology — the real problems were (a) a hardcoded wrong URL in the generator, (b) opencode missing the field entirely, and (c) no user-facing override for environments where the default target isn't appropriate. Alt. B — fix the three defects without duplicating existing infrastructure — was preferred to Alt. A (new field) to avoid semantic duplication with `repository`. The override field (`github.upstream_repo`) addresses the remaining methodological gap: users can redirect feedback without patching shipped files.
+
 ## [0.37.3] - 2026-04-20
 
 Layers impacted: **design**, **implementation** (`/gse:preview` scaffold-as-preview variant)

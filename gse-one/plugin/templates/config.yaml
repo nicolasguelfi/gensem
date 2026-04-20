@@ -85,8 +85,13 @@ github:
   repo: ""                             # auto-detected from git remote
   sync_mode: manual                    # manual | on-activity | real-time
   auto_close_on_deliver: true          # close linked issues when TASK is delivered
-  # Methodology feedback (COMPOUND Axe 2) targets the GSE-One plugin repo,
-  # read from plugin.json → repository. Not configured here.
+  # Methodology feedback (COMPOUND Axe 2) targets the GSE-One plugin repo.
+  # Resolution order at /gse:integrate Axe 2: (1) upstream_repo below if set,
+  # (2) plugin manifest — plugin.json → repository on Claude/Cursor,
+  # opencode.json → gse.repository on opencode, (3) skip Axe 2 with an Inform note.
+  upstream_repo: ""                    # optional override — e.g., "owner/fork-name"
+                                       # or a full URL. Use for private trackers,
+                                       # personal forks, or corporate environments.
 
 # --- Section 11: Testing ---
 testing:

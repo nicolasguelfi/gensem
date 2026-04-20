@@ -26,7 +26,7 @@ Before executing, read:
 2. `.gse/config.yaml` — project configuration
 3. `.gse/profile.yaml` — user profile, competency map
 4. `docs/sprints/sprint-{NN}/compound.md` — capitalization output (source of solutions)
-5. `gse-one/plugin.json` — repository URL for methodology issues (Axe 2)
+5. Upstream repository URL for methodology issues (Axe 2). **Resolution order:** (1) `config.yaml → github.upstream_repo` if set (user override — private forks, corporate trackers), (2) plugin manifest (`plugin.json → repository` on Claude/Cursor; `opencode.json → gse.repository` on opencode), (3) skip Axe 2 with an Inform note.
 
 ## Workflow
 
@@ -57,13 +57,13 @@ Route methodology feedback to the GSE-One repository. This step consumes the tic
    - **If the file is absent** (user chose option 1 "local export only" in COMPOUND, or COMPOUND was skipped): skip this step with an Inform note: *"No GitHub ticket proposals to process — Axe 2 handoff file absent."*
    - **If the file is present**: proceed.
 
-2. **Final confirmation Gate** — list the approved tickets one last time (title + label + one-line body preview) and ask: *"Submit {N} methodology issues to the GSE-One repository ({repo_url})?"*
+2. **Final confirmation Gate (public submission — privacy acknowledgment).** List the approved tickets one last time (title + label + one-line body preview) and state explicitly that submission will create **public issues** on the resolved repository. Ask: *"Submit {N} methodology issues to the upstream repository ({repo_url})? Note: issues are public and visible to anyone with access to the repo."*
    - Options: *Submit all* / *Review individually again* / *Cancel* / *Discuss*.
 
-3. **On submission**, for each approved ticket:
+3. **On submission**, for each approved ticket (using the repository resolved per Prerequisite 5):
    ```
    gh issue create \
-     --repo {repository_from_plugin.json} \
+     --repo {resolved_upstream_repo} \
      --title "{title}" \
      --body "{body}" \
      --label "{label}"

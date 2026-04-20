@@ -127,7 +127,7 @@ into {M} themes. How should I route them?
 
 **If no observations were gathered** (rare, but possible on a smooth sprint) → skip the Gate silently with: *"No methodology observations worth escalating this sprint."*
 
-**If the user has opted out of upstream feedback** (e.g., `github.enabled: false` in `config.yaml`, or `plugin.json` has no `repository` field) → options 2 and 3 are hidden; only option 1 (local export) is offered.
+**If no upstream repository resolves** (resolution order: `config.yaml → github.upstream_repo` → plugin manifest `repository` field → none) **or** if `config.yaml → github.enabled: false` → options 2 and 3 are hidden; only option 1 (local export) is offered.
 
 #### 2.4 — On option 1 or 3 (local export)
 

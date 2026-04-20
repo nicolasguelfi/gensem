@@ -1,5 +1,5 @@
 <!-- GSE-ONE START -->
-<!-- gse-one-version: 0.37.3 -->
+<!-- gse-one-version: 0.37.4 -->
 # GSE-One Methodology (opencode edition)
 
 This section is managed by GSE-One. Edit `gse-one/src/` and regenerate — do not hand-edit between the START/END markers.
@@ -502,6 +502,6 @@ Both files are written atomically at each transition — complementary, never du
 
 ## Methodology Feedback
 
-For COMPOUND Axe 2, read the plugin manifest (plugin.json > repository) to find the GSE-One repo URL for issue creation.
+For COMPOUND Axe 2, resolve the upstream repository URL in order: (1) `config.yaml → github.upstream_repo` if set, (2) plugin manifest — `plugin.json → repository` on Claude/Cursor, `opencode.json → gse.repository` on opencode, (3) skip Axe 2 with an Inform note. The Gate before `gh issue create` must state that submission is public (privacy acknowledgment).
 
 <!-- GSE-ONE END -->

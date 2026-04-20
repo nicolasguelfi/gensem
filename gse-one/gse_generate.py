@@ -84,6 +84,12 @@ PLUGIN_DESCRIPTION = (
     "worktree isolation."
 )
 
+# Canonical upstream repository URL — single source of truth.
+# Propagated to all platform manifests (Claude plugin.json, Cursor plugin.json,
+# opencode.json under the `gse` key) so that /gse:integrate Axe 2 can resolve
+# the methodology feedback target uniformly across platforms.
+UPSTREAM_REPO = "https://github.com/nicolasguelfi/gensem"
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -266,7 +272,7 @@ def generate(clean: bool = False) -> None:
         "description": PLUGIN_DESCRIPTION,
         "version": VERSION,
         "author": {"name": "GSE-One Project"},
-        "repository": "https://github.com/gse-one/gse-one",
+        "repository": UPSTREAM_REPO,
         "skills": "./skills/",
         "agents": "./agents/",
         "hooks": "./hooks/hooks.claude.json",
@@ -280,7 +286,7 @@ def generate(clean: bool = False) -> None:
         "description": PLUGIN_DESCRIPTION,
         "version": VERSION,
         "author": {"name": "GSE-One Project"},
-        "repository": "https://github.com/gse-one/gse-one",
+        "repository": UPSTREAM_REPO,
         "commands": "./commands/",
         "agents": "./agents/",
         "rules": "./rules/",
@@ -672,7 +678,8 @@ def _oc_build_config_json(oc: Path) -> None:
             }
         },
         "gse": {
-            "version": VERSION
+            "version": VERSION,
+            "repository": UPSTREAM_REPO
         }
     }
     write_file(oc / "opencode.json", json.dumps(config, indent=2) + "\n")

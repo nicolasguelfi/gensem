@@ -67,7 +67,7 @@ gse-one/
 
 ### 3.2 Plugin Manifests
 
-Both platforms use separate manifests with slightly different fields. The `repository` field is the **source of truth** for methodology feedback (COMPOUND Axe 2) — the agent reads this URL to create issues on the GSE-One repo. It is NOT configured in the user's `.gse/config.yaml`.
+Both platforms use separate manifests with slightly different fields. The `repository` field is the **canonical default** for methodology feedback (COMPOUND Axe 2) — the agent reads this URL to create issues on the GSE-One repo. On opencode the equivalent lives at `opencode.json → gse.repository` (same constant, different manifest schema). The canonical default can be **overridden** by the user via `config.yaml → github.upstream_repo` (e.g., for private forks or corporate issue trackers). Full resolution order: `config.yaml → github.upstream_repo` → plugin manifest `repository` → skip Axe 2.
 
 **Claude Code manifest** (`.claude-plugin/plugin.json`):
 
@@ -1920,6 +1920,8 @@ for each proposed_theme:
 **Link with `/gse:integrate` Axe 2:**
 
 Compound prepares the tickets as a draft set (stored transiently in `.gse/compound-tickets-draft.yaml` for handoff). `/gse:integrate` Axe 2 reads this file and executes the user-approved `gh issue create` calls. No change to integrate's skeleton — just the input quality is now higher.
+
+**Upstream repository resolution (Axe 2):** the target repository for `gh issue create` is resolved in order: (1) `config.yaml → github.upstream_repo` if non-empty (user override — private forks, corporate trackers), (2) plugin manifest — `plugin.json → repository` on Claude/Cursor, `opencode.json → gse.repository` on opencode (canonical default shipped with the plugin), (3) if neither resolves, `/gse:compound` Axe 2 hides the ticket-proposal options and only offers the local export. The final Gate before `gh issue create` must state explicitly that GitHub issues are public (privacy acknowledgment — cf. P4 consequence visibility).
 
 **Configuration:**
 

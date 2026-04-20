@@ -1185,7 +1185,7 @@ The agent also creates backlog items **automatically** during other activities (
 
 | Command | Activity | Description |
 |---------|----------|-------------|
-| `/gse:deploy` | **Deploy** | Deploy the current project to a Hetzner server via Coolify. Adapts to the user's situation: from zero infrastructure (solo) to a pre-configured shared server (training). Handles provisioning, server hardening, Coolify installation, DNS/SSL, and application deployment in a single guided flow. Options: `--status` (show state), `--redeploy` (force rebuild), `--destroy` (tear down, double Gate), `--registrar <name>` (registrar-specific DNS instructions), `--training-init` (instructor: generate `.env.training`), `--training-reap` (instructor: clean learner apps), `--help`. See `src/activities/deploy.md` for the full workflow. |
+| `/gse:deploy` | **Deploy** | Deploy the current project to a Hetzner server via Coolify. Adapts to the user's situation: from zero infrastructure (solo) to a pre-configured shared server (training). Handles provisioning, server hardening, Coolify installation, DNS/SSL, and application deployment in a single guided flow. First-time users are greeted by a **Step -1 Orientation** that identifies their role (Solo / Instructor / Learner) and tailors the subsequent flow. Options: `--status` (show state), `--redeploy` (force rebuild), `--destroy` (tear down, double Gate), `--registrar <name>` (registrar-specific DNS instructions), `--training-init` (instructor: generate `.env.training`), `--training-reap` (instructor: clean learner apps), `--silent` (skip Step -1 for scripting), `--help`. See `src/activities/deploy.md` for the full workflow. |
 
 ### 3.9 Capitalization
 

@@ -2322,6 +2322,8 @@ This section documents the design of the `/gse:deploy` activity introduced at th
 
 The maintenance cost (occasional upstream drift in Coolify API, DNS registrar UIs, hcloud CLI install paths) is absorbed by a documented contribution workflow (README → Deployment → Maintaining upstream compatibility). This is the explicit trade-off: accept bounded maintenance work in exchange for determinism.
 
+**Onboarding orientation (Step -1).** `/gse:deploy` starts with a pre-flight orientation that triggers only for first-time users (detected by absence of `.gse/deploy.json` AND absence of any deploy-related env vars: `HETZNER_API_TOKEN`, `SERVER_IP`, `COOLIFY_URL`, `COOLIFY_API_TOKEN`, `DEPLOY_DOMAIN`, `DEPLOY_USER`). The orientation displays a 4-option menu identifying the user's role: **Solo** (deploying own project to own server), **Instructor** (preparing a shared training server), **Learner** (using an instructor-provided `.env.training`), or **Skip** (experienced user). Based on the answer, the skill gives a role-appropriate briefing (estimated duration, cost, next actions) and persists the role via `deploy.py record-role`. For Learner role, two preconditions are verified (`.env` copied from `.env.training`, `DEPLOY_USER` set) before proceeding. The `--silent` flag bypasses Step -1 entirely (for scripting, CI, or experienced users who don't need orientation). The role persists in `deploy.json → user_role` and can be used by future invocations to adapt communication tone — though v1 only records; no behavioral branching beyond Step -1.
+
 **Subdomain derivation.** `/gse:deploy` derives the public subdomain for a deployed application as follows:
 
 - **Solo mode** (no `DEPLOY_USER` in `.env`): `{project-name}.{DEPLOY_DOMAIN}`

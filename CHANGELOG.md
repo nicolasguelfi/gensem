@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.43.0] - 2026-04-21
+
+Layers impacted: **spec**, **design**, **implementation**, **tools**, **tests**, **docs**
+
+### Added
+- **Step -1 Orientation in `/gse:deploy`** — first-time users are greeted by a 4-option menu that identifies their role (Solo / Instructor / Learner / Skip). Each role triggers a tailored briefing (estimated duration, cost, next actions) before proceeding to Step 0. Integrated directly into `/gse:deploy` (single command to remember) rather than `/gse:hug`, for novice-friendly discoverability.
+- **`user_role` field in `.gse/deploy.json`** — persists `"solo"`, `"instructor"`, `"learner"`, or `""` (if Skip/--silent). Purely informational in v1; no behavioral branching beyond Step -1.
+- **`deploy.py record-role <role>`** subcommand — CLI handler invoked by the skill to persist the role with validation (VALID_ROLES = {solo, instructor, learner}).
+- **`--silent` flag** on `/gse:deploy` — skips Step -1 entirely (for scripting, CI, or experienced users). Keeps all other Gates (costly operations, destroy confirmations).
+- **Learner preconditions** — for role 3, the skill verifies (a) `.env.training` was copied to `.env`, (b) `DEPLOY_USER` is set, before proceeding. Exits with clear instructions if not.
+- **5 new unit tests** (`RecordRoleTests`): empty-state shape includes `user_role`, record_role for each of 3 valid roles persists correctly, invalid role returns `status: "error"`. Total: 49 tests.
+
+### Changed
+- **`/gse:deploy --help`** reformatted with a "Who are you?" role-first narrative (3 paragraphs: Solo / Instructor / Learner) followed by the full Options table. Novices see their relevant flow first.
+- **README "Deployment" section** simplified: the long 3-situations paragraph is replaced by a concise "Just run `/gse:deploy`" pointer to the Step -1 Orientation, plus the 4 role summary lines.
+- **Spec §1.6 `/gse:deploy` row** extended to mention Step -1 and the `--silent` flag.
+- **Design §5.18** new subsection "Onboarding orientation (Step -1)" documenting the trigger conditions, the 4-option menu, the role-based routing, and the `--silent` bypass.
+- **`src/templates/deploy.json`** schema: added `user_role: ""` field between `last_updated_at` and `phases_completed`.
+- **`plugin/tools/deploy.py`** — added `VALID_ROLES`, `record_role()`, CLI handler, subparser, and `user_role` to `_empty_state()`.
+
+### Design decision
+The onboarding was integrated directly into `/gse:deploy` (not into `/gse:hug`) because novices looking to deploy will naturally type the deploy command first. Separating onboarding from action would fragment the UX, especially for instructors briefing learners ("just run /gse:deploy" stays a one-sentence instruction). The slight entorse to the "onboarding = hug" convention is justified by significantly better discoverability and cohesion.
+
 ## [0.42.0] - 2026-04-21
 
 Layers impacted: **spec**, **design**, **implementation**, **tools**, **tests**, **docs**

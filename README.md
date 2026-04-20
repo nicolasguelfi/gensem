@@ -303,11 +303,16 @@ The GSE-One agent should respond, detect the project state and propose the next 
 
 ## Deployment
 
-GSE-One includes `/gse:deploy` — a single-command deployment flow that provisions a Hetzner Cloud server, installs Coolify v4, configures DNS + SSL, and deploys the current project. It adapts to three situations:
+GSE-One includes `/gse:deploy` — a single-command deployment flow that provisions a Hetzner Cloud server, installs Coolify v4, configures DNS + SSL, and deploys the current project.
 
-- **Solo** — you have nothing; the command walks you through every phase (provision → secure → install-coolify → configure-domain → deploy)
-- **Partial** — you already have a server; the command skips what's done
-- **Training** — the instructor has set up a shared server; learners only run Phase 6 (deploy their own app under `{user}-{project}.{domain}`)
+**Just run `/gse:deploy`.** On first use, the command displays a Step -1 Orientation menu and asks whether you are:
+
+- **Solo** — deploying your own project to your own server (~1h setup, ~8.49 EUR/month)
+- **Instructor** — preparing a shared training server, then distributing `.env.training` to learners (~1h setup)
+- **Learner** — your instructor sent you a `.env.training` file (~5 min to deploy your app)
+- **Skip** — experienced user, proceed directly to detection
+
+The orientation tailors the subsequent 6-phase flow to your role. For scripting or experienced users, `/gse:deploy --silent` skips the orientation and goes straight to detection.
 
 See `gse-one-implementation-design.md` §5.18 for the full design.
 

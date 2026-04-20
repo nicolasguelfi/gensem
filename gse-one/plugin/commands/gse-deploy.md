@@ -17,6 +17,7 @@ Arguments: $ARGUMENTS
 | --destroy | Tear down server and all data (Gate, confirm twice) |
 | --redeploy | Force rebuild and redeploy (skip infrastructure phases) |
 | --registrar `<name>` | Show DNS instructions for a specific registrar (`namecheap`, `gandi`, `ovh`, `cloudflare`) without re-running earlier phases |
+| --silent | Skip the Step -1 Orientation (for scripting/CI or experienced users) |
 | --training-init | (Instructor) Generate `.env.training` for distribution to learners |
 | --training-reap | (Instructor) Delete learner apps at end of course |
 | --help | Show this command's usage summary |
@@ -33,6 +34,59 @@ Read before execution:
 7. `$(cat ~/.gse-one)/references/ssh-operations.md` — SSH patterns and credential resolution (consulted on demand)
 
 ## Workflow
+
+### Step -1 — Orientation (first-time users only)
+
+**Skip this step if ANY of the following is true:**
+- The `--silent` flag was passed
+- `.gse/deploy.json` already exists
+- Any of these env vars are set in `.env`: `HETZNER_API_TOKEN`, `SERVER_IP`, `COOLIFY_URL`, `COOLIFY_API_TOKEN`, `DEPLOY_DOMAIN`, `DEPLOY_USER`
+
+Otherwise (first-time user), display:
+
+> Welcome to `/gse:deploy`. This command provisions infrastructure and deploys your project. First, let me understand your situation:
+>
+>   (1) **Solo** — Deploy my own project to my own Hetzner server. (~1h first time, ~8.49 EUR/month ongoing. You'll need a Hetzner account and optionally a domain.)
+>
+>   (2) **Instructor** — Prepare a shared server for a training session. (~1h setup, then distribute a `.env.training` file to learners. Reap at course end.)
+>
+>   (3) **Learner** — My instructor sent me a `.env.training` file to use. (~5 min. You only deploy your project, no server setup.)
+>
+>   (4) **Skip** — I know what I'm doing, proceed to detection.
+>
+> Which are you? [1/2/3/4]
+
+Wait for the user's answer, then route:
+
+**(1) Solo** — Persist role and brief:
+```
+python3 "$(cat ~/.gse-one)/tools/deploy.py" record-role solo
+```
+Say: *"You'll go through 6 phases: installing the hcloud CLI, creating a Hetzner server, hardening it, installing Coolify, configuring DNS/SSL, and deploying your project. I'll guide you at each step. Type 'ready' to begin."*
+Wait for confirmation → proceed to Step 0.
+
+**(2) Instructor** — Persist role and brief:
+```
+python3 "$(cat ~/.gse-one)/tools/deploy.py" record-role instructor
+```
+Say: *"I'll walk you through the full 6-phase setup (same as Solo mode), then help you generate a `.env.training` file with `--training-init` to distribute to your learners. At the end of the course, run `/gse:deploy --training-reap --all` to clean up all learner apps. Ready to start the server setup?"*
+Wait for confirmation → proceed to Step 0.
+
+**(3) Learner** — Two precondition checks:
+1. Ask: *"Have you copied the `.env.training` file your instructor sent you into your project directory as `.env`? (y/n)"*
+   - If no: *"Please do that first (`cp .env.training .env` in your project). Then re-run `/gse:deploy`."* → Exit.
+2. Ask: *"Have you set `DEPLOY_USER` to your learner ID in the `.env` file? (y/n)"*
+   - If no: *"Open `.env` in your editor, set `DEPLOY_USER=<your-learner-id>`, save, and re-run `/gse:deploy`."* → Exit.
+3. Persist role:
+   ```
+   python3 "$(cat ~/.gse-one)/tools/deploy.py" record-role learner
+   ```
+4. Say: *"I'll detect your instructor's shared server from the training config and deploy your project at `{DEPLOY_USER}-{project-name}.{DEPLOY_DOMAIN}`. Expected duration: ~5 minutes."*
+5. Proceed to Step 0 (will detect app-only mode → Phase 6).
+
+**(4) Skip** — No role persistence. Proceed directly to Step 0.
+
+---
 
 ### Step 0 — Situation Detection
 
@@ -628,8 +682,18 @@ The `gse` solo project (instructor's own apps) is **never** touched by `--traini
 
 When invoked with `--help`:
 
-Display the Options table and a short hint:
+Display a role-first narrative, then the Options table:
 
-> Run `/gse:deploy` without arguments to start (or resume) a deployment. Use `--status` to inspect current state, `--redeploy` to force a rebuild of an existing application, or `--destroy` to tear everything down.
+> **Who are you?**
+>
+> - **Solo user** → Run `/gse:deploy` (no args). First run walks you through 6 phases (setup, provision, secure, Coolify, DNS, deploy). Expect ~1h first time, ~8.49 EUR/month ongoing.
+>
+> - **Instructor** → Run `/gse:deploy` once to set up a shared server. Then `/gse:deploy --training-init` to generate `.env.training` for distribution to learners. At course end, `/gse:deploy --training-reap --all`.
+>
+> - **Learner** → Copy the `.env.training` file your instructor sent into your project as `.env`, set `DEPLOY_USER=<your-id>`, then run `/gse:deploy`. Takes ~5 minutes.
+>
+> All commands support `--status` (inspect state), `--redeploy` (force rebuild), `--destroy` (tear down, double Gate), `--silent` (skip orientation for scripting).
+
+Then display the full Options table.
 
 If `config.yaml → deploy.app_type` is set to a specific value (not `auto`), also mention which Dockerfile template would be used (e.g., *"Current app_type: `python` → will use Dockerfile.python"*).

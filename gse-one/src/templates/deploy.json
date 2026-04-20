@@ -3,6 +3,7 @@
   "plugin": "gse-one",
   "created_at": "",
   "last_updated_at": "",
+  "user_role": "",
 
   "phases_completed": {
     "setup": "",

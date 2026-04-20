@@ -364,5 +364,40 @@ class CostHintTests(unittest.TestCase):
         self.assertIn("unknown", deploy._cost_hint(""))
 
 
+class RecordRoleTests(unittest.TestCase):
+    def setUp(self):
+        self.dir = Path(tempfile.mkdtemp())
+        self.addCleanup(lambda: shutil.rmtree(self.dir))
+        self._prev_cwd = os.getcwd()
+        os.chdir(self.dir)
+
+    def tearDown(self):
+        os.chdir(self._prev_cwd)
+
+    def test_user_role_in_empty_state(self):
+        s = deploy._empty_state()
+        self.assertIn("user_role", s)
+        self.assertEqual(s["user_role"], "")
+
+    def test_record_solo(self):
+        r = deploy.record_role("solo")
+        self.assertEqual(r["status"], "ok")
+        self.assertEqual(r["role"], "solo")
+        self.assertEqual(deploy.load_state()["user_role"], "solo")
+
+    def test_record_instructor(self):
+        deploy.record_role("instructor")
+        self.assertEqual(deploy.load_state()["user_role"], "instructor")
+
+    def test_record_learner(self):
+        deploy.record_role("learner")
+        self.assertEqual(deploy.load_state()["user_role"], "learner")
+
+    def test_invalid_role_rejected(self):
+        r = deploy.record_role("guest")
+        self.assertEqual(r["status"], "error")
+        self.assertIn("invalid role", r["error"])
+
+
 if __name__ == "__main__":
     unittest.main()

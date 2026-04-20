@@ -48,6 +48,8 @@ SUBDOMAIN_COMPONENT_MAX = 30
 
 PHASE_NAMES = {"setup", "provision", "secure", "coolify", "dns"}
 
+VALID_ROLES = {"solo", "instructor", "learner"}
+
 DEFAULT_HEALTH_CHECK_PATHS = {
     "streamlit": "/_stcore/health",
     "python": "/",
@@ -89,6 +91,7 @@ def _empty_state() -> dict:
         "plugin": "gse-one",
         "created_at": _now(),
         "last_updated_at": _now(),
+        "user_role": "",
         "phases_completed": {
             "setup": "",
             "provision": "",
@@ -372,6 +375,26 @@ def record_domain(base: str, registrar: str = "") -> dict:
     state["domain"] = {"base": base, "registrar": registrar}
     save_state(state)
     return state["domain"]
+
+
+def record_role(role: str) -> dict:
+    """Persist the user role in state (solo | instructor | learner).
+
+    Called by the skill's Step -1 Orientation once the user selects their
+    role. The role is purely informational in v1 — no behavioral branching
+    beyond Step -1.
+    """
+    if role not in VALID_ROLES:
+        return {
+            "status": "error",
+            "error": f"invalid role '{role}'. Must be one of: {sorted(VALID_ROLES)}",
+        }
+    if not STATE_PATH.exists():
+        init_state()
+    state = load_state()
+    state["user_role"] = role
+    save_state(state)
+    return {"status": "ok", "role": role}
 
 
 def record_cdn(provider: str, enabled: bool, bot_protection: bool = False) -> dict:
@@ -1399,6 +1422,13 @@ def _cmd_record_domain(args: argparse.Namespace) -> None:
     _json_out(record_domain(args.base, args.registrar or ""))
 
 
+def _cmd_record_role(args: argparse.Namespace) -> None:
+    result = record_role(args.role)
+    _json_out(result)
+    if result.get("status") != "ok":
+        sys.exit(2)
+
+
 def _cmd_record_cdn(args: argparse.Namespace) -> None:
     _json_out(
         record_cdn(
@@ -1521,6 +1551,12 @@ def _build_parser() -> argparse.ArgumentParser:
     p_rd.add_argument("--base", required=True)
     p_rd.add_argument("--registrar", default="")
 
+    p_rrole = sub.add_parser(
+        "record-role",
+        help="Persist user role in state (solo | instructor | learner)",
+    )
+    p_rrole.add_argument("role", choices=sorted(VALID_ROLES))
+
     p_rcdn = sub.add_parser("record-cdn", help="Update cdn block")
     p_rcdn.add_argument("--provider", required=True, help="e.g. cloudflare | none")
     p_rcdn.add_argument("--enabled", action="store_true", help="CDN active")
@@ -1622,6 +1658,7 @@ _COMMANDS = {
     "record-server": _cmd_record_server,
     "record-coolify": _cmd_record_coolify,
     "record-domain": _cmd_record_domain,
+    "record-role": _cmd_record_role,
     "record-cdn": _cmd_record_cdn,
     "wait-dns": _cmd_wait_dns,
     "preflight": _cmd_preflight,

@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.34.1] - 2026-04-20
+
+Layers impacted: **spec**, **implementation** (activity preview — documentation clarification only, no new mechanism)
+
+### Added
+- **Sprint-level skip condition for PREVIEW** (AMÉL-11 from training feedback, documentation clarification). When the current sprint contains no task producing a user-visible or demonstrable artefact (foundation sprints doing infrastructure, reqs, design, tests only), PREVIEW is legitimately skipped. Recorded in `plan.yaml → workflow.skipped` with reason *"no user-visible tasks in this sprint — preview will apply in a future sprint when demonstrable work is scheduled"*. Standard skip, no DEC- created.
+- Explicit anti-pattern documented: **preview-ahead is NOT supported**. Tasks scheduled for future sprints must not be previewed during the current sprint's PREVIEW. Rationale: staleness risk if target scope evolves, blurred sprint boundaries, traceability disruption. PREVIEW is just-in-time.
+
+### Changed
+- `/gse:preview` Step 1 enriched with the skip condition and the anti-preview-ahead rule.
+- Spec §3 `/gse:preview` command description mentions the skip and the anti-preview-ahead rule.
+
+### Rationale
+Observed training feedback (learner05): *"PREVIEW in a foundation-only sprint is semantically odd — there's no UI code in Sprint 1 to preview. Solution: preview the Sprint 2 screens during Sprint 1."* After analysis, the just-in-time principle is more aligned with the methodology than preview-ahead: each sprint runs its own PREVIEW when it contains the tasks concerned. The skip is the clean, faithful answer — zero new mechanism introduced.
+
 ## [0.34.0] - 2026-04-20
 
 Layers impacted: **spec**, **design**, **implementation** (P10 principle + activity plan + config template)

@@ -43,6 +43,10 @@ For each planned task in the current sprint, determine the appropriate preview t
 | User-facing feature | **Feature preview** | User story walkthrough OR scaffold (see Step 1.5) |
 | External source import | **Import preview** | Side-by-side original vs planned |
 
+**Sprint-level skip condition (foundation sprints and similar):** if the current sprint contains **no task that produces a user-visible or demonstrable artefact** — i.e., all tasks are of type `requirement`, `design`, `test`, `doc`, `config`, or infrastructure code with no exposed surface — then PREVIEW is legitimately skipped for this sprint. The agent adds `preview` to `plan.yaml → workflow.skipped` with the reason *"no user-visible tasks in this sprint — preview will apply in a future sprint when demonstrable work is scheduled"*. This is a **standard skip**, not a methodology deviation — no DEC- is created.
+
+**Do NOT preview-ahead.** Tasks scheduled for future sprints (in the backlog pool or assigned to a later sprint) must not be previewed during the current sprint's PREVIEW step. Each sprint runs its own PREVIEW when it contains the relevant tasks. Previewing ahead introduces staleness (if the target sprint's scope evolves) and blurs sprint boundaries (PREVIEW artefact of Sprint N describing Sprint N+1 work disrupts traceability). PREVIEW is a *just-in-time* activity, performed when the sprint actually contains what is being previewed.
+
 ### Step 1.5 — Preview Variant Selection (Gate, spec §3 + design Preview Variants)
 
 Before generating previews, the agent presents a Gate to select the preview variant, applied uniformly to the UI / feature-walkthrough previews of this sprint. Other preview types (API, architecture, data, import) remain static — they don't benefit from a scaffold.

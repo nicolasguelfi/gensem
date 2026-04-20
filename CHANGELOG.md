@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.38.0] - 2026-04-20
+
+Layers impacted: **milestone** (no code / spec / design changes)
+
+### Milestone
+- **Closure of the 20-AMÉL training-feedback cycle.** Improvements derived from the DLH training sessions (12 learners × 3 days) have been processed end-to-end from v0.23.0 to v0.37.4. Summary of the cycle:
+
+  | AMÉL | Version | Commit | Summary |
+  |---|---|---|---|
+  | 01 | v0.23.0 | `b6f76e4` | Sprint Freeze guardrail |
+  | 02 | v0.24.0 | `5d9a501` | Automatic dashboard regeneration via editor hooks |
+  | 03 | v0.26.0 | `0206978` | Root-Cause Discipline guardrail (P16) |
+  | 04 | v0.25.0 | `53d111d` | Git Identity Verification guardrail |
+  | 05 | v0.27.0 | `67aa68e` | Scope Reconciliation + Inform-Tier Summary (absorbs AMÉL-17) |
+  | 06 | v0.32.0 | `a7aca0e` | Shared State section in design artefact |
+  | 07 | v0.28.0 | `9846172` | Intent Capture for greenfield projects |
+  | 08 | v0.29.0 | `d013d6d` | Open Questions + activity-entry scan |
+  | 09 | v0.33.0 | `37bf6ff` | Scaffold-as-preview variant |
+  | 10 | v0.34.0 | `910934d` | Unified complexity-point semantics |
+  | 11 | v0.34.1 | `a1ecc3e` | Preview skip condition + anti-preview-ahead rule |
+  | 12 | v0.30.0 | `544766f` | Config Application Transparency |
+  | 13 | v0.35.0 | `95e4ffd` | Policy tests as first-class pyramid level |
+  | 14 | v0.31.0 | `fc85447` | Methodology feedback via compound Axe 2 |
+  | 15 | v0.36.0 | `661c247` | Tutor specialized agent (superseded by v0.37.0) |
+  | 16 | v0.37.0 | `84a6684` | Unified coach agent (pedagogy + workflow, 8 axes) |
+  | 17 | (v0.27.0) | `67aa68e` | Absorbed by AMÉL-05 |
+  | 18 | v0.37.2 | `bacc968` | Framework isolation check in `architect` agent |
+  | 19 | v0.37.3 | `e6d373e` | Connectivity preflight for scaffolders |
+  | 20 | v0.37.4 | `78c8397` | Upstream repo resolution + URL fix |
+
+  Additional in-cycle fixes: v0.37.1 (`9198e4b`) generator `--clean` preserves `plugin/tools/`.
+
 ## [0.37.4] - 2026-04-20
 
 Layers impacted: **design**, **implementation** (generator, config template, integrate/compound, orchestrator)

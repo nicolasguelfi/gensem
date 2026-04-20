@@ -70,6 +70,7 @@ Rules for decomposition:
 - Dependencies flow from volatile to stable (never reverse)
 - Components communicate through explicit interfaces (no direct field access)
 - Circular dependencies are forbidden (hard guardrail)
+- When a heavy UI or I/O framework is in scope (Streamlit, React, Next.js, Django, Flask, FastAPI, …), the agent (via the `architect` checklist) checks whether a framework-free domain module is warranted and, if so, proposes a DEC + a policy test enforcing the import boundary
 
 ### Step 2.5 — Shared State Identification
 

@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.37.2] - 2026-04-20
+
+Layers impacted: **implementation** (`architect` agent + `/gse:design` Step 2)
+
+### Added
+- **Framework isolation check in the `architect` agent** (AMÉL-18 from training feedback). New **Priorities** entry and new **Checklist** item ("Framework isolation") invoked during `/gse:design` and `/gse:review`. When the design includes a heavy UI or I/O framework (Streamlit, React, Next.js, Django, Flask, FastAPI, Express, Spring, …) AND non-trivial business logic, the agent proposes a framework-free domain module (`src/domain/**` imports stdlib only) and flags a DEC + a policy test enforcing the import boundary. Skipped when `config.yaml → project.domain ∈ {cli, library, scientific, embedded}` or when the design does not reference a UI/I/O framework.
+- New `DES-004 [INFO] — Framework isolation opportunity` example in the agent's Output Format, showing the canonical finding (location, detail, DEC name, policy-test hint).
+- One-line guideline in `/gse:design` Step 2 (Component Decomposition) pointing to the architect checklist so the rule is visible in the workflow, not only inside the agent file.
+
+### Rationale
+Training feedback observed two learners (05, 06) adopting the framework-free domain pattern **spontaneously** to satisfy reversibility/quality-fit trade-offs (e.g., Streamlit app with `logic/budget.py` kept free of Streamlit imports). Learner05 explicitly requested promotion to a GSE-level guideline. A dedicated **principle P17** was considered but rejected: the pattern is a corollary of existing principles (Dependency direction, Separation of concerns, Layering violations) rather than a transversal invariant, and it is conditional on the project type — elevating it to a P-level rule would break the universality of P1–P16. Enriching the `architect` agent (already invoked at DESIGN and REVIEW) is minimal, conditional, and carries the recommendation exactly where it applies, with infrastructure (DEC + policy test from v0.35) already in place.
+
 ## [0.37.1] - 2026-04-20
 
 Layers impacted: **implementation** (generator)

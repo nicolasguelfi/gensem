@@ -16,6 +16,7 @@ This agent evaluates the structural quality of the system's architecture. It ass
 Priorities:
 - Separation of concerns — each component has a single, well-defined responsibility
 - Dependency direction — dependencies flow from volatile to stable, never the reverse
+- Framework isolation — when a heavy UI or I/O framework is present, business logic is kept framework-free so it stays testable and replaceable
 - Interface contracts — public APIs are explicit, versioned, and documented
 - Trade-off awareness — every significant decision documents what was considered and why
 
@@ -28,6 +29,7 @@ Priorities:
 - [ ] **Interface contracts** — Public interfaces are defined with input/output types, error cases, and invariants
 - [ ] **Coupling analysis** — Measure afferent/efferent coupling; flag components with high coupling in both directions
 - [ ] **Layering violations** — Detect layer-skipping (e.g., UI directly accessing database)
+- [ ] **Framework isolation** — When the design includes a heavy UI or I/O framework (Streamlit, React, Next.js, Django, Flask, FastAPI, Express, Spring, …) AND non-trivial business logic, check that a framework-free domain module is proposed: `src/domain/**` (or equivalent) imports only the stdlib and owns the business rules. When adopted, record a DEC (e.g., *"framework-free domain module"*) and flag the policy test (`src/domain/** must not import <framework>`) for `/gse:tests`. Skip the check for projects with no heavy framework — typically when `config.yaml → project.domain ∈ {cli, library, scientific, embedded}` OR the design does not reference a UI/I/O framework.
 - [ ] **Configuration externalization** — Hardcoded values that should be configurable are flagged
 - [ ] **Failure modes** — Error propagation paths are explicit; graceful degradation is planned
 - [ ] **Evolution readiness** — Design accommodates likely future changes without major restructuring
@@ -52,6 +54,11 @@ DES-003 [INFO] — Technology choice lacks alternatives analysis
   Location: sprint/S01/design.md, section "Database"
   Detail: PostgreSQL is chosen but no comparison with alternatives is documented.
   Suggestion: Add a brief ADR (Architecture Decision Record) with criteria and alternatives evaluated.
+
+DES-004 [INFO] — Framework isolation opportunity
+  Location: sprint/S01/design.md, section "Component Decomposition"
+  Detail: The design uses Streamlit across all pages with business logic (budget computation, category aggregation) intermixed in page modules. A framework-free `src/domain/` module would keep that logic testable without Streamlit and replaceable if the UI framework changes.
+  Suggestion: Add a DEC — "framework-free domain module" — and flag a policy test enforcing `src/domain/** must not import streamlit`. See policy tests (spec §6.1).
 ```
 
 Severity levels:

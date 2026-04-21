@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.47.10] - 2026-04-21
+
+Layers impacted: **design** (docs only)
+
+**Methodology coherence pass — tenth batch (closure)** from the /gse-audit run against v0.45.0. Closes the sole remaining audit item deferred from Prop 9 (structural spec/design corrections).
+
+### Changed
+- **design §14 Open Questions** — added explicit `Status` column (OPEN / RESOLVED / DEFERRED) and renamed `Recommendation` to `Recommendation / Resolution` across all 10 entries. Each row now clearly states whether the recommendation is implemented in current code or still pending:
+  - **RESOLVED (6):** #1 orchestrator principles embedding; #5 lazy worktree creation; #6 branch-level git hygiene + dependency audit; #7 `.gse/` main-only; #8 contextual tip frequency caps; #10 state-recovery resilience.
+  - **OPEN (4):** #2 Cursor marketplace + npm packaging (Claude marketplace done); #3 `.gse/` version upgrades (field done, migration logic pending); #4 git conflicts during deliver (no 3-option Gate); #9 external source shallow-clone caching (throwaway currently).
+- Entry #1 un-strike-through'd: keeping a single plain "RESOLVED" label is more readable than mixing strikethrough for one row vs plain text for nine others.
+
+### Notes
+- Pure documentation change in the design doc. No plugin impact, no behavioral change.
+- The 4 OPEN items are now actionable pending tasks with explicit "what's done vs what remains" text. They can be promoted to individual propositions in a future audit cycle.
+- This closes the treatment plan from the initial /gse-audit run against v0.45.0: **16 of 16 propositions delivered** over commits v0.47.1 → v0.47.10.
+
 ## [0.47.9] - 2026-04-21
 
 Layers impacted: **implementation**, **docs** (agents uniformity + archetype documentation)

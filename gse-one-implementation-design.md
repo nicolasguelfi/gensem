@@ -2794,15 +2794,15 @@ Grand total: **150 files**. Generator: ~900 lines.
 
 ## 14. Open Questions
 
-| # | Question | Impact | Recommendation |
-|---|----------|--------|----------------|
-| 1 | ~~Should GSE-One principles be in `settings.json` agent key or separate skills?~~ | ~~Context efficiency~~ | **RESOLVED.** Principles are embedded in the orchestrator agent body (`agents/gse-orchestrator.md`), which also generates the Cursor `.mdc` rule. `settings.json` contains only the agent reference. |
-| 2 | Cursor marketplace or npm or both? | Reach | Both |
-| 3 | How to handle `.gse/` version upgrades? | UX | `gse_version` field + migration logic in skills |
-| 4 | How to handle git conflicts during deliver? | User experience | Gate decision with 3 options: resolve manually, use theirs, use ours |
-| 5 | Should worktrees be created eagerly (at plan time) or lazily (at produce time)? | Resource usage | **Lazily** — create at produce time. Plan only assigns names. |
-| 6 | How deep should git hygiene check go? | Scope | Start with branch-level checks. Dependency audit in Phase 4. |
-| 7 | Should `.gse/` itself live on main or on each branch? | State consistency | **Main only.** Worktrees get a symlink or copy. |
-| 8 | How to handle contextual tip frequency? Too many tips = annoying, too few = useless. | User experience | Max 1 tip per activity step. User can disable via HUG. Track and adapt. |
-| 9 | Should external source shallow clones be cached or re-cloned each time? | Performance | Cache in `.gse/cache/` with TTL. Clean on `/gse:deliver`. |
-| 10 | How to handle state recovery when user manually breaks `.gse/` or deletes branches? | Robustness | Best-effort reconstruction from git history. Warn, don't crash. |
+| # | Question | Impact | Status | Recommendation / Resolution |
+|---|----------|--------|--------|------------------------------|
+| 1 | Should GSE-One principles be in `settings.json` agent key or separate skills? | Context efficiency | **RESOLVED** | Principles are embedded in the orchestrator agent body (`agents/gse-orchestrator.md`), which also generates the Cursor `.mdc` rule and the opencode `AGENTS.md` block. `settings.json` contains only the agent reference. |
+| 2 | Cursor marketplace or npm or both? | Reach | **OPEN** | Recommended: both. Status: Claude plugin marketplace entry exists (`gse-one/marketplace/.claude-plugin/marketplace.json`). Cursor marketplace submission and npm package publishing both remain TODO. |
+| 3 | How to handle `.gse/` version upgrades? | UX | **OPEN** | Recommended: `gse_version` field + migration logic in skills. Status: field exists in `status.yaml` template (filled by `/gse:hug` from VERSION registry, since v0.47.8). Migration logic (skill-level detection + transforms when `gse_version < current_VERSION`) is not yet implemented. |
+| 4 | How to handle git conflicts during deliver? | User experience | **OPEN** | Recommended: Gate decision with 3 options — resolve manually, use theirs, use ours. Status: `/gse:deliver` Step 3 does a merge but has no documented conflict-resolution Gate. Conflicts currently abort the activity with a raw git error. |
+| 5 | Should worktrees be created eagerly (at plan time) or lazily (at produce time)? | Resource usage | **RESOLVED** | **Lazily.** `/gse:plan` Step 6 assigns branch names only; `/gse:produce` creates the worktree at task start. Confirmed in plan.md ("Branches are NOT created yet — only named"). |
+| 6 | How deep should git hygiene check go? | Scope | **RESOLVED** | Branch-level checks enforced by `guardrail-enforcer`; dependency vulnerability audit runs at `/gse:go` Step 2.5 (spec §14.3 Step 1.6). |
+| 7 | Should `.gse/` itself live on main or on each branch? | State consistency | **RESOLVED** | **Main only.** `.gse/` is a single shared directory at repo root; worktrees inherit it via filesystem (not duplicated per-branch). |
+| 8 | How to handle contextual tip frequency? Too many tips = annoying, too few = useless. | User experience | **RESOLVED** | Coach agent enforces `max_preambles_per_sprint: 3` (pedagogy axis) and `max_advice_per_check: 3` (workflow axes). User can disable per axis (`config.yaml → coach.axes.<name>: false`) or the whole subsystem (`coach.enabled: false`). "Track and adapt" via recipes auto-updated at `/gse:compound` Axe 3. |
+| 9 | Should external source shallow clones be cached or re-cloned each time? | Performance | **OPEN** | Recommended: cache in `.gse/cache/` with TTL, clean on `/gse:deliver`. Status: `/gse:collect` currently performs a shallow clone into a temp directory (throwaway). No persistent cache implemented. |
+| 10 | How to handle state recovery when user manually breaks `.gse/` or deletes branches? | Robustness | **RESOLVED** | Best-effort reconstruction implemented via spec §12.7 Resilience section + `/gse:go` Step 2 recovery check + pause/resume checkpoint handling with `session_paused` and `pause_checkpoint` fields. |

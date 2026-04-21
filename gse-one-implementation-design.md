@@ -2715,11 +2715,13 @@ The `marketplace.json` install path is `"plugin"` (not `"dist/claude"`), reflect
 | 1 | `src/agents/gse-orchestrator.md` (body) | `plugin/agents/gse-orchestrator.md` + `plugin/rules/gse-orchestrator.mdc` + `plugin/opencode/AGENTS.md` (wrapped in markers) | Body identical across 3 outputs, frontmatter/wrapper differs |
 | 2 | `src/activities/*.md` (23) | `plugin/skills/<name>/SKILL.md` + `plugin/commands/gse-<name>.md` + `plugin/opencode/skills/<name>/SKILL.md` + `plugin/opencode/commands/gse-<name>.md` | Shared body; opencode skills inject `name:` frontmatter |
 | 3 | `src/agents/*.md` (10 specialized) | `plugin/agents/<name>.md` + `plugin/opencode/agents/<name>.md` (with `mode: subagent`) | Shared body; opencode agents translate `tools:` to object form |
-| 4 | `src/templates/*` (28) | `plugin/templates/*` | Shared across platforms via `~/.gse-one` registry |
+| 4 | `src/templates/*` (29) | `plugin/templates/*` | Shared across platforms via `~/.gse-one` registry |
 | 5 | `src/references/*.md` | `plugin/references/*.md` | Shared — consulted by agents at runtime |
 | 6 | Constants | `plugin/.claude-plugin/plugin.json` + `plugin/.cursor-plugin/plugin.json` + `plugin/opencode/opencode.json` | Three manifests |
 | 7 | Shared shell commands | `plugin/hooks/hooks.claude.json` + `plugin/hooks/hooks.cursor.json` + `plugin/opencode/plugins/gse-guardrails.ts` (transpiled TS) | Same logic, three formats |
 | 8 | — | `plugin/settings.json` | Claude-only |
+
+The generator's `--verify` flag asserts (a) `plugin/` structure completeness — every expected skill, agent, manifest, hook file is present per §12; (b) body parity between the three orchestrator outputs (`plugin/agents/`, `plugin/rules/gse-orchestrator.mdc`, `plugin/opencode/AGENTS.md`) — fatal on divergence; (c) presence of critical patterns in `gse-guardrails.ts` (transpiled hooks). In addition, `--verify` runs a *warning-level* external-docs consistency check on hand-maintained prose (`README.md`, `install.py`, `gse-one/README.md`) against the source-of-truth registries (`SPECIALIZED_AGENTS`, `ACTIVITY_NAMES`, `src/templates/`, `src/principles/`). External-docs mismatches are non-blocking by design — the authoritative numeric-drift audit lives in `gse-one/audit.py` (invoked via `/gse-audit` or `python3 gse-one/audit.py --fail-on warning`).
 
 ---
 
@@ -2730,15 +2732,15 @@ The `marketplace.json` install path is `"plugin"` (not `"dist/claude"`), reflect
 | Skills | 23 | — | — | 23 (regenerated with `name:` injection) | 23 activities |
 | Commands | — | — | 23 | 23 | 23 activities (reused) |
 | Agents | 11 (incl. orchestrator) | — | — | 10 specialized (excl. orchestrator) | 11 agents |
-| Templates | 28 | — | — | — | 28 templates |
+| Templates | 29 | — | — | — | 29 templates |
 | Manifest | — | 1 | 1 | 1 (`opencode.json`) | constants |
 | Rules | — | — | 1 (.mdc) | — | from orchestrator |
 | Hooks | — | 1 | 1 | 1 (`gse-guardrails.ts`) | shared constants |
 | Settings | — | 1 | — | — | — |
 | AGENTS.md | — | — | — | 1 (from orchestrator) | from orchestrator |
-| **Total** | **62** | **3** | **26** | **59** | **62 sources** |
+| **Total** | **63** | **3** | **26** | **59** | **63 sources** |
 
-Grand total: **150 files**. Generator: ~900 lines.
+Grand total: **151 files**. Generator: ~900 lines.
 
 ---
 

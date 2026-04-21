@@ -11,7 +11,7 @@ Source layout:
     src/principles/    → 16 principle definitions (P1-P16)
     src/activities/    → 23 activity definitions (→ skills for Claude, commands for Cursor/opencode)
     src/agents/        → 11 agent roles (10 specialized + gse-orchestrator)
-    src/templates/     → 28 artefact & config templates
+    src/templates/     → 29 artefact & config templates
 
 Generated output:
     plugin/            → Single deployable directory
@@ -20,7 +20,7 @@ Generated output:
         skills/                       ← Claude Code activities (SKILL.md in subdirs)
         commands/                     ← Cursor activities (flat gse-<name>.md files)
         agents/                       ← 11 agents (10 specialized + orchestrator for Claude; installer excludes orchestrator for Cursor)
-        templates/                    ← Shared (28 templates)
+        templates/                    ← Shared (29 templates)
         rules/gse-orchestrator.mdc    ← Cursor-specific (generated)
         hooks/hooks.claude.json       ← Claude-specific (generated)
         hooks/hooks.cursor.json       ← Cursor-specific (generated)
@@ -702,6 +702,66 @@ def _oc_build_config_json(oc: Path) -> None:
 # Verification
 # ---------------------------------------------------------------------------
 
+def verify_external_docs() -> list:
+    """Check that hand-maintained docs mention the source-of-truth counts.
+
+    Detects future drift on descriptive prose in README.md / install.py /
+    gse-one/README.md when SPECIALIZED_AGENTS, ACTIVITY_NAMES, src/templates/
+    or src/principles/ change but the prose is forgotten.
+
+    Returns a list of mismatch strings (empty = all aligned). Called by
+    verify() as a *warning-level* check — mismatches are reported but do
+    NOT fail the build. The definitive numeric-drift audit lives in
+    gse-one/audit.py (/gse-audit Python engine), which can fail on warning
+    via --fail-on warning. This function is an early alert at generate time.
+    """
+    mismatches = []
+    n_specialized = len(SPECIALIZED_AGENTS)
+    n_agents = n_specialized + 1  # + orchestrator
+    n_activities = len(ACTIVITY_NAMES)
+    n_principles = sum(1 for _ in PRINCIPLES_DIR.glob("*.md")) if PRINCIPLES_DIR.exists() else 0
+    n_templates = sum(
+        1 for f in TEMPLATES_DIR.rglob("*")
+        if f.is_file() and f.name != "MANIFEST.yaml"
+    ) if TEMPLATES_DIR.exists() else 0
+
+    checks = {
+        REPO_ROOT / "README.md": [
+            f"{n_agents} agents ({n_specialized} specialized + orchestrator)",
+            f"{n_agents} agents (shared)",
+            f"{n_specialized} specialized (mode: subagent)",
+            f"# {n_templates} templates",
+            f"# {n_templates} templates (shared)",
+            f"{n_activities} commands",
+            f"{n_principles} principles (P1-P{n_principles})",
+            f"{n_activities} activity definitions",
+        ],
+        REPO_ROOT / "install.py": [
+            f"{n_specialized} specialized agents",
+        ],
+        ROOT / "README.md": [
+            f"{n_agents} agents ({n_specialized} specialized + orchestrator)",
+            f"{n_agents} agents (shared)",
+            f"{n_templates} artefact & config templates",
+            f"{n_templates} templates (shared)",
+            f"{n_activities} commands",
+            f"{n_activities} activity definitions",
+        ],
+    }
+
+    for path, phrases in checks.items():
+        if not path.exists():
+            mismatches.append(f"External doc missing: {path}")
+            continue
+        text = path.read_text(encoding="utf-8")
+        for phrase in phrases:
+            if phrase not in text:
+                rel = path.relative_to(REPO_ROOT)
+                mismatches.append(f"{rel}: missing phrase '{phrase}'")
+
+    return mismatches
+
+
 def verify() -> None:
     print("=== Verification ===\n")
     errors = []
@@ -831,6 +891,20 @@ def verify() -> None:
             else:
                 print(f"    AGENTS.md vs .mdc body:    DIVERGENT!")
                 errors.append("opencode AGENTS.md body differs from .mdc body")
+
+    # External docs consistency — warning-level (non-blocking).
+    # Build-time early alert: visible but not fatal so prose can evolve
+    # (reformulation, localization). Definitive numeric-drift audit is in
+    # gse-one/audit.py (/gse-audit Python engine).
+    ext_mismatches = verify_external_docs()
+    print(f"\n  External docs consistency:")
+    if ext_mismatches:
+        print(f"    WARNING: {len(ext_mismatches)} phrase(s) out of sync (non-blocking):")
+        for m in ext_mismatches:
+            print(f"      - {m}")
+        print(f"    Run `python3 gse-one/audit.py` for full numeric drift analysis.")
+    else:
+        print(f"    OK (README.md, install.py, gse-one/README.md aligned with registries)")
 
     # Run unit tests if available (opt-in via directory presence).
     tests_dir = ROOT / "tests"

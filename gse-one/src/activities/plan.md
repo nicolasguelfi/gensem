@@ -66,6 +66,10 @@ If this is NOT the first sprint (`current_sprint > 1`):
    - Present unfinished tasks: "These tasks were not completed in sprint {NN-1}. Include them in this sprint?"
    - Gate decision per task: Include / Return to pool / Discard / Discuss
 
+#### Step 0.6 — Coach Sprint-Promotion Analysis (Sprint N+1 only)
+
+After the raw velocity and carryover signals are collected, the orchestrator invokes the **coach agent** with `moment: sprint promotion (/gse:plan --strategic)` (per coach.md Invocation contract, design §5.17). The coach activates axes 3, 4, 5, and 8 (`sprint_velocity`, `workflow_health`, `quality_trends`, `sustainability`) to produce retrospective cross-sprint analysis. This complements the velocity calibration of Step 0.5 by drawing on the `workflow_observations[]` ledger (summarized entries from previous sprints) for deeper trend detection. Coach outputs (bounded by `config.yaml → coach.max_advice_per_check`, default 3) are surfaced as Inform-tier recommendations to the user before the pool is presented. If nothing meaningful surfaces, this step is silent.
+
 #### Step 1 — Present Pool
 
 Display all items in the pool (including any carryover from Step 0) with their metadata:

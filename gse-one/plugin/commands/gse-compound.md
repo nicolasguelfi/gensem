@@ -78,6 +78,16 @@ Analyze the sprint for project-level learnings:
 
 Analyze what worked and what did not in the GSE-One methodology itself during this sprint, then route the observations through a closure Gate.
 
+#### 2.0 — Coach invocation (cross-sprint workflow analysis)
+
+At the start of Axe 2, the orchestrator invokes the **coach agent** with `moment: /gse:compound Axe 2 feed` (per coach.md Invocation contract, design §5.17). The coach activates axes 2–8 to produce cross-sprint trend analysis — comparing this sprint's signals against the persistent `workflow_observations[]` history (see design §5.17 — trend axes `quality_trends`, `sprint_velocity`, `sustainability` each require ≥ 3 sprints of history). Typical coach outputs at this moment:
+- `sprint_velocity` — stability of complexity points delivered per sprint
+- `quality_trends` — evolution of test pass rate, review findings, regression flags
+- `workflow_health` — patterns of skipped activities, non-standard sequences
+- `process_deviation` — recurring DEC- methodology-deviation entries
+
+Coach advice messages (bounded by `config.yaml → coach.max_advice_per_check`, default 3) are collected and merged with the static sources listed in Step 2.1 below. If nothing meaningful surfaces, this step is silent.
+
 #### 2.1 — Gather observations from the sprint
 
 Sources to scan (in order):
@@ -87,6 +97,7 @@ Sources to scan (in order):
 | `docs/sprints/sprint-{NN}/review.md` | Findings tagged `[METHOD-FEEDBACK]` (process-level, not product-level) |
 | `docs/sprints/sprint-{NN}/decisions.md` | DEC- entries with attribute `type: methodology-deviation` |
 | `.gse/status.yaml → activity_history[*].notes` | Free-text notes describing methodology friction |
+| `.gse/status.yaml → workflow_observations[]` (current sprint, not yet summarized) | Raw observations produced by the coach sub-agent during the sprint across the 7 workflow axes (sprint_velocity, workflow_health, quality_trends, engagement_pattern, process_deviation, sustainability, profile_calibration). Filter: entries where `sprint == current_sprint` AND `summarized != true`. |
 | Agent conversation memory for this sprint | Recurring user questions, explicit frustrations, ad-hoc deviations, Gates that felt awkward, Inform notes that surprised the user |
 
 For each observation, the agent records:
@@ -181,7 +192,33 @@ Record a short methodology section in `docs/sprints/sprint-{NN}/compound.md` wit
 - Route chosen (export / tickets / both / none)
 - References to the `methodology-feedback.md` and `compound-tickets-draft.yaml` files if produced
 
+#### 2.7 — Summarize raw workflow observations (coach ledger maintenance)
+
+After the methodology feedback is routed, the agent maintains the coach's cross-sprint ledger (`.gse/status.yaml → workflow_observations[]`) by condensing the current sprint's raw entries into summarized ones. This step preserves historical signal for the coach's trend-based axes (`quality_trends`, `sprint_velocity`, `sustainability` — each requires ≥ 3 sprints of history per design §5.17) while keeping the ledger bounded in size.
+
+1. **Read raw entries** — filter `workflow_observations[]` to entries where `sprint == current_sprint` AND `summarized != true`. If the filter returns zero entries (coach disabled this sprint, or no observations fired), skip the remaining substeps silently.
+
+2. **Group by axis** — partition the raw entries by their `axis` field. Each of the 7 workflow axes that actually fired during the sprint will produce ONE condensed summary entry.
+
+3. **Condense per axis** — for each axis, produce a summary entry capturing the sprint's signal for that axis. The exact schema is left to the coach sub-agent's judgment (to preserve the anti-rigidity principle), but suggested fields are:
+   - `axis`: the axis name (same as the raw entries grouped)
+   - `sprint`: current sprint number
+   - `summarized: true` (mandatory — distinguishes from raw entries)
+   - `timestamp`: end-of-sprint timestamp
+   - `summary_text`: a 1-3 sentence narrative of what the axis observed this sprint
+   - `key_observations: [refs]` — optional references to particularly salient raw entries
+   - `severity_trend`: optional qualitative assessment (e.g., "improving", "stable", "degrading")
+   - `count_raw_entries`: number of raw entries condensed
+
+4. **Write summaries back** to `workflow_observations[]`. The raw entries MAY be deleted once summarized (to save space) OR retained with a reference from the summary — at the agent's discretion, as long as the axis signal is preserved.
+
+5. **Bounded growth** — this mechanism keeps `status.yaml` manageable: each sprint adds at most 7 summarized entries (one per workflow axis), regardless of how many raw entries the coach produced. After 10 sprints, the ledger holds approximately 70 condensed entries plus the current sprint's raw entries.
+
+6. **Report in compound.md** — append to the methodology section (from 2.6) a one-line entry: *"Workflow ledger: {N_raw} raw observations from {M_axes} axes condensed into {M_axes} summary entries for cross-sprint trend analysis."*
+
 ### Step 3 — Axe 3: Competency Capitalization
+
+At the start of Axe 3, the orchestrator invokes the **coach agent** with `moment: /gse:compound Axe 3 feed` (per coach.md Invocation contract, design §5.17). The coach activates axis 1 (pedagogy — to identify learning opportunities from the sprint's activity) and axis 2 (profile_calibration — to detect drift signals that may warrant `/gse:hug --update`). Coach outputs feed the substeps below.
 
 Feed the user's learning journey:
 

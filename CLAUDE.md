@@ -24,11 +24,12 @@ The 11 agents in `src/agents/` deliberately use **4 structural archetypes**. Dif
 | Archetype | Agent(s) | Standard sections |
 |---|---|---|
 | **Identity** | `gse-orchestrator` | Role / Activated by / Perspective / Core Principles (P1-P16) / Skill activation / Sub-agent dispatch |
-| **Reviewer** (output to `review.md` via `/gse:review`) | `architect`, `code-reviewer`, `security-auditor`, `requirements-analyst`, `devil-advocate`, `guardrail-enforcer`, `ux-advocate`, `test-strategist` | Role / Activated by / Perspective / Checklist / Output Format |
+| **Reviewer** (output to `review.md` via `/gse:review`) | `architect`, `code-reviewer`, `security-auditor`, `requirements-analyst`, `devil-advocate`, `ux-advocate`, `test-strategist` | Role / Activated by / Perspective / Checklist / Output Format (RVW-NNN + `perspective:` + HIGH/MEDIUM/LOW) |
 | **Operational** (multi-step workflow execution) | `deploy-operator` | Role / Activated by / Perspective / Required readings / Core Principles / Anti-patterns / Output Format |
 | **Observational** (8-axis monitoring) | `coach` | Role / Activated by / Perspective / 8 axes / Invocation contract / Evaluation algorithm / Output Formats (plural) / Anti-spam / Recipes / Persistence |
+| **Compliance** (real-time guardrail enforcement) | `guardrail-enforcer` | Role / Activated by / Perspective / Guardrail Tiers / Decision Tier Compliance / Checklist / Output Format (GUARD-NNN + EMERGENCY/HARD/SOFT) |
 
-Common to all 11: YAML frontmatter with `name` + `description`; opening `**Role:**` + `**Activated by:**` lines; `## Perspective` section. Finding outputs use `RVW-NNN` + `perspective:` field (reviewer archetype only) per spec §6.5 and the canonical 3-tier severity scale `HIGH / MEDIUM / LOW` (+ P15 escalation to CRITICAL).
+Common to all 11: YAML frontmatter with `name` + `description`; opening `**Role:**` + `**Activated by:**` lines; `## Perspective` section. Reviewer archetype agents output `RVW-NNN` findings with `perspective:` field (per spec §6.5) and the canonical 3-tier severity scale `HIGH / MEDIUM / LOW` (+ P15 escalation to CRITICAL). The Compliance archetype (guardrail-enforcer) uses a distinct format (`GUARD-NNN` + `EMERGENCY/HARD/SOFT` guardrail tiers) because its outputs are real-time action alerts, not artefact review findings — the tier labels carry action semantics (WARN / BLOCK / HALT) that would be lost in the severity scale.
 
 ## Critical rules
 
@@ -82,6 +83,26 @@ The `.claude/` directory at the repo root contains **maintainer tools** that are
 These are inherited automatically when someone clones gensem (or a fork of it). They are Claude Code-only (v1). The Python engine at `gse-one/audit.py` provides CLI access independent of the editor.
 
 **Do not move these tools into `gse-one/plugin/`** — that would distribute them to all end users of GSE-One, polluting the methodology for people who only use the plugin without forking. Maintainer tools live at `.claude/` (repo-local) or `gse-one/` (e.g., `audit.py` alongside `gse_generate.py`), never in `gse-one/plugin/`.
+
+### Communication style (development sessions)
+
+When proposing changes, applying fixes, or explaining methodology concepts during interactive sessions with the user, follow these two rules.
+
+**Rule 1 — Pedagogical phrasing, not cryptic jargon.** The GSE-One methodology introduces many internal terms (TASK, REVIEW, FIX, `workflow.pending`, RVW-NNN, DEC-NNN, LRN-NNN, axes, moments, archetypes, tiers, Gate, Inform, backlog pool, sprint freeze, etc.). When writing propositions, explanations, or analyses, do NOT chain these terms as if the reader has mastered them. Instead:
+- Introduce each term with a brief parenthetical reminder of its meaning the first time it appears in a document (e.g., "the coach (an AI sub-agent observing the collaboration)" rather than just "the coach").
+- Re-introduce terms periodically if the document is long, not just once at the top.
+- Accept longer paragraphs for better pedagogical clarity — density is not a virtue here.
+- Counter-example (bad, too compressed): *"The methodology defines a TASK state-machine and a conditional FIX insertion rule into workflow.pending after REVIEW."*
+- Better phrasing (pedagogical): *"Each task of the project (called TASK in the vocabulary) has a life-cycle. After the code-review phase (called REVIEW, which produces a list of problems), the methodology may automatically add a correction phase (called FIX) into the list of activities still to be done for the current sprint — this list of pending activities is stored in a structured field named `workflow.pending` inside `plan.yaml`."*
+
+**Rule 2 — One question = one default answer explicitly stated.** When asking the user to validate a proposition, do NOT write composite questions with multiple sub-points bundled. Each question must:
+- Carry a single proposed action.
+- State explicitly the default that will be applied if the user says "ok" (e.g., "Si tu dis ok, c'est X qui sera appliqué.").
+- Optionally mention alternatives as a side note, not as another question to answer.
+- Counter-example (bad, composite): *"Pour la modification X, es-tu d'accord avec (a) le positionnement, (b) le nombre de sous-étapes, (c) le choix du tag ?"*
+- Better phrasing: *"Q_x — Je propose [action concrète]. Si tu dis ok, c'est [action exacte] qui sera appliqué. Alternative disponible : [option]."*
+
+**Why these rules.** The user works with the methodology from multiple sessions and machines, sometimes coming back cold. Cryptic phrasing forces them to reload context mentally; pedagogical phrasing preserves flow. Composite questions hide decisions — the user might approve the proposition intending to validate point (a) while point (c) was also smuggled in. Single-default questions make consent explicit and auditable.
 
 ## Language
 

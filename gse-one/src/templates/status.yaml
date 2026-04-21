@@ -64,10 +64,16 @@ detected_gaps: []                      # list of { concept, source, occurrences,
 # Reviewed at /gse:compound Axe 3; may propose /gse:hug --update with user consent.
 profile_drift_signals: {}              # map of { dimension → { observations: int, last_seen, direction, evidence: [] } }
 
-# Coach agent — workflow-axes scratchpad (transient)
-# Accumulates observations from velocity/health/quality/engagement/deviation/sustainability axes
-# during the current sprint. Consumed and cleared at sprint close by /gse:compound Axe 2.
-workflow_observations: []              # list of { axis, moment, observation, evidence, severity, timestamp }
+# Coach agent — cross-sprint workflow-axes ledger (persistent)
+# Accumulates observations from the 7 workflow-monitoring axes
+# (sprint_velocity, workflow_health, quality_trends, engagement_pattern,
+#  process_deviation, sustainability, profile_calibration) throughout
+# the project's lifetime. Required by trend-based axes (quality_trends,
+# sprint_velocity, sustainability) that need ≥ 3 sprints of history.
+# At each sprint close, /gse:compound Axe 2 summarizes raw observations
+# into condensed trend entries (but does NOT purge them) — this keeps
+# the ledger bounded in size while preserving historical signal.
+workflow_observations: []              # list of { axis, moment, observation, evidence, severity, timestamp, sprint, summarized: bool }
 
 last_activity: ""                      # e.g., /gse:produce
 last_activity_timestamp: ""            # ISO 8601 timestamp

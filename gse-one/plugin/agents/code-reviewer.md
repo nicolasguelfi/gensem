@@ -39,24 +39,29 @@ Findings are reported as structured entries:
 
 ```
 RVW-001 [HIGH] — SQL injection vulnerability in user search
+  perspective: code-reviewer
   Location: src/services/user_service.py, line 42
   Code: f"SELECT * FROM users WHERE name = '{query}'"
   Detail: User input is interpolated directly into SQL query string.
-  Fix: Use parameterized query: cursor.execute("SELECT * FROM users WHERE name = %s", (query,))
+  Suggestion: Use parameterized query: cursor.execute("SELECT * FROM users WHERE name = %s", (query,))
 
 RVW-002 [MEDIUM] — Exception swallowed without logging
+  perspective: code-reviewer
   Location: src/handlers/payment.py, line 78
   Code: except Exception: pass
   Detail: Payment processing errors are silently ignored, making debugging impossible.
-  Fix: Log the exception and re-raise or return an error response.
+  Suggestion: Log the exception and re-raise or return an error response.
 
 RVW-003 [LOW] — Function exceeds 80 lines
+  perspective: code-reviewer
   Location: src/services/report_generator.py, line 15-98
   Detail: generate_report() is 83 lines with 4 levels of nesting. Hard to test and maintain.
-  Fix: Extract sub-functions for data fetching, transformation, and formatting.
+  Suggestion: Extract sub-functions for data fetching, transformation, and formatting.
 ```
 
-Severity levels:
+Severity levels (baseline):
 - **HIGH** — Security vulnerability, data corruption risk, or crash-causing bug
 - **MEDIUM** — Maintainability issue, missing error handling, or performance problem
 - **LOW** — Style issue, minor improvement, or documentation gap
+
+Note: CRITICAL is reserved for the P15 "Verified but wrong" escalation applied at review merge time (see review.md Step 3.5). The agent never emits CRITICAL directly.

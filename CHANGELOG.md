@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.48.0] - 2026-04-22
+
+Layers impacted: **spec** (no change — already canonical), **design** (§11.1 + §12 count alignment, new `--verify` paragraph), **implementation** (6 agents, 4 activities, 1 template, generator), **CLAUDE.md** (archetype table + communication rules)
+
+**Post-audit propositions P1–P5 batched commit.** Five methodology coherence fixes surfaced by the 2026-04-21 /gse-audit run, applied incrementally with explicit user validation per proposition. Audit report archive: `_LOCAL/audits/audit-2026-04-21-112532-v0.47.10.md`.
+
+### Added
+- **New agent archetype `Compliance`** — `guardrail-enforcer` moved from Reviewer archetype to a dedicated Compliance archetype in `CLAUDE.md`. Rationale: guardrail-enforcer emits real-time action alerts (`GUARD-NNN` + `EMERGENCY/HARD/SOFT` guardrail tiers carrying action semantics WARN/BLOCK/HALT), not artefact review findings. Forcing HIGH/MEDIUM/LOW would lose the tier semantics. Archetype count: 5 (Identity, Reviewer [7 agents], Operational, Observational, Compliance).
+- **Coach invocation contract now implemented in 4 activities** — per `coach.md:44-55`. New steps: `pause.md` Step 3.5 (moment `/gse:pause`, axes 2-8 — sustainability + engagement end-of-session check); `compound.md` Step 2.0 (moment `/gse:compound Axe 2 feed`, axes 2-8 — cross-sprint trend analysis); `compound.md` Step 3 intro paragraph (moment `/gse:compound Axe 3 feed`, axes 1+2 — pedagogy + profile drift); `plan.md --strategic` Step 0.6 (moment `sprint promotion`, axes 3+4+5+8 — retrospective cross-sprint analysis). Previously these moments existed only in coach.md's contract without corresponding activity-side invocation — 3 of 8 coach axes (quality_trends, sprint_velocity, sustainability) were silently inoperant.
+- **`compound.md` Step 2.7 — "Summarize raw workflow observations (coach ledger maintenance)"** — new substep describing the ledger maintenance mechanism: group raw entries by axis, produce one condensed summary entry per axis, mark with `summarized: true`, keep growth bounded (≤ 7 entries per sprint). Format of summary entries left to the coach's judgment (anti-rigidity).
+- **`gse_generate.py` — new `verify_external_docs()` function** — warning-level check asserting hand-maintained docs (README.md, install.py, gse-one/README.md) mention the expected counts derived from source-of-truth registries (`SPECIALIZED_AGENTS`, `ACTIVITY_NAMES`, `src/templates/`, `src/principles/`). Non-blocking by design — prose must be able to evolve, localize, and reformulate without breaking the build. Definitive numeric-drift audit remains in `gse-one/audit.py`.
+- **CLAUDE.md — new "Communication style (development sessions)" section** — two durable rules for Claude during interactive sessions: (1) pedagogical phrasing with parenthetical term reminders, no cryptic jargon chains; (2) propositions must use single-default questions, one action per question, with the default explicitly stated.
+
+### Changed
+- **`workflow_observations[]` lifecycle clarified across 4 files** — design §5.17 was already correct ("persistent cross-sprint ledger for trending, summarized at /gse:compound"). The template (`status.yaml:67-70`), orchestrator description (`gse-orchestrator.md:160`), and coach agent (`coach.md:152`) previously claimed "transient, cleared at sprint close", contradicting the design and breaking the 3 trend-based axes (quality_trends, sprint_velocity, sustainability) that each require ≥ 3 sprints of history. All three are now aligned with the design.
+- **`review.md` Step 6 FIX insertion threshold** — now says "HIGH or MEDIUM findings → `status: fixing`" (was "HIGH only"). Aligns with spec §14, design §10.1, and `plan.yaml` template comment — previously 3 of 4 sources said HIGH-or-MEDIUM while review.md said HIGH-only, forcing `fix.md` Step 1.4 to compensate at runtime. User retains `/gse:fix --severity HIGH` for scope narrowing.
+- **`code-reviewer.md`** aligned to Reviewer archetype — added missing `perspective: code-reviewer` field on all 3 RVW examples, added `(baseline)` qualifier to severity legend, added CRITICAL reservation note (all 6 other Reviewer agents already had these).
+- **Fix-label prose harmonized to `Suggestion:`** in `code-reviewer.md` and `security-auditor.md` (was `Fix:`), matching the canonical YAML schema field name `suggestion:` in `review.md` Step 4 and the majority pattern (architect, requirements-analyst, test-strategist, ux-advocate). `devil-advocate.md` intentionally retains `Action:` — more directive semantics appropriate for AI-integrity findings (hallucinations, fabrications).
+- **`gse-one-implementation-design.md` §11.1 + §12** — templates count 28 → 29 (actual count excluding MANIFEST.yaml descriptor). Grand total file count 150 → 151. Added §11.1 paragraph documenting what `--verify` asserts (plugin structure, body parity, guardrails patterns, external-docs warning-level check).
+
+### Fixed
+- **Numeric drift across user-facing docs**: `install.py:726` now emits "10 specialized agents" (was "8"). `README.md` arborescence: "11 agents (10 specialized + orchestrator)", "29 templates", "10 specialized (mode: subagent)". `gse-one/README.md` arborescence: same pattern + "29 artefact & config templates". `gse-one/gse_generate.py` docstring: "29 artefact & config templates" and "Shared (29 templates)". `CHANGELOG.md` historical entries and section numbers like "§3.10 Commands" intentionally NOT modified (historical record / false positives flagged by audit engine).
+
+### Deferred (planned work captured in `_LOCAL/maintenance/`)
+- **META.1 — Numeric Registry Centralization** — structural fix for numeric drift via per-document `{doc}_registry.md` files regenerated from SSOT registries, prose references instead of inlined counts. Full plan in `_LOCAL/maintenance/2026-04-21-numeric-registry-centralization.md`. Execute after remaining audit propositions (P6–P14).
+- **P-MOMENT-TAGS** — unify coach moment tag vocabulary (currently natural-language in `coach.md:44-55` vs snake_case in `design §5.17:2200-2212`). Flagged as warning in audit.
+
+### Notes
+- No spec modifications in this release — all spec-level rules were already canonical. The work consisted of aligning design, implementation, and CLAUDE.md to the spec (downward refinement) plus one upward propagation (`workflow_observations` lifecycle — design was source of truth, other layers were stale).
+- VERSION bumped to 0.48.0 (minor) because of new archetype (Compliance), new coach invocation moments (structural activity changes), and new summarization mechanism (semantic lifecycle change). Individual propositions were pure fixes, but the aggregate crosses into feature territory.
+
 ## [0.47.10] - 2026-04-21
 
 Layers impacted: **design** (docs only)

@@ -242,12 +242,14 @@ Report:
 - Health score delta
 
 **Update TASK statuses** in `backlog.yaml` based on review results:
-- If HIGH findings exist for a TASK → set `status: fixing` (requires `/gse:fix` before delivery)
-- If no HIGH findings → set `status: done` (ready for delivery)
+- If HIGH or MEDIUM findings exist for a TASK → set `status: fixing` (requires `/gse:fix` before delivery)
+- If no HIGH or MEDIUM findings → set `status: done` (LOW findings are tracked but non-blocking; user can still address them via `/gse:fix --severity LOW`)
 
-If findings with severity HIGH exist:
+**Rationale:** this threshold aligns with the canonical rule in spec §14 and design §10.1 (FIX is inserted into `workflow.pending` if HIGH or MEDIUM findings exist). MEDIUM findings weight significantly in the `review_findings` health formula (×0.8); letting them pass without triage would silently accumulate tech debt. The user retains full agency via `/gse:fix --severity HIGH` to narrow the fix scope.
+
+If findings with severity HIGH or MEDIUM exist:
 - Recommend `/gse:fix` before delivery
-- Present findings sorted by severity
+- Present findings sorted by severity (HIGH first, then MEDIUM, then LOW)
 
 Update `status.yaml`:
 - `last_activity: review`

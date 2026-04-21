@@ -134,16 +134,16 @@ gse-one/
 ├── src/                              # Single source of truth
 │   ├── principles/                   # 16 principles (P1-P16)
 │   ├── activities/                   # 23 activity definitions → skills
-│   ├── agents/                       # 9 agents (8 specialized + orchestrator)
-│   └── templates/                    # 19 templates
+│   ├── agents/                       # 11 agents (10 specialized + orchestrator)
+│   └── templates/                    # 29 templates
 │
 ├── plugin/                           # Deployable directory
 │   ├── .claude-plugin/plugin.json    # Claude Code manifest
 │   ├── .cursor-plugin/plugin.json    # Cursor manifest
 │   ├── skills/                       # 23 skills (shared, with name: field)
 │   ├── commands/                     # 23 /gse-<name>.md (Cursor)
-│   ├── agents/                       # 9 agents (shared)
-│   ├── templates/                    # 19 templates (shared)
+│   ├── agents/                       # 11 agents (shared)
+│   ├── templates/                    # 29 templates (shared)
 │   ├── tools/                        # Python tools (dashboard, etc.)
 │   ├── rules/gse-orchestrator.mdc    # Cursor only
 │   ├── hooks/                        # Platform-specific hooks
@@ -151,7 +151,7 @@ gse-one/
 │   └── opencode/                     # opencode subtree
 │       ├── skills/                   # 23 skills (name: injected)
 │       ├── commands/                 # 23 /gse-<name>.md
-│       ├── agents/                   # 8 specialized (mode: subagent)
+│       ├── agents/                   # 10 specialized (mode: subagent)
 │       ├── plugins/gse-guardrails.ts # Native TS guardrails plugin
 │       ├── AGENTS.md                 # Orchestrator body (markered)
 │       └── opencode.json             # Default permissions

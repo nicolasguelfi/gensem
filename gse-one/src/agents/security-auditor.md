@@ -48,7 +48,7 @@ RVW-001 [HIGH] — Hardcoded API key in source code
   Code: API_KEY = "sk-live-abc123def456"
   Detail: Production API key is committed to version control.
   Impact: Active exploitation possible if the repository is public or compromised — attacker gains direct API access. Immediate credential rotation required.
-  Fix: Move to environment variable; add to .gitignore; rotate the exposed key immediately.
+  Suggestion: Move to environment variable; add to .gitignore; rotate the exposed key immediately.
 
 RVW-002 [HIGH] — Missing rate limiting on login endpoint
   perspective: security-auditor
@@ -56,14 +56,14 @@ RVW-002 [HIGH] — Missing rate limiting on login endpoint
   Location: src/routes/auth.py, line 30
   Detail: /api/login has no rate limiting, enabling brute-force attacks.
   Impact: Attacker can attempt unlimited password guesses.
-  Fix: Add rate limiting (e.g., 5 attempts per minute per IP) using middleware or API gateway.
+  Suggestion: Add rate limiting (e.g., 5 attempts per minute per IP) using middleware or API gateway.
 
 RVW-003 [MEDIUM] — Verbose error response exposes stack trace
   perspective: security-auditor
   OWASP: A05:2021 — Security Misconfiguration
   Location: src/middleware/error_handler.py, line 15
   Detail: Production error handler returns full Python traceback to the client.
-  Fix: Return generic error message in production; log full trace server-side only.
+  Suggestion: Return generic error message in production; log full trace server-side only.
 ```
 
 Severity levels (baseline):

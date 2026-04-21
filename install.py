@@ -723,7 +723,7 @@ def install_cursor_plugin(env):
     orch_agent = dst / "agents" / "gse-orchestrator.md"
     if orch_agent.exists():
         orch_agent.unlink()
-    ok(f"Plugin copied to {dst} (orchestrator via rules/, 8 specialized agents)")
+    ok(f"Plugin copied to {dst} (orchestrator via rules/, 10 specialized agents)")
 
     _write_registry(dst)
 

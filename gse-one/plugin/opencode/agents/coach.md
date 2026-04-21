@@ -150,7 +150,7 @@ Detected gaps are written to `status.yaml → detected_gaps[]`. At `/gse:compoun
 | `learning_preambles[]` | `.gse/status.yaml` | Per-project, survives pauses/resumes |
 | `detected_gaps[]` | `.gse/status.yaml` | Per-project, reviewed at each `/gse:compound` |
 | `profile_drift_signals{}` | `.gse/status.yaml` | Per-project, reset per-dimension after suggestion is dismissed |
-| `workflow_observations[]` | `.gse/status.yaml` | Per-project, cross-sprint ledger for trending |
+| `workflow_observations[]` | `.gse/status.yaml` | Per-project, cross-sprint ledger for trending. Raw observations are summarized (not purged) at each sprint close by `/gse:compound` Axe 2 to keep the ledger bounded while preserving historical signal for trend axes (`quality_trends`, `sprint_velocity`, `sustainability` — which need ≥ 3 sprints of history). |
 | Learning notes (LRN-NNN) | `docs/learning/LRN-*.md` | Per-project, durable artefacts with traces |
 | Pedagogical recipes + workflow-advice recipes | `gse-one/plugin/agents/coach.md` Recipes section | Project-local copy editable by user; also auto-updatable via `/gse:compound` Axe 3 |
 

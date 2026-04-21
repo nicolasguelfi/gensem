@@ -76,6 +76,10 @@ Create a checkpoint file at `.gse/checkpoints/checkpoint-{YYYY-MM-DD-HHMM}.yaml`
    - `session_paused: true`
    - `pause_checkpoint: checkpoint-{YYYY-MM-DD-HHMM}.yaml`
 
+### Step 3.5 — Coach End-of-Session Check (sustainability + engagement)
+
+After the checkpoint is saved and status updated, the orchestrator invokes the **coach agent** with `moment: /gse:pause` (per coach.md Invocation contract, design §5.17). The coach activates axes 2–8 (workflow axes) to surface end-of-session observations — particularly the `sustainability` axis (detecting long session durations, sprint point totals vs spec §8 guidance) and the `engagement_pattern` axis (accepting defaults without pushback over the session). Coach outputs (bounded by `config.yaml → coach.max_advice_per_check`, default 3) are included in the pause report (Step 4). If nothing meaningful surfaces, this step is silent.
+
 ### Step 4 — Report
 
 ```

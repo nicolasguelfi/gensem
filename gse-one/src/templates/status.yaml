@@ -2,9 +2,13 @@
 # Auto-maintained by the GSE-One agent. Do not edit manually.
 # Schema aligned with current spec (see VERSION file at repository root)
 
-gse_version: "0.9.0"
+gse_version: ""                        # filled by /gse:hug from VERSION registry at project init
 current_sprint: 1
 current_phase: LC02                    # LC00 | LC01 | LC02 | LC03
+
+# Session pause state (set by /gse:pause, cleared by /gse:resume)
+session_paused: false                  # true between /gse:pause and /gse:resume
+pause_checkpoint: ""                   # filename of the active checkpoint (e.g., checkpoint-2026-04-21-1430.yaml)
 # plan_status removed in v0.20.1 — use .gse/plan.yaml `status` field instead
 # (active | completed | abandoned). Fallback file-existence check for pre-v0.20 projects.
 

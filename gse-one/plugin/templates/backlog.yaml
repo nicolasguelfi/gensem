@@ -6,7 +6,8 @@
 items: []
   # list of:
   # - id: TASK-NNN                       # Unique, never recycled
-  #   title: ""
+  #   title: ""                          # Short one-line title
+  #   description: ""                    # Optional longer description (distinct from title)
   #   artefact_type: code                # code | requirement | design | test | doc | config | import | spike
   #   sprint: null                       # null = pool (unplanned), integer = assigned to sprint
   #   priority: must                     # must | should | could
@@ -16,8 +17,10 @@ items: []
   #     derives_from: []                 # design/intent this derives from [DES-NNN, INT-NNN, ...]
   #   acceptance_criteria: ""            # User-visible success definition
   #   status: open                       # open | planned | in-progress | review | fixing | done | delivered | deferred
+  #   requires_review: true              # set false for complexity <= 1 OR --no-review OR spikes
   #   delivered_at: null                 # ISO 8601 timestamp, set by /gse:deliver Step 4
-  #   origin: user                       # plan | review | collect | user | import
+  #   completed_at: null                 # ISO 8601 timestamp, set when status → done (for ad-hoc TASKs without deliver)
+  #   origin: user                       # plan | review | collect | user | import | ad-hoc
   #   origin_ref: null                   # Reference to originating artefact
   #   git:
   #     branch: null                     # e.g., gse/sprint-01/feat/auth
@@ -27,7 +30,12 @@ items: []
   #     commits: 0
   #     last_commit: null                # ISO 8601 timestamp
   #     uncommitted_changes: 0
-  #   github_issue: null                 # GitHub issue number, null if not enabled
+  #   github_issue: null                 # GitHub issue number, null if not enabled (top-level, not nested in traces)
+  #   # --- artefact_type: spike extensions ---
+  #   question: null                     # spike-specific: the technical question to answer
+  #   complexity_cap: null               # spike-specific: integer cap (max 3 per spec §12.3 spike rules)
+  #   deliverable: true                  # false for spikes (cannot be merged to main)
+  #   outcome: null                      # spike-specific: pending | yes | no | partial (after completion)
   #   # Test evidence — written by /gse:produce and /gse:tests --run,
   #   # read by /gse:review guardrail and /gse:deliver.
   #   test_evidence:
@@ -37,5 +45,5 @@ items: []
   #     pass_rate: null                  # % of tests passing (0-100)
   #     code_coverage: null              # % line coverage (0-100)
   #     summary: null                    # human-readable one-liner
-  #   created: YYYY-MM-DD
-  #   updated: YYYY-MM-DD
+  #   created: ""                        # ISO 8601 timestamp
+  #   updated: ""                        # ISO 8601 timestamp

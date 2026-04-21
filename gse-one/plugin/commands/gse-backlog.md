@@ -121,20 +121,21 @@ Add to `.gse/backlog.yaml`:
   status: open  # open | planned | in-progress | review | fixing | done | delivered | deferred
   priority: should  # default, can be changed
   complexity: null  # set during planning
-  created: 2026-01-20
+  origin: user  # plan | review | collect | user | import | ad-hoc
+  created: 2026-01-20T10:30:00Z
   git:
     branch: null
-    branch_status: null
+    branch_status: null  # null | planned | active | merged | deleted
   traces:
     derives_from: []
-    github_issue: null
+  github_issue: null  # top-level, aligned with backlog.yaml template
 ```
 
 #### Step 4 — GitHub Issue (If Enabled)
 
-If `.gse/config.yaml` has `github.issues_sync: true`:
+If `.gse/config.yaml → github.enabled: true` AND `github.sync_mode ∈ {on-activity, real-time}`:
 - Create a GitHub Issue with matching title and description
-- Store the issue number in `traces.github_issue`
+- Store the issue number in `github_issue` (top-level field, not nested in traces)
 - Apply labels based on artefact type
 
 ### Sync Mode (`sync`)
@@ -147,7 +148,7 @@ Fetch all open GitHub Issues for the repository:
 
 #### Step 2 — Push to GitHub
 
-For each TASK with `github_issue: null` and `github.issues_sync: true`:
+For each TASK with `github_issue: null` and (`github.enabled: true` AND `github.sync_mode ∈ {on-activity, real-time}`):
 - Create a GitHub Issue
 - Store the issue number
 

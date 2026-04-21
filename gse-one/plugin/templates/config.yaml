@@ -5,11 +5,11 @@
 # --- Section 1: Project ---
 project:
   name: ""
-  domain: "web"                        # web | embedded | scientific | cli | library | mobile
+  domain: "web"                        # web | api | cli | data | mobile | embedded | library | scientific | other  (aligned with profile.yaml dimensions.project_domain)
 
 # --- Section 2: Lifecycle ---
 lifecycle:
-  mode: full                           # full | lightweight
+  mode: full                           # full | lightweight | micro  (see spec §13.2)
   stale_sprint_sessions: 3              # sessions without progress before stale detection (/gse:go)
   phases:
     LC02:

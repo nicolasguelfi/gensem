@@ -87,32 +87,50 @@ Before any other work, verify the current sprint is writeable. This preflight im
 Create a new TASK entry in `backlog.yaml`:
 
 ```yaml
-TASK-{next_id}:
+- id: TASK-{next_id}
   title: "{description}"
   artefact_type: {inferred_type}
   complexity: {estimated}
-  sprint: S{current_NN}
+  sprint: {current_NN}                # integer (not "S{NN}")
   status: planned
-  source: ad-hoc
+  priority: should                    # default — ad-hoc tasks rarely 'must'
+  origin: ad-hoc                      # aligned with backlog.yaml template `origin` enum
   requires_review: {true unless --no-review or complexity <= 1}
-  created_at: {timestamp}
+  traces:
+    derives_from: []
+    implements: []
+  git:
+    branch: null
+    branch_status: null
+  github_issue: null
+  created: {ISO-8601 timestamp}
+  updated: {ISO-8601 timestamp}
 ```
 
 **If `artefact_type: spike`:**
 ```yaml
-TASK-{next_id}:
+- id: TASK-{next_id}
   title: "{description}"
   artefact_type: spike
+  # Spike-specific fields (spec §12.3 artefact_type=spike extensions):
   question: "{the technical question to answer}"
   complexity_cap: {estimated, max 3}
+  deliverable: false                  # cannot be merged to main
+  outcome: pending                    # pending | yes | no | partial (after completion)
   complexity: {estimated}
-  sprint: S{current_NN}
+  sprint: {current_NN}
   status: planned
-  source: ad-hoc
+  priority: should
+  origin: ad-hoc
   requires_review: false
-  deliverable: false          # cannot be merged to main
-  outcome: pending            # → yes / no / partial after completion
-  created_at: {timestamp}
+  traces:
+    derives_from: []
+  git:
+    branch: null
+    branch_status: null
+  github_issue: null
+  created: {ISO-8601 timestamp}
+  updated: {ISO-8601 timestamp}
 ```
 
 **Spike rules:**

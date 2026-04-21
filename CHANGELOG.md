@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.47.8] - 2026-04-21
+
+Layers impacted: **implementation**, **templates** (state management cluster pass)
+
+**Methodology coherence pass — eighth batch** from the /gse-audit run against v0.45.0. Six state-management drifts: stale hardcoded version, missing pause/resume fields, task.md using the wrong YAML shape (mapping vs list), backlog schema incomplete, config enum missing Micro, deploy templates still marked PENDING, and one config key referenced but non-existent.
+
+### Fixed
+- **`status.yaml` template `gse_version: "0.9.0"`** hardcoded → `""` (filled by /gse:hug from VERSION registry). Prevents newly-seeded projects from inheriting a stale version.
+- **`status.yaml` template missing `session_paused` and `pause_checkpoint`** added. Previously written by pause.md Step 3 and cleared by resume.md Step 6, but the template didn't declare them — schema drift.
+- **task.md §Step 3 YAML shape** fixed: was writing `TASK-{next_id}: {fields}` (mapping form) into `items: []` (list). YAML-incompatible — would either corrupt backlog or write to the wrong location. Now uses canonical list-of-objects form `- id: TASK-{next_id}\n  title: ...`.
+- **task.md field names** aligned on backlog.yaml template:
+  - `source: ad-hoc` → `origin: ad-hoc` (template's canonical enum)
+  - `created_at: {timestamp}` → `created: {ISO-8601 timestamp}` (template's field name)
+  - Sprint values: `S{NN}` → `{NN}` (integer, as template specifies)
+  - Added `priority`, `traces`, `git`, `github_issue`, `updated` fields to match template structure.
+- **config.yaml `lifecycle.mode` comment** extended from `full | lightweight` to `full | lightweight | micro (see spec §13.2)`. Micro was a valid third mode already used elsewhere but the enum comment hid it.
+- **MANIFEST.yaml deploy PENDING block removed** — `/gse:deploy` is production-ready since v0.42.0. Registered 8 deploy templates: `deploy.json`, `deploy-env.example`, `deploy-env-training.example`, `Dockerfile.streamlit`, `Dockerfile.python`, `Dockerfile.node`, `Dockerfile.static`, `.dockerignore`. MANIFEST now declares 29 templates (was 21).
+- **backlog.md `github.issues_sync`** (non-existent config key) replaced with canonical `github.enabled: true AND github.sync_mode ∈ {on-activity, real-time}` across 2 occurrences. Prevents silent broken check.
+- **backlog.md `github_issue` nesting** corrected: previously `github_issue: null` was placed **inside** `traces: {}`, but the backlog.yaml template has it at the item top-level. backlog.md example now matches.
+
+### Changed
+- **backlog.yaml template extended** with 8 new documented fields to formalize the canonical schema: `description`, `requires_review`, `completed_at`, and 4 spike-specific fields (`question`, `complexity_cap`, `deliverable`, `outcome`). All optional; existing backlogs remain valid.
+- **config.yaml `project.domain` enum comment** aligned with the fused `project_domain` enum from Prop 6: `web | api | cli | data | mobile | embedded | library | scientific | other`. Previously used the old template enum `web | embedded | scientific | cli | library | mobile`.
+
+### Notes
+- No activity, agent, or principle added/removed.
+- MANIFEST deploy entries now make the template system the single source of truth for what `/gse:deploy` copies into user projects.
+- A future pass could address: checkpoint.yaml `health_score` flat vs status.yaml `health.score` nested naming asymmetry (cosmetic drift flagged by audit but not functional).
+
 ## [0.47.7] - 2026-04-21
 
 Layers impacted: **spec**, **design**, **implementation** (coach/pedagogy cluster pass)

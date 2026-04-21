@@ -7,9 +7,6 @@
 # - Future /gse:upgrade (knows which project files to scan and migrate)
 # - gse_generate.py --verify (can check all listed templates exist)
 #
-# NOTE: Deploy-related templates (Dockerfile.*, deploy.json, deploy-env*.example)
-# are excluded pending an ongoing deploy refactoring. Add them after stabilization.
-
 templates:
   # --- Core .gse/ state files (scope: project) ---
   - source: status.yaml
@@ -141,12 +138,51 @@ templates:
     scope: project
     description: Gitignore additions (.worktrees/, .gse/checkpoints/, etc.)
 
-  # --- Deploy templates (PENDING — deploy refactoring in progress) ---
-  # TODO: Add after deploy refactoring stabilizes:
-  # - deploy.json → .gse/deploy.json
-  # - deploy-env.example → deploy-env.example
-  # - deploy-env-training.example → deploy-env-training.example
-  # - Dockerfile.python → Dockerfile
-  # - Dockerfile.streamlit → Dockerfile
-  # - Dockerfile.node → Dockerfile
-  # - Dockerfile.static → Dockerfile
+  # --- Deploy templates (scope: project — /gse:deploy production-ready since v0.42) ---
+  - source: deploy.json
+    target: .gse/deploy.json
+    created_by: /gse:deploy
+    scope: project
+    description: Deploy state — phases, server, coolify, domain, applications
+
+  - source: deploy-env.example
+    target: deploy-env.example
+    created_by: /gse:deploy (Solo / Instructor)
+    scope: project
+    description: .env template for Hetzner+Coolify deployment (HETZNER_API_TOKEN, DEPLOY_DOMAIN)
+
+  - source: deploy-env-training.example
+    target: deploy-env-training.example
+    created_by: /gse:deploy (Learner)
+    scope: project
+    description: .env template for learner role (shared Coolify, no Hetzner token)
+
+  - source: Dockerfile.streamlit
+    target: Dockerfile
+    created_by: /gse:deploy (app_type=streamlit)
+    scope: project
+    description: Dockerfile for Streamlit apps (port 8501, healthcheck /_stcore/health)
+
+  - source: Dockerfile.python
+    target: Dockerfile
+    created_by: /gse:deploy (app_type=python)
+    scope: project
+    description: Dockerfile for generic Python apps (port 8000, healthcheck /)
+
+  - source: Dockerfile.node
+    target: Dockerfile
+    created_by: /gse:deploy (app_type=node)
+    scope: project
+    description: Dockerfile for Node.js apps (port 3000, healthcheck /)
+
+  - source: Dockerfile.static
+    target: Dockerfile
+    created_by: /gse:deploy (app_type=static)
+    scope: project
+    description: Dockerfile for static sites (port 80, nginx)
+
+  - source: .dockerignore
+    target: .dockerignore
+    created_by: /gse:deploy
+    scope: project
+    description: Excludes for Docker build context (.git, node_modules, .worktrees, etc.)

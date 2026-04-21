@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.47.3] - 2026-04-21
+
+Layers impacted: **spec**, **design** (structural cleanup pass)
+
+**Methodology coherence pass — third batch (structural corrections)** from the /gse-audit run against v0.45.0. Targets dangling cross-references, missing TOC entries, undefined steps referenced multiple times, and one missing introduction section.
+
+### Fixed
+- **spec TOC** now lists Appendix B (Cost Assessment Grid for Maintenance Work) and Appendix C (Maintainer Guide) separately. Previous entry "B. Maintainer Guide" pointed at Appendix B but Appendix B is actually the Cost Grid — Maintainer Guide is Appendix C.
+- **spec §14.3 "Step 6 (Complexity Assessment)"** now exists as a dedicated section. Previously referenced 4 times (§14.3 Step 2 tables, §13.2 cross-ref, Step 5 transition lines) but never defined. The new Step 6 consolidates the 8 structural signals scanned, the mode mapping (Micro / Lightweight / Full), and the Gate decision format.
+- **spec §3.2.1 line 1123** corrected from "not 11" to "not 13" — the HUG interview has 13 dimensions (confirmed by spec §14.1 and the 13-row table in hug.md).
+- **spec §7.2 Risk Alerts example** corrected `DS-002` → `DES-002`. `DS-` is not a canonical P6 prefix; design decisions use `DES-`.
+- **spec §10 commit convention example** corrected `Traces: RVW-005, SEC-002` → `Traces: RVW-005, RVW-012`. `SEC-` is not a canonical P6 prefix; since Prop 7 unified all reviewer findings to `RVW-NNN` with `perspective:`, the example now reflects that.
+- **design §1 Introduction** added. The document previously started at §2 (Plugin System Comparison), which disoriented readers. The new §1 clarifies scope, out-of-scope, and reading order.
+- **design §5.14 ligne 1167** corrected cross-ref `Adopt mode (see 5.5)` → `Adopt mode (see 5.4)`. §5.4 is Adopt Mode; §5.5 is Lightweight Mode (different concept).
+- **design §5.9 "Step 7 — (removed)"** dead section marker removed. The info it carried ("health auto-updated by canonical run") is already covered by its reference to spec §6.3.
+
+### Notes
+- No plugin impact — these are spec/design documentation corrections. Regeneration is a no-op.
+- design §14 Open Questions status labeling (some items "RESOLVED", others "Recommendation" without status) is deliberately deferred to a future dedicated proposition — each row needs individual analysis.
+
 ## [0.47.2] - 2026-04-21
 
 Layers impacted: **spec**, **implementation** (schema + artefact identification pass)

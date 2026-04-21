@@ -4,6 +4,26 @@
 
 ---
 
+## 1. Introduction
+
+This document details the implementation design of GSE-One: how the abstract concepts defined in `gse-one-spec.md` are realized as concrete artifacts (skills, agents, templates, tools, hooks) deployed across three coding agent platforms (Claude Code, Cursor, opencode).
+
+**Scope:**
+- Repository structure and generator mechanics (§3, §11)
+- Skill designs that required non-trivial decisions (§4, §5)
+- Cross-platform parity (§6)
+- Hook system mechanics (§7)
+- File inventory (§12) and implementation roadmap (§13)
+
+**Out of scope:**
+- Methodological principles (see spec §2)
+- Per-activity workflow details (see each `src/activities/<name>.md`)
+- Agent persona prompts (see each `src/agents/<name>.md`)
+
+**Reading order:** start at §3 (architecture), then §4-§5 (skills), §6-§7 (cross-platform), §11-§12 (generator + inventory). Sections §8-§10 handle edge cases.
+
+---
+
 ## 2. Plugin System Comparison
 
 All three supported environments support git operations:
@@ -991,9 +1011,6 @@ Part of the canonical run when visual testing is enabled (see spec §6.3 "Screen
 
 Only invoked by `--evidence`. Aggregates all per-run TCPs of the current sprint into a single sprint-level campaign (also TCP-prefixed), with `traces.derives_from` pointing at the rolled-up TCPs. No test execution is performed.
 
-### Step 7 — (removed)
-
-Health dimensions and TASK `test_evidence` are updated automatically by the canonical run (spec §6.3 step 7 and step 5). No separate step needed here.
 ```
 
 ### 5.10 `/gse:produce` — Test Execution After Production
@@ -1164,7 +1181,7 @@ When `/gse:go` is invoked:
 
 | Condition | Action |
 |-----------|--------|
-| `.gse/` absent + project has files | Adopt mode (see 5.5) |
+| `.gse/` absent + project has files | Adopt mode (see 5.4) |
 | `.gse/` absent + project empty | HUG (LC00) |
 | `.gse/` exists | Read `status.yaml` → Step 2 |
 

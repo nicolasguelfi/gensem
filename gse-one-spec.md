@@ -79,7 +79,8 @@ Everything else is handled by the agent based on your profile and project state.
 14. [Standard Activity Groups (Lifecycle Phases)](#14-standard-activity-groups)
 15. [Glossary](#15-glossary)
 A. [Activity Summary (Quick Reference)](#appendix-a)
-B. [Maintainer Guide](#appendix-b)
+B. [Cost Assessment Grid for Maintenance Work](#appendix-b)
+C. [Maintainer Guide](#appendix-c)
 
 ---
 
@@ -1120,7 +1121,7 @@ The HUG activity captures and maintains the following profile dimensions:
 - **IT expertise:** estimated from vocabulary and question complexity
 - **Team context:** detected from git log (multiple committers?)
 
-Only dimensions that cannot be reliably inferred are asked explicitly. For a typical solo project, the interview should have 4-5 questions, not 11.
+Only dimensions that cannot be reliably inferred are asked explicitly. For a typical solo project, the interview should have 4-5 questions, not 13.
 
 ### 3.3 Learning
 
@@ -1696,7 +1697,7 @@ Actionable warnings surfaced from the health score:
 
 ```
   ⚠ RISK: REQ-007 (user authentication) has no tests
-  ⚠ RISK: Design shortcut DS-002 (hardcoded config) — planned fix: sprint 4
+  ⚠ RISK: Design shortcut DES-002 (hardcoded config) — planned fix: sprint 4
   ⚠ DEBT: 2 dependencies have known vulnerabilities (npm audit)
   ⚠ GIT:  2 worktrees have uncommitted changes
   ⚠ GIT:  Branch gse/sprint-02/feat/old-feature not touched in >2 sprints
@@ -1995,7 +1996,7 @@ Traces: REQ-007, DES-003
 gse(sprint-03/fix): resolve XSS vulnerability in login form
 
 Sprint: 3
-Traces: RVW-005, SEC-002
+Traces: RVW-005, RVW-012
 
 gse(sprint-03/docs): add API reference for auth endpoints
 
@@ -2896,6 +2897,44 @@ When the project is **greenfield** (no source files after standard exclusions) a
 5. After intent is captured and backlog items created, proceed to **Step 6 (Complexity Assessment)** to determine the appropriate mode. The mode determines the lifecycle path (Micro → PRODUCE, Lightweight → PLAN, Full → COLLECT). Present each activity in plain language for beginners; direct technical terms for intermediate/expert.
 6. **Exit condition:** the user can skip Intent Capture at any time by saying *"I know the process"* / *"no need, let's proceed"* / equivalent. If skipped, no `intent.md` is written and the agent proceeds directly to Step 6. An Inform note is logged noting intent was declined.
 7. **Pivot / re-capture:** if at a later date the user wants to replace or evolve the intent (project pivot, scope reset), the existing `INT-001` is archived to `docs/archive/intent-vNN.md` and a new `INT-002` is created with the updated content. Downstream artefacts pointing to the old `INT-001` are not rewritten — the archive preserves the historical trace.
+
+**Step 6 — Complexity Assessment:**
+
+Triggered by Step 2's "No sprint" branches (greenfield after Intent Capture, or adopt mode after `.gse/` scaffolding). The orchestrator scans structural signals to recommend a lifecycle mode:
+
+| Signal | What is scanned | Weight |
+|--------|-----------------|--------|
+| Package manifest | `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`, etc. | present / absent |
+| Persistence | DB config, schema files, migrations, ORM usage | present / absent |
+| Entry points | `main()`, CLI commands, HTTP routes | count |
+| Multi-component | Top-level subdirs suggesting separate modules | count |
+| CI/CD | `.github/workflows/`, `.gitlab-ci.yml`, `Jenkinsfile` | present / absent |
+| Git maturity | Commit count, branch count, co-author count | count |
+| Test presence | `tests/`, `*.test.*`, `*_test.py` | count |
+| Dependencies | Total declared dependencies (dev + runtime) | count |
+
+Mapping (see §13.2 for the detailed Full / Lightweight / Micro matrix):
+- **Micro** — No manifest, no git history, ≤ 2 source files. Scripts, one-off tasks.
+- **Lightweight** — Few dependencies, single component, no persistence, no CI.
+- **Full** — Persistence, multi-component, CI/CD, > 10 dependencies, or > 10 entry points.
+
+The recommendation is presented as a **Gate decision**:
+
+```
+**Question:** I've analyzed your project. It looks like a {mode} project. Use {mode} mode?
+
+**Signals detected:**
+- {signal 1}: {value}
+- {signal 2}: {value}
+- ...
+
+**Options:**
+1. Accept {mode} — continue with the recommended ceremony level
+2. Choose another mode ({other modes}) — override the recommendation
+3. Discuss — explain what each mode implies for this project
+```
+
+The chosen mode is written to `config.yaml → lifecycle.mode` and to `status.yaml` for subsequent sessions. Upgrading later is possible at any time via `/gse:go` — the agent scaffolds the missing structure (see §13.2 "Upgrading from Micro → Lightweight → Full").
 
 ```yaml
 # In config.yaml → lifecycle:

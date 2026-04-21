@@ -833,8 +833,8 @@ Proactive proposals use the structured interaction pattern (P4):
 **Context:** <why this matters for your project right now>
 
 **Options:**
-1. Yes, quick overview (5 min) — key concepts + how they apply to your project
-2. Yes, deeper session (15 min) — concepts + examples + practice exercise
+1. Quick overview (5 min) — concise introduction with key concepts + how they apply to your project
+2. Deep session (15 min) — worked example + practice exercise
 3. Not now — remind me next sprint
 4. Not interested — don't propose this topic again
 5. Discuss — tell me more before I decide
@@ -915,6 +915,34 @@ expertise_domains:
 ```
 
 When a domain entry exists, the agent uses it instead of the global `it_expertise` for communication and decision tier calibration in that domain. This is never asked at HUG — it emerges from use.
+
+#### Workflow monitoring axes (P14 extension)
+
+Beyond pedagogy (axis 1), the coach monitors seven workflow axes that observe the AI+user collaboration for drift, fatigue, and process-quality signals. Each axis has a specific signal source and output type:
+
+| # | Axis | Signal source | Output type |
+|---|------|---------------|-------------|
+| 2 | `profile_calibration` | Per-dimension drift signals (vocabulary mismatch, repeated requests for simpler/longer explanations) | Inform advice proposing `/gse:hug --update` |
+| 3 | `sprint_velocity` | Estimated vs consumed complexity points across last N sprints | Inform advice on sprint sizing |
+| 4 | `workflow_health` | Activity skip patterns, re-runs, non-standard sequences | Inform advice on workflow deviations |
+| 5 | `quality_trends` | Test pass rate evolution, review findings trend, regression flag occurrence | Inform advice on quality direction |
+| 6 | `engagement_pattern` | P16 `consecutive_acceptances` counter, Gate dismissal rate, "Discuss" usage | Inform advice on engagement health |
+| 7 | `process_deviation` | Recurring DEC- entries with `type: methodology-deviation` | Inform advice on sanctioning deviations |
+| 8 | `sustainability` | Session cadence, sprint point totals vs spec §8 guidance | Inform advice on pacing |
+
+Each axis is individually toggleable via `config.yaml → coach.axes.<axis_name>` (snake_case). All workflow-axis outputs are Inform-tier (never blocks). The mechanism and invocation moments are defined in design §5.17; the agent implementation lives in `plugin/agents/coach.md`.
+
+#### P14 preamble — 5-option format (canonical)
+
+When the coach proposes a pedagogy topic (axis 1) or when `/gse:learn` presents a learning proposal, the standard 5-option Gate is:
+
+1. **Quick overview (5 min)** — concise introduction
+2. **Deep session (15 min)** — worked example + practice
+3. **Not now** — remind me next sprint
+4. **Not interested** — don't propose this topic again (permanent topic-level suppress)
+5. **Discuss** — tell me more before I decide
+
+Options 3 and 4 are recorded in `status.yaml → learning_preambles[]` to avoid re-proposing the same topic spuriously. Labels are canonical — implementations (coach.md, learn.md, orchestrator) use this exact wording.
 
 **AI Integrity**
 

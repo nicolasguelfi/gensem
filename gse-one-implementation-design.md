@@ -2238,7 +2238,7 @@ Invoked by the orchestrator with a `moment` tag. Each axis is activated by speci
 
 # Workflow axes outputs
 - verdict: advise
-  axis: velocity | health | quality | engagement | deviation | sustainability | profile-calibration
+  axis: sprint_velocity | workflow_health | quality_trends | engagement_pattern | process_deviation | sustainability | profile_calibration
   severity: inform | gate
   observation: "{1-2 sentences of what the coach has noticed}"
   evidence: ["{concrete signal 1}", "{concrete signal 2}"]
@@ -2255,7 +2255,7 @@ On `propose` (pedagogy), the orchestrator presents the 5-option P14 Gate. On `ad
 | `detected_gaps[]` | `.gse/status.yaml` | Pedagogy (inferred) | Per-project, reviewed at each `/gse:compound` |
 | Learning notes | `docs/learning/LRN-*.md` | Pedagogy | Per-project, durable artefacts with traces |
 | `profile_drift_signals{}` | `.gse/status.yaml` | Profile calibration | Per-project, persistent — feeds `/gse:hug --update` proposals |
-| `workflow_observations[]` | `.gse/status.yaml` | Velocity, Health, Quality, Engagement, Deviation, Sustainability | Transient — cleared at sprint close after consumption by compound |
+| `workflow_observations[]` | `.gse/status.yaml` | sprint_velocity, workflow_health, quality_trends, engagement_pattern, process_deviation, sustainability | **Persistent** — cross-sprint ledger for trending. Axes like `quality_trends`, `sprint_velocity`, `sustainability` depend on history across ≥ 3 sprints. Individual observations may be summarized (not purged) at `/gse:compound`. |
 | Coaching recipes | `gse-one/plugin/agents/coach.md` Recipes section | All axes (tagged `for: pedagogy | workflow | both`) | **Edit destination:** the user-local copy in `.claude/agents/coach.md` / `.cursor/agents/coach.md` (per-project) OR the shipped template (shared defaults) |
 
 **Coaching recipes — dual maintenance:**

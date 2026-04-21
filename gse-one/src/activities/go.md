@@ -93,6 +93,10 @@ If `.gse/config.yaml` → `git.strategy` is `worktree` or `branch-only`:
 
 This step is a **safety net** for cases where HUG Step 4 was interrupted or the foundational commit was not created.
 
+### Step 2.8 — Coach Workflow Overview (post-recovery)
+
+After all recovery / dependency / dashboard / git-baseline checks have cleared (Steps 2–2.7), the orchestrator invokes the **coach agent** with `moment: /gse:go after recovery` (per coach.md Invocation contract, design §5.17). The coach activates axes 2–8 (workflow axes) to surface any cross-sprint drift signals (profile calibration, velocity, health, quality trends, engagement, deviation, sustainability) as Inform-tier advice. Coach outputs are bounded by `config.yaml → coach.max_advice_per_check` (default 3). If nothing meaningful surfaces, this step is silent.
+
 ### Step 3 — Determine Next Action (Decision Tree)
 
 Read `status.yaml` fields: `current_sprint`, `current_phase`, `last_activity`, `last_activity_timestamp`, AND `.gse/plan.yaml` when it exists.

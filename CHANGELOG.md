@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.47.7] - 2026-04-21
+
+Layers impacted: **spec**, **design**, **implementation** (coach/pedagogy cluster pass)
+
+**Methodology coherence pass — seventh batch** from the /gse-audit run against v0.45.0. Targets coach axis naming drift (functional bug: config keys not matching), `workflow_observations[]` lifecycle contradiction, P14 preamble 5-option divergence across 3 documents, and a gap in spec coverage of the 7 workflow axes.
+
+### Fixed
+- **Coach axis naming** — design §5.17 output schema aligned on snake_case full names from coach.md: `sprint_velocity`, `workflow_health`, `quality_trends`, `engagement_pattern`, `process_deviation`, `sustainability`, `profile_calibration`. Previously design used shortened ambiguous tokens (`velocity`, `health`, `quality`, `engagement`, `deviation`, `profile-calibration` kebab) that did not match coach.md — breaking the `config.yaml → coach.axes.<name>: false` toggle (user-written snake_case would not match the design-side check).
+- **`workflow_observations[]` lifecycle** — design §5.17 persistence table corrected from "Transient — cleared at sprint close after consumption by compound" to "**Persistent** — cross-sprint ledger for trending". Quality trends, sprint velocity, and sustainability axes all require ≥ 3 sprints of history to compute meaningful trends; purging at sprint close broke trending.
+- **P14 preamble 5-option labels** unified across 3 documents onto canonical wording:
+  - Option 1: "Quick overview (5 min) — concise introduction"
+  - Option 2: "Deep session (15 min) — worked example + practice"
+  - Options 3-5 unchanged (Not now / Not interested / Discuss).
+  Previously: spec §P14 used "Yes, quick overview (5 min)" / "Yes, deeper session (15 min)"; learn.md used "Quick overview (5 min) — core REST principles" / "Deep dive (15 min) — REST design patterns"; coach.md used compact "Quick overview" / "Deep session". Now all three agree.
+
+### Added
+- **spec §P14 "Workflow monitoring axes"** subsection listing the 7 non-pedagogy axes (profile_calibration through sustainability) with signal source and output type per axis. Previously §P14 described pedagogy in detail but never enumerated the 7 workflow axes at the spec layer — readers had to discover them in design §5.17 or coach.md.
+- **spec §P14 "P14 preamble — 5-option format (canonical)"** subsection formalizing the 5 options with their canonical labels and persistence rules (options 3/4 recorded in `status.yaml → learning_preambles[]`). Serves as the shared reference for coach.md / learn.md / orchestrator preambles.
+- **go.md Step 2.8 "Coach Workflow Overview (post-recovery)"** — explicit invocation of the coach agent after recovery checks complete, activating axes 2-8 for cross-sprint drift signals. Previously coach.md cited "/gse:go after recovery" as an invocation moment but go.md didn't document the invocation.
+
+### Changed
+- **learn.md "Proactive Workflow" section** simplified to a pointer to coach.md + design §5.17 + spec §P14. Previously learn.md documented its own 4-trigger list (duplicating coach.md's 8 moments + design's 9 moments with different vocabulary). Now `/gse:learn` owns the Reactive path; the Proactive path is owned by the coach agent.
+- **learn.md Structured Interaction Pattern** aligned on canonical 5-option labels.
+
+### Notes
+- No functional regression: the persistence change for `workflow_observations[]` enables trending that was implicitly required by quality_trends/velocity/sustainability axes. Existing projects with an empty `workflow_observations[]` list continue to work — the coach fills it across upcoming sprints.
+- Open: design §5.17 invocation moments table (lines 2202-2212) uses tokens like `activity_start:/gse:*`, `compound_axe_3` which don't match coach.md's prose (e.g. "/gse:compound Axe 3 feed"). This is moment-naming convention (machine-facing vs human-facing) and is kept as-is for now — both are unambiguous and reference the same moments.
+
 ## [0.47.6] - 2026-04-21
 
 Layers impacted: **implementation**, **templates** (delivery/compound cluster pass)

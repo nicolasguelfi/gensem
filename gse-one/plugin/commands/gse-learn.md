@@ -71,6 +71,8 @@ Content is calibrated using the user profile:
 | `preferred_verbosity` | Length and detail level |
 | `language.chat` | Language of explanation |
 
+_See spec §P14 "P14 preamble — 5-option format (canonical)" for the shared 5-option Gate used across coach / `/gse:learn` / orchestrator preambles._
+
 **Quick mode structure:**
 1. One-sentence definition
 2. Why it matters (in the context of the current project)
@@ -135,34 +137,35 @@ topics:
 
 ### Proactive Workflow (Agent-Initiated)
 
-Triggered automatically at workflow transitions when GSE-One detects a learning opportunity.
+Proactive learning proposals are driven by the **coach agent's pedagogy axis (axis 1)**. The coach is invoked by the orchestrator at documented moments (any lifecycle activity start with `learning_goals` non-empty, `/gse:compound` Axe 3, detected inferred gaps, etc.). See:
 
-#### When to Trigger (4 specific triggers)
+- **`plugin/agents/coach.md`** — authoritative specification of the 8 coach axes, invocation contract, anti-spam safeguards, coaching recipes.
+- **design §5.17** — coach invocation moments, persistence model, output schema.
+- **spec §P14** — 5-option P14 preamble canonical format + 7 workflow monitoring axes.
 
-1. **Sprint end** — During COMPOUND, propose learning on topics encountered during the sprint
-2. **Before complex activity** — Before DESIGN, TESTS strategy, or PRODUCE on a TASK involving unfamiliar technology, check competency map and propose if gaps exist
-3. **After repeated review findings** — If REVIEW finds the same type of issue (e.g., missing error handling) across 2+ TASKs, propose a learning session on that topic
-4. **HUG learning goals** — If the user specified learning goals in their profile, propose relevant sessions when the current work touches those topics
+`/gse:learn` handles **direct user invocation** (Reactive Workflow, above). The Proactive path is owned by the coach — `/gse:learn` does not duplicate its trigger logic here.
 
-#### Structured Interaction Pattern
+#### Structured Interaction Pattern (canonical — spec §P14)
 
-Present exactly 5 options — never force learning on the user:
+When the coach (or `/gse:learn`) proposes a topic, it presents the 5-option P14 Gate:
 
 ```
 Agent: We're about to define API contracts. I notice "REST design patterns"
 isn't in your competency map. Would you like to:
 
-1. Quick overview (5 min) — core REST principles for this project
-2. Deep dive (15 min) — REST design patterns with exercises
+1. Quick overview (5 min) — concise introduction
+2. Deep session (15 min) — worked example + practice
 3. Not now — remind me next sprint
 4. Not interested — don't propose this topic again
 5. Discuss — tell me more before I decide
 ```
 
-#### Guardrails
+On acceptance (option 1 or 2), `/gse:learn` runs in Reactive mode to generate and persist the LRN-. Options 3 and 4 are recorded in `status.yaml → learning_preambles[]` to avoid re-proposing.
 
-- **Max 1 proposal per phase** — Never interrupt the same activity twice
-- **Respect user pace** — If user chose "Not now" for a topic, do not re-propose in the same sprint
+#### Guardrails (enforced by the coach)
+
+- **Max 1 proposal per activity phase** — Never interrupt the same activity twice
+- **Respect user pace** — "Not now" for a topic: no re-proposal in the same sprint; "Not interested": permanent topic-level suppress
 - **Contextual relevance** — Only propose topics directly relevant to the current or next task
 
 ### Contextual Tips (Inline Micro-Explanations)

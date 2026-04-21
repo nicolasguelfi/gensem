@@ -14,7 +14,9 @@ gse:
 
 ## Summary
 
-_{1-3 sentences giving the overall experience of this sprint with the methodology}_
+_{1-3 sentences giving the overall experience of this sprint with the methodology.
+State the volume (how many observations, how many themes), the headline theme
+(biggest friction or biggest win), and the chosen route (export / tickets / both).}_
 
 ## Observations grouped by theme
 
@@ -27,3 +29,34 @@ _{1-3 sentences giving the overall experience of this sprint with the methodolog
 **User quote** (if relevant): *"{verbatim}"*
 
 **Proposed improvement:** {actionable suggestion}
+
+---
+
+### Theme 2: {name}
+
+**Observation:** {specific, with context}
+
+**Source:** {list of artefact references}
+
+**User quote** (if relevant): *"{verbatim}"*
+
+**Proposed improvement:** {actionable suggestion}
+
+---
+
+<!-- Duplicate the "### Theme N" block for each additional theme.
+     Keep themes in order of severity (HIGH → MEDIUM → LOW) or impact.
+     Separator: a blank line then `---` between themes. -->
+
+## Totals
+
+- **Observations collected:** {N}
+- **Themes produced:** {M}
+- **Severity split:** {N_high} HIGH / {N_medium} MEDIUM / {N_low} LOW
+- **Route chosen:** {local export | tickets proposed | both | none}
+- **Tickets proposed to upstream** (if applicable): {list of draft ticket titles; see `.gse/compound-tickets-draft.yaml` for full content}
+
+## Next steps
+
+- {e.g., /gse:integrate Axe 2 to submit proposed tickets}
+- {e.g., re-run /gse:compound Axe 2 after N sprints to check if themes repeat}

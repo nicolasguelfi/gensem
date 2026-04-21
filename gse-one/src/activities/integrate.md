@@ -24,7 +24,7 @@ Before executing, read:
 2. `.gse/config.yaml` — project configuration
 3. `.gse/profile.yaml` — user profile, competency map
 4. `docs/sprints/sprint-{NN}/compound.md` — capitalization output (source of solutions)
-5. Upstream repository URL for methodology issues (Axe 2). **Resolution order:** (1) `config.yaml → github.upstream_repo` if set (user override — private forks, corporate trackers), (2) plugin manifest (`plugin.json → repository` on Claude/Cursor; `opencode.json → gse.repository` on opencode), (3) skip Axe 2 with an Inform note.
+5. Upstream repository URL for methodology issues (Axe 2). **Pre-condition** `config.yaml → github.enabled`: if `false`, Axe 2 is skipped entirely (Inform note: *"GitHub ticket routing disabled — local methodology feedback preserved; no issues submitted upstream"*) and `.gse/compound-tickets-draft.yaml` is deleted if present (user's intent is "export only"). If `true` or unset, apply the **Resolution order:** (1) `config.yaml → github.upstream_repo` if set (user override — private forks, corporate trackers), (2) plugin manifest (`plugin.json → repository` on Claude/Cursor; `opencode.json → gse.repository` on opencode), (3) skip Axe 2 with an Inform note.
 
 ## Workflow
 

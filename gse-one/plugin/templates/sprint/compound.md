@@ -40,72 +40,52 @@ _Reusable patterns, techniques, or approaches worth remembering._
 |-------------------------------|----------------------|---------------------|
 |                               |                      |                     |
 
-## Axis 2: Ecosystem Feedback
+## Axis 2: Methodology Capitalization
 
-_Feedback for tools, libraries, and infrastructure used._
+_What worked and what did not in the GSE-One methodology itself this sprint.
+Aligned with compound.md activity §2.1–§2.6._
 
-### Tool Effectiveness
+### Observations Gathered
 
-| Tool / Library                | Effectiveness | Friction Points      | Suggestions         |
-|-------------------------------|--------------|----------------------|---------------------|
-|                               |              |                      |                     |
+| Observation                   | Source (RVW-/DEC-/activity/conversation) | Theme                | Severity (HIGH/MEDIUM/LOW) |
+|-------------------------------|------------------------------------------|----------------------|----------------------------|
+|                               |                                          |                      |                            |
 
-### Configuration Adjustments
+### Themes (Consolidated)
 
-_Recommended changes to project configuration based on this sprint's experience._
+| Theme                         | Effective practices | Friction points | Missing capabilities | Improvement proposal |
+|-------------------------------|---------------------|-----------------|----------------------|----------------------|
+|                               |                     |                 |                      |                      |
 
-| Config Key                    | Current Value | Suggested Value | Reason              |
-|-------------------------------|--------------|-----------------|---------------------|
-|                               |              |                 |                     |
-
-### Issues to Report
-
-_Issues to file against tools or libraries._
-
-| Target                        | Issue Description    | Severity | Filed? |
-|-------------------------------|----------------------|----------|--------|
-|                               |                      |          |        |
-
-### Methodology Feedback Summary
-
-> Recorded at Step 2.6 closure. Summarizes methodology observations from this sprint.
+### Closure Gate Outcome
 
 - **Observations collected:** {N}
-- **Themes identified:** {N}
-- **Route:** {exported locally | proposed as tickets | both | none}
+- **Themes identified:** {M}
+- **Route chosen:** {local export | tickets proposed | both | none}
 - **References:**
   - `methodology-feedback.md`: {produced | not produced}
   - `compound-tickets-draft.yaml`: {produced | not produced}
 
-## Axis 3: Development Governance
+## Axis 3: Competency Capitalization
 
-_Improvements to the development process itself._
+_User's learning journey — update notes, competency map, propose next topics.
+Aligned with compound.md activity §3._
 
-### Decision Tier Review
+### Learning Notes Updated / Created
 
-_Were decision tiers appropriate? Any that should be adjusted?_
+| LRN- | Topic                | Source (sprint evidence) | Note file                         |
+|------|----------------------|--------------------------|-----------------------------------|
+|      |                      |                          |                                   |
 
-| Decision Type                 | Current Tier | Suggested Tier | Reason              |
-|-------------------------------|-------------|----------------|---------------------|
-|                               |             |                |                     |
-
-### Guardrail Effectiveness
-
-| Guardrail                     | Triggered? | Appropriate? | Adjustment          |
-|-------------------------------|-----------|-------------|---------------------|
-|                               |           |             |                     |
-
-### Process Improvements
-
-1. {improvement description}
-
-### Competency Growth
-
-_User competency developments observed during this sprint._
+### Competency Map Updates
 
 | Area                          | Before      | After       | Evidence            |
-|-------------------------------|------------|-------------|---------------------|
-|                               |            |             |                     |
+|-------------------------------|-------------|-------------|---------------------|
+|                               |             |             |                     |
+
+### Proactive LEARN Proposals
+
+1. {topic} — {rationale grounded in sprint activity; preamble will be offered at next activity start}
 
 ## Summary
 

@@ -28,11 +28,31 @@ Before executing, read:
 
 ### Step 0 — Safety: Backup Tags
 
-Before any destructive operation, create backup tags for every feature branch that will be merged:
+Before any destructive operation, create **two classes of backup tags** per feature branch, aligned with spec §10.6 and design §5.15:
 
+**Tag class 1 — merge reversal** (created BEFORE the merge into the integration branch):
+
+```bash
+git tag gse-backup/sprint-{NN}-pre-merge-{type}-{name} $(git rev-parse gse/sprint-{NN}/integration)
 ```
-git tag gse-backup/sprint-{NN}-pre-merge-{type}-{name} $(git rev-parse gse/sprint-{NN}/{type}/{name})
+
+This tags the **integration branch ref** at its state before each merge. To revert a problematic merge:
+```bash
+git checkout gse/sprint-{NN}/integration && git reset --hard gse-backup/sprint-{NN}-pre-merge-{type}-{name}
 ```
+
+**Tag class 2 — branch recovery** (created BEFORE each feature branch is deleted in Step 5 cleanup):
+
+```bash
+git tag gse-backup/sprint-{NN}-{type}-{name}-deleted $(git rev-parse gse/sprint-{NN}/{type}/{name})
+```
+
+This tags the **feature branch ref** at its last commit. To recreate an accidentally-deleted feature branch:
+```bash
+git checkout -b gse/sprint-{NN}/{type}/{name} gse-backup/sprint-{NN}-{type}-{name}-deleted
+```
+
+Both tag classes are retained for 30 days by default (configurable via `config.yaml → git.backup_retention_days`). Cleanup happens at the next `/gse:deliver` (see Step 10).
 
 This ensures rollback is always possible.
 
@@ -195,7 +215,7 @@ Remove backup tags older than `backup_retention_days` (default: 30):
 3. Update `status.yaml`:
    - `last_activity: deliver`
    - `last_activity_timestamp: {now}`
-   - `current_phase: LC03` (transition to capitalization)
+   - `current_phase: LC03` — `/gse:deliver` is the **last LC02 activity** per spec §14 ladder; Step 9.3 marks the post-delivery transition to LC03 (Capitalization). `/gse:compound` and `/gse:integrate` then operate in LC03.
    - **Refresh all 8 health dimension scores** using the same formulas as review (final snapshot for the delivered sprint). This ensures the dashboard health radar reflects the state at delivery time.
 4. Report delivery summary:
    - Tasks delivered

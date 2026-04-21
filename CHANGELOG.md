@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.47.6] - 2026-04-21
+
+Layers impacted: **implementation**, **templates** (delivery/compound cluster pass)
+
+**Methodology coherence pass — sixth batch** from the /gse-audit run against v0.45.0. Targets deliver/compound/integrate cluster drifts: dangerous backup-tag format divergence, LC02/LC03 ambiguity, compound template axes mismatched with activity, integrate missing github.enabled gate, and template gaps.
+
+### Fixed
+- **Safety backup tag format** — deliver.md Step 0 was tagging the wrong ref (feature branch instead of integration branch) with a format (`gse-backup/sprint-{NN}-pre-merge-{type}-{name}` on `gse/sprint-{NN}/{type}/{name}`) that diverged from spec §10.6 and design §5.15. **Functional bug**: the merge-reversal procedure in spec §10.6:2023 (`git reset --hard gse-backup/...`) could not work because the tag didn't point at the right ref. deliver.md now documents **two tag classes** aligned with spec + design:
+  - **Class 1 (merge reversal):** `gse-backup/sprint-{NN}-pre-merge-{type}-{name}` on `gse/sprint-{NN}/integration` BEFORE merge — enables `git reset --hard` rollback.
+  - **Class 2 (branch recovery):** `gse-backup/sprint-{NN}-{type}-{name}-deleted` on `gse/sprint-{NN}/{type}/{name}` BEFORE branch delete — enables branch recreation.
+- **LC02/LC03 deliver ambiguity** — deliver.md Step 9.3 write `current_phase: LC03` now carries an explicit comment: `/gse:deliver` is the **last LC02 activity** per spec §14 ladder; its Step 9.3 marks the post-delivery transition to LC03. Compound and integrate operate in LC03.
+- **compound template Axis 2** renamed from "Ecosystem Feedback" to **"Methodology Capitalization"** with tables aligned on activity §2.1–§2.6 (Observations Gathered / Themes Consolidated / Closure Gate Outcome). Previous Ecosystem Feedback tables (Tool Effectiveness / Configuration Adjustments / Issues to Report) were never filled by the activity.
+- **compound template Axis 3** renamed from "Development Governance" to **"Competency Capitalization"** with tables aligned on activity §3 (Learning Notes / Competency Map / Proactive LEARN Proposals). Previous Governance tables (Decision Tier Review / Guardrail Effectiveness / Process Improvements) were never filled.
+- **integrate.md Axe 2 `github.enabled: false` short-circuit** — previously absent. compound.md already respected `github.enabled: false` (export local only), but integrate would still try to submit any pending `.gse/compound-tickets-draft.yaml`. Integrate now checks `github.enabled` first and deletes the draft file if disabled (user's intent is clearly "export only").
+
+### Added
+- **methodology-feedback.md template** extended with Theme 2 scaffold block, separator convention (`---` between themes), **Totals** section (observations/themes/severity split/route), and **Next steps** section. Previously the template ended after Theme 1 with no closing — users had no guidance on formatting additional themes.
+- **compound.md Step 5 `.gse/plan.yaml` handling clarified** with explicit "no-op" sub-step. The durable sprint-plan archive is `docs/sprints/sprint-{NN}/plan-summary.md` (produced by `/gse:deliver` Step 9.1 with `gse.id: PLN-NNN` inherited); `.gse/plan.yaml` itself stays in place with `status: completed` (sprint-freeze marker) until `/gse:plan --strategic` opens the next sprint and overwrites it. Eliminates the audit's concern about plan.yaml getting stranded after sprint-directory archival.
+
+### Notes
+- compound.md Step 5 sub-step numbering shifted from 4 to 6 due to the new "plan.yaml handling" sub-step between archive accessibility and dashboard regeneration.
+- These fixes close the delivery/compound cluster audit findings except for the two reported items (LC02/LC03 documentation and backup tag format) that were the most material.
+
 ## [0.47.5] - 2026-04-21
 
 Layers impacted: **spec**, **design**, **implementation** (cross-cutting cluster pass)

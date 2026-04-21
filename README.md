@@ -357,79 +357,138 @@ Thank you — contributions keep `/gse:deploy` usable across releases of Hetzner
 
 ## Auditing the plugin
 
-GSE-One ships with a coherence audit tool for **maintainers and forkers** of the methodology repository (not for user projects — for those, use `/gse:status`, `/gse:health`, `/gse:review`, `/gse:assess`, `/gse:compound`, `/gse:collect`). Run it regularly to detect drift between spec, design, and implementation layers.
+GSE-One ships with a **two-part audit tool** for maintainers and forkers of the methodology repository:
+
+1. **Coherence audit** — checks internal consistency across spec, design, and implementation (20 parallel jobs)
+2. **Strategic critique** — evaluates methodology quality, relevance, and user value (4 of the 20 jobs)
+
+Not for user projects — for those, use `/gse:status`, `/gse:health`, `/gse:review`, `/gse:assess`, `/gse:compound`, `/gse:collect`.
 
 ### Two access points
 
 **Slash command (Claude Code, interactive):**
 
 ```
-/gse-audit
+/gse-audit                    # all 20 jobs in parallel
+/gse-audit --deterministic-only   # fast Python engine only
+/gse-audit --coherence-only   # skip strategic critique (16 jobs)
+/gse-audit --strategic-only   # only Category E (4 jobs)
+/gse-audit --job deploy-cluster   # single job
 ```
 
-Runs the full audit: deterministic Python engine + LLM semantic reasoning via the `methodology-auditor` agent. Available in any Claude Code session opened at the root of gensem or a fork. The command is defined in `.claude/commands/gse-audit.md` and the agent in `.claude/agents/methodology-auditor.md`.
+Spawns **20 parallel sub-agents** (one per job), each with its own file list and checks defined in `.claude/audit-jobs.json`. Combines with the Python deterministic engine for a unified report.
 
 **CLI (for CI or quick checks, Python only):**
 
 ```bash
 cd gensem  # or your fork
-python3 gse-one/audit.py                    # full deterministic report (markdown)
-python3 gse-one/audit.py --format json      # JSON for CI/scripting
-python3 gse-one/audit.py --category version # single category
-python3 gse-one/audit.py --fail-on error    # exit code 1 on errors (CI)
+python3 gse-one/audit.py                      # deterministic report (markdown)
+python3 gse-one/audit.py --format json        # JSON for CI/scripting
+python3 gse-one/audit.py --category version   # single category
+python3 gse-one/audit.py --cluster deploy-cluster   # filter to cluster
+python3 gse-one/audit.py --list-clusters      # list available jobs
+python3 gse-one/audit.py --fail-on error      # exit code 1 on errors (CI)
 ```
 
-Pure Python stdlib. **Optional dependency:** `pip install pyyaml` enables YAML schema validation (skipped gracefully if PyYAML is absent).
+Pure Python stdlib. **Optional dependency:** `pip install pyyaml` enables YAML schema validation.
 
-### What the audit covers
+### What the audit covers (20 jobs, 5 categories)
 
-**Deterministic checks (Python engine, 12 categories):**
+**Category A — Single-file quality** *(2 jobs, non-directional)*
+- `spec-file-quality` — internal quality of `gse-one-spec.md`
+- `design-file-quality` — internal quality of `gse-one-implementation-design.md`
+
+**Category B — Intra-layer uniformity** *(5 jobs, non-directional)*
+- `activities-structure-uniformity` — all 23 activity skills follow uniform skeleton
+- `agents-structure-uniformity` — all 11 agents follow uniform skeleton
+- `tools-quality-uniformity` — all 5 Python tools follow SE standards
+- `templates-completeness` — all ~30 templates valid + in MANIFEST
+- `references-quality` — references/ docs fresh and self-contained
+
+**Category C — Layer pair** *(1 job, bidirectional)*
+- `spec-design-coherence` — design refines spec; may reveal spec improvements
+
+**Category D — Horizontal clusters** *(8 jobs, bidirectional)*
+- `governance-cluster` — orchestrator + 16 principles + spec/design
+- `deploy-cluster` — deploy activity + agent + refs + tools + templates + spec + design
+- `sprint-lifecycle-cluster` — plan→reqs→design→preview→tests→produce→review→fix→deliver
+- `state-management-cluster` — all state files + activities that read/write them
+- `cross-cutting-cluster` — go/hug/learn/health/status
+- `coach-pedagogy-cluster` — coach agent + pedagogy activities + profile
+- `quality-assurance-cluster` — review+tests+produce+fix + 7 QA agents
+- `delivery-compound-cluster` — deliver + compound + integrate
+
+**Category E — Strategic critique** *(4 jobs, bidirectional, severity `recommendation`)*
+- `methodology-design-critique` — is the methodology the best design for its goals?
+- `ai-era-adequacy-critique` — is it adapted to current LLM capabilities and risks?
+- `user-value-critique` — does it deliver value to each user profile (solo/instructor/learner/forker)?
+- `robustness-and-recovery-critique` — is it robust to failures?
+
+### Catalog: `.claude/audit-jobs.json`
+
+All 20 jobs are defined declaratively with explicit file lists, scopes, and checks. To add a job (e.g., when your fork adds a new subsystem), edit the catalog and validate:
+
+```bash
+python3 gse-one/audit_catalog.py --validate
+python3 gse-one/audit_catalog.py --show deploy-cluster   # inspect one job
+```
+
+The next `/gse-audit` invocation will automatically include any new job.
+
+### Deterministic checks (Python engine, 12 categories)
+
+Complement the LLM jobs with fast syntactic/structural checks:
 
 | # | Category | Examples |
 |:-:|---|---|
-| 1 | Version consistency | VERSION ↔ 3 manifests ↔ CHANGELOG latest entry |
+| 1 | Version consistency | VERSION ↔ 3 manifests ↔ CHANGELOG latest |
 | 2 | File integrity | `ACTIVITY_NAMES` + `SPECIALIZED_AGENTS` sources exist; no orphans |
-| 3 | Plugin parity | Claude / Cursor / opencode expected counts match |
-| 4 | Cross-file references | `/gse:X` mentions resolve; referenced agents exist |
-| 5 | Numeric consistency | Spec "23 commands" = `len(ACTIVITY_NAMES)`; "10 specialized" = `len(SPECIALIZED_AGENTS)` |
-| 6 | Link integrity | No dead `gse-one/...` paths in docs |
-| 7 | Git hygiene | No uncommitted `plugin/` (regenerated) |
-| 8 | Python quality | Syntax OK; `@gse-tool` headers present on tools |
-| 9 | Template schema | JSON parses; YAML parses (if PyYAML); Dockerfile templates have `ARG SOURCE_COMMIT` |
-| 10 | TODO / FIXME scan | Report any open markers |
-| 11 | Test coverage structural | Public functions in `deploy.py` have matching test |
-| 12 | Last-verified freshness | `last verified YYYY-MM-DD` markers older than 180 days |
+| 3 | Plugin parity | Claude / Cursor / opencode counts match |
+| 4 | Cross-file references | `/gse:X` mentions resolve |
+| 5 | Numeric consistency | Spec "23 commands" = `len(ACTIVITY_NAMES)` |
+| 6 | Link integrity | No dead `gse-one/...` paths |
+| 7 | Git hygiene | No uncommitted `plugin/` |
+| 8 | Python quality | Syntax OK; `@gse-tool` headers |
+| 9 | Template schema | JSON + YAML valid; Dockerfiles have `ARG SOURCE_COMMIT` |
+| 10 | TODO / FIXME scan | Open markers |
+| 11 | Test coverage structural | Public functions have tests |
+| 12 | Last-verified freshness | > 180 days flagged |
 
-**LLM-driven checks (via `/gse-audit` only, 6 dimensions × ~4 checks):**
+### Unified report structure
 
-| Dimension | Type | Checks |
-|---|:-:|---|
-| Within-spec | intra | Terminology stability; principles consistency; modes distinctness; Gates strictness |
-| Within-design | intra | Pattern consistency `§5.x`; rationale documented; self-consistency |
-| Within-implementation | intra | Skill structure uniform; error message tone; `@gse-tool` semantic quality; docstring quality |
-| Spec ↔ design | cross | Each principle implemented; no design decision contradicts spec |
-| Design ↔ implementation | cross | Code matches description; no undocumented patterns |
-| Spec ↔ implementation | cross | Every `/gse:X` exists; every agent exists; counts match |
+```
+Part 1 — Coherence findings (Categories A-D)
+  🔴 Errors       — contradictions, block release
+  🟡 Warnings     — drifts, review
+  🔵 Info         — passed checks + observations
+
+Part 2 — Strategic recommendations (Category E)
+  💡 Recommendations — per critique job, with impact level (high/medium/low)
+
+Conclusion: ❌ errors | 🟡 warnings | 💡 recommendations | ✅ pass
+```
+
+Recommendations (Category E) are **proposals, not defects** — they never trigger CI exit codes. Warnings and errors do.
 
 ### When to run
 
-- Before any release commit (catches drift introduced since last audit)
-- After significant changes (new activity, new agent, schema changes)
-- In a fork, before proposing changes upstream
-- Weekly during active development
-- In CI, in `--deterministic-only --fail-on error` mode (future — not wired by default)
+- Before any release commit (catches coherence drift)
+- After significant changes (new activity, agent, schema)
+- In a fork, before proposing changes upstream (full audit)
+- When planning a methodology evolution (use `--strategic-only`)
+- In CI (use `--deterministic-only --fail-on error`, future)
 
 ### Fork inheritance
 
-The `.claude/` directory at repo root is **included via `git clone`**. When you fork gensem, the audit tooling comes with your fork automatically — no additional install step. Open your fork in Claude Code and `/gse-audit` is immediately available.
+The `.claude/` directory at repo root is **included via `git clone`**. When you fork gensem, all audit tooling (`commands/gse-audit.md`, `agents/methodology-auditor.md`, `audit-jobs.json`) comes with your fork. No install step. Open your fork in Claude Code → `/gse-audit` available.
 
-The `gse-one/audit.py` script also travels with the fork. Run it from the fork's root directory; it auto-detects the repo and adapts.
+The Python engine (`gse-one/audit.py` + `gse-one/audit_catalog.py`) also travels with the fork.
 
 ### Exit codes (CLI)
 
-- `0` — all checks passed (or only info-level findings)
-- `1` — errors found (if `--fail-on error`)
-- `2` — warnings or errors found (if `--fail-on warning`)
+- `0` — all checks passed
+- `1` — errors found (with `--fail-on error`)
+- `2` — warnings or errors found (with `--fail-on warning`)
 - `3` — not a GSE-One repository (context detection failed)
 
 ---

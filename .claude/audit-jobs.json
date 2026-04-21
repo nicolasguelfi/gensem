@@ -1,0 +1,481 @@
+{
+  "version": "1.0",
+  "schema": {
+    "types": ["file_quality", "intra_layer_group", "layer_pair", "horizontal_cluster", "qualitative_critique"],
+    "refinements": ["none", "downward", "bidirectional"],
+    "severities": ["error", "warning", "info", "recommendation"]
+  },
+  "jobs": [
+    {
+      "id": "spec-file-quality",
+      "category": "A",
+      "type": "file_quality",
+      "refinement": "none",
+      "files": ["gse-one-spec.md"],
+      "scope": "Internal quality of the spec file alone, no cross-level comparison.",
+      "checks": [
+        "Terminology stability (activity, command, skill, tier, gate, phase, mode) — one term = one meaning throughout",
+        "16 principles (P1-P16) consistently cited and applied across their appearances",
+        "Modes (Micro / Lightweight / Full) remain logically distinct with no overlap",
+        "Gates uniform in severity (each Gate has a defined threshold)",
+        "Internal numeric consistency (if §1.6 says 23 commands, §12 TOC must match)",
+        "Internal cross-references resolve (e.g., §4.2 referenced → §4.2 exists)",
+        "No TODO/FIXME/TBD markers",
+        "Tables well-formed (consistent column counts, alignment, headers)"
+      ]
+    },
+    {
+      "id": "design-file-quality",
+      "category": "A",
+      "type": "file_quality",
+      "refinement": "none",
+      "files": ["gse-one-implementation-design.md"],
+      "scope": "Internal quality of the design doc alone.",
+      "checks": [
+        "Pattern consistency across §5.x subsections (similar length, structure, depth)",
+        "Rationale documented for each significant decision",
+        "No self-contradictions (decisions that contradict each other)",
+        "§6 tables consistent (counts, column alignment, content)",
+        "Internal cross-references resolve",
+        "No TODO/FIXME/TBD markers",
+        "Tables well-formed"
+      ]
+    },
+    {
+      "id": "activities-structure-uniformity",
+      "category": "B",
+      "type": "intra_layer_group",
+      "refinement": "none",
+      "files": ["gse-one/src/activities/*.md"],
+      "scope": "All 23 activity skills follow a uniform structural skeleton and tone.",
+      "checks": [
+        "YAML frontmatter present with a 'description' field",
+        "Standard sections present (Options / Prerequisites / Workflow or Phases)",
+        "User-facing message tone consistent across activities",
+        "Gate decisions formatted identically (same wording patterns)",
+        "References to agents, templates, tools use consistent path conventions",
+        "Phase/step numbering uniform",
+        "Error message format consistent"
+      ]
+    },
+    {
+      "id": "agents-structure-uniformity",
+      "category": "B",
+      "type": "intra_layer_group",
+      "refinement": "none",
+      "files": ["gse-one/src/agents/*.md"],
+      "scope": "All agents (orchestrator + 10 specialized) follow a uniform structure.",
+      "checks": [
+        "YAML frontmatter (name, description) present",
+        "Standard sections (Role / Activated by / Perspective / Required readings / Core Principles / Anti-patterns / Output format)",
+        "Tone consistent (neutral, directive, cite patterns not judgment)",
+        "Activation triggers match the activities that reference them",
+        "Each specialized agent declares its 'Activated by' clearly",
+        "Anti-patterns formatted as NEVER/ALWAYS statements uniformly"
+      ]
+    },
+    {
+      "id": "tools-quality-uniformity",
+      "category": "B",
+      "type": "intra_layer_group",
+      "refinement": "none",
+      "files": [
+        "gse-one/plugin/tools/dashboard.py",
+        "gse-one/plugin/tools/deploy.py",
+        "gse-one/plugin/tools/coolify_client.py",
+        "gse-one/audit.py",
+        "gse-one/audit_catalog.py"
+      ],
+      "scope": "All Python tools follow uniform quality standards (software engineering hygiene).",
+      "checks": [
+        "Header '# @gse-tool <name> <version>' on line 2 (regardless of file location)",
+        "Module docstring present and clear (purpose + usage example)",
+        "Public functions documented with docstrings",
+        "Error handling pattern consistent (return dict with 'status' field OR raise typed exceptions)",
+        "CLI pattern uniform (argparse + subcommands where applicable)",
+        "Stdlib-only by default; optional dependencies documented and gracefully degraded",
+        "No print() in library code; CLI output goes through a rendering function"
+      ]
+    },
+    {
+      "id": "templates-completeness",
+      "category": "B",
+      "type": "intra_layer_group",
+      "refinement": "none",
+      "files": ["gse-one/src/templates/**/*"],
+      "scope": "All templates complete, consistent, and declared in MANIFEST.yaml.",
+      "checks": [
+        "YAML syntax valid (fallback to structural check if PyYAML unavailable)",
+        "JSON syntax valid",
+        "Dockerfile templates contain 'ARG SOURCE_COMMIT'",
+        ".env example files contain all documented keys with placeholder values",
+        "Each template listed in MANIFEST.yaml with correct metadata",
+        "Templates referenced by activities actually exist",
+        "No orphan templates (files not referenced by any activity or agent)"
+      ]
+    },
+    {
+      "id": "references-quality",
+      "category": "B",
+      "type": "intra_layer_group",
+      "refinement": "none",
+      "files": ["gse-one/src/references/*.md"],
+      "scope": "Reference docs accurate, well-structured, and kept fresh.",
+      "checks": [
+        "Tables well-formed (prices, types, endpoints)",
+        "'last verified YYYY-MM-DD' markers present for volatile data",
+        "No stale information older than 180 days without update",
+        "Canonical patterns (SSH, CLI invocations) match what tools and skills expect",
+        "Self-contained (a forker can read without needing external context)"
+      ]
+    },
+    {
+      "id": "spec-design-coherence",
+      "category": "C",
+      "type": "layer_pair",
+      "refinement": "bidirectional",
+      "files": [
+        "gse-one-spec.md",
+        "gse-one-implementation-design.md"
+      ],
+      "scope": "Design is a proper refinement of spec. Both directions checked: design realizes spec AND design may reveal spec improvements.",
+      "checks": [
+        "Every spec principle (P1-P16) has a corresponding design implementation or explicit reference",
+        "Every design decision traces to a spec requirement",
+        "Numeric claims align (agent counts, command counts, mode counts)",
+        "Terminology coherent across both files",
+        "No design decision contradicts spec",
+        "[bidirectional] If design contains precision or clarity absent from spec, propose an upward update",
+        "[bidirectional] If spec lacks a concept that design assumes, flag as spec gap"
+      ]
+    },
+    {
+      "id": "governance-cluster",
+      "category": "D",
+      "type": "horizontal_cluster",
+      "refinement": "bidirectional",
+      "files": [
+        "gse-one/src/agents/gse-orchestrator.md",
+        "gse-one/src/principles/*.md",
+        "gse-one-spec.md",
+        "gse-one-implementation-design.md"
+      ],
+      "scope": "Orchestrator + 16 principles + their spec/design references coherent as the governance core.",
+      "checks": [
+        "Orchestrator embodies all 16 principles in its structure",
+        "Each principle is activatable at runtime (has a practical application)",
+        "Cross-platform parity (Claude / Cursor / opencode) described in design matches code",
+        "Spec's orchestrator description matches the markdown content",
+        "Specialized agent invocations consistent across all activities",
+        "[bidirectional] If orchestrator content reveals a missing principle in spec, propose addition"
+      ]
+    },
+    {
+      "id": "deploy-cluster",
+      "category": "D",
+      "type": "horizontal_cluster",
+      "refinement": "bidirectional",
+      "files": [
+        "gse-one/src/activities/deploy.md",
+        "gse-one/src/agents/deploy-operator.md",
+        "gse-one/src/references/hetzner-infrastructure.md",
+        "gse-one/src/references/ssh-operations.md",
+        "gse-one/plugin/tools/deploy.py",
+        "gse-one/plugin/tools/coolify_client.py",
+        "gse-one/src/templates/deploy.json",
+        "gse-one/src/templates/Dockerfile.streamlit",
+        "gse-one/src/templates/Dockerfile.python",
+        "gse-one/src/templates/Dockerfile.node",
+        "gse-one/src/templates/Dockerfile.static",
+        "gse-one/src/templates/.dockerignore",
+        "gse-one/src/templates/deploy-env.example",
+        "gse-one/src/templates/deploy-env-training.example",
+        "gse-one-spec.md",
+        "gse-one-implementation-design.md"
+      ],
+      "scope": "Entire deployment ecosystem coherent horizontally + aligned with spec deploy row and design §5.18.",
+      "checks": [
+        "Every concept in deploy.md has a matching description in design §5.18",
+        "Deploy-operator principles reflected in skill phases",
+        "Dockerfile templates match what the skill documents (ports, healthchecks, CMD)",
+        "References consulted at documented points in the skill",
+        "Python tools match the skill's invocation contracts (subcommands, args)",
+        "Deploy state schema matches all referenced fields",
+        "Training mode flow (init, distribute, reap) coherent across all files",
+        "No file in the cluster contradicts another",
+        "[bidirectional] If tools expose capabilities not documented in skill or design, propose upward update"
+      ]
+    },
+    {
+      "id": "sprint-lifecycle-cluster",
+      "category": "D",
+      "type": "horizontal_cluster",
+      "refinement": "bidirectional",
+      "files": [
+        "gse-one/src/activities/plan.md",
+        "gse-one/src/activities/reqs.md",
+        "gse-one/src/activities/design.md",
+        "gse-one/src/activities/preview.md",
+        "gse-one/src/activities/tests.md",
+        "gse-one/src/activities/produce.md",
+        "gse-one/src/activities/review.md",
+        "gse-one/src/activities/fix.md",
+        "gse-one/src/activities/deliver.md",
+        "gse-one/src/templates/plan.yaml",
+        "gse-one/src/templates/sprint/plan-summary.md",
+        "gse-one/src/templates/sprint/reqs.md",
+        "gse-one/src/templates/sprint/design.md",
+        "gse-one/src/templates/sprint/tests.md",
+        "gse-one/src/templates/sprint/review.md",
+        "gse-one/src/templates/sprint/release.md",
+        "gse-one/src/templates/sprint/compound.md",
+        "gse-one/src/templates/backlog.yaml",
+        "gse-one-spec.md",
+        "gse-one-implementation-design.md"
+      ],
+      "scope": "Sprint lifecycle activities + their templates + their spec/design references coherent as an end-to-end flow.",
+      "checks": [
+        "Phase transitions LC00 → LC01 → LC02 → LC03 consistent across all activities",
+        "TASK state machine (planned → in-progress → review → fixing → done) coherent",
+        "Templates referenced correctly (no drift between activity and template schema)",
+        "Gate sequences uniform across activities",
+        "DEC-NNN decision format applied consistently",
+        "Handoffs between activities well-defined (what state each produces for the next)"
+      ]
+    },
+    {
+      "id": "state-management-cluster",
+      "category": "D",
+      "type": "horizontal_cluster",
+      "refinement": "bidirectional",
+      "files": [
+        "gse-one/src/activities/status.md",
+        "gse-one/src/activities/backlog.md",
+        "gse-one/src/activities/task.md",
+        "gse-one/src/activities/pause.md",
+        "gse-one/src/activities/resume.md",
+        "gse-one/src/templates/status.yaml",
+        "gse-one/src/templates/backlog.yaml",
+        "gse-one/src/templates/plan.yaml",
+        "gse-one/src/templates/checkpoint.yaml",
+        "gse-one/src/templates/decisions.md",
+        "gse-one/src/templates/profile.yaml",
+        "gse-one/src/templates/config.yaml",
+        "gse-one/src/templates/deploy.json",
+        "gse-one/src/templates/MANIFEST.yaml",
+        "gse-one-spec.md",
+        "gse-one-implementation-design.md"
+      ],
+      "scope": "All state files + activities that read/write them + their schema references coherent.",
+      "checks": [
+        "Each activity that writes state matches the template schema",
+        "Field names consistent (e.g., last_activity_timestamp everywhere, not _date)",
+        "State transitions documented in activity workflows",
+        "MANIFEST.yaml lists all templates with correct paths",
+        "No orphan field (written by an activity but never read)",
+        "No orphan template (not referenced by any activity)"
+      ]
+    },
+    {
+      "id": "cross-cutting-cluster",
+      "category": "D",
+      "type": "horizontal_cluster",
+      "refinement": "bidirectional",
+      "files": [
+        "gse-one/src/activities/go.md",
+        "gse-one/src/activities/hug.md",
+        "gse-one/src/activities/learn.md",
+        "gse-one/src/activities/health.md",
+        "gse-one/src/activities/status.md",
+        "gse-one/src/templates/profile.yaml",
+        "gse-one-spec.md",
+        "gse-one-implementation-design.md"
+      ],
+      "scope": "Cross-cutting activities (orchestration, onboarding, learning, health) coherent with spec and design.",
+      "checks": [
+        "/gse:go decision logic matches design §5.14",
+        "/gse:hug profile detection algorithm uniform",
+        "/gse:learn → profile.yaml topics schema used",
+        "/gse:health → 8 dimensions defined consistently",
+        "Integration between activities (hug → go, learn → status) well-described",
+        "Profile calibration (coach axis 2) leverages profile.yaml correctly"
+      ]
+    },
+    {
+      "id": "coach-pedagogy-cluster",
+      "category": "D",
+      "type": "horizontal_cluster",
+      "refinement": "bidirectional",
+      "files": [
+        "gse-one/src/agents/coach.md",
+        "gse-one/src/activities/learn.md",
+        "gse-one/src/activities/hug.md",
+        "gse-one/src/templates/profile.yaml",
+        "gse-one-spec.md",
+        "gse-one-implementation-design.md"
+      ],
+      "scope": "Coach agent + pedagogy activities + profile schema coherent as a learning subsystem.",
+      "checks": [
+        "8 coach axes (pedagogy, profile_calibration, sprint_velocity, workflow_health, quality_trends, engagement_pattern, process_deviation, sustainability) implemented",
+        "P14 preambles format consistent across invocations",
+        "LRN-NNN format applied uniformly",
+        "Profile topics schema supports all referenced learning signals",
+        "Coach triggers (activity start, sprint close, Gate end, etc.) documented"
+      ]
+    },
+    {
+      "id": "quality-assurance-cluster",
+      "category": "D",
+      "type": "horizontal_cluster",
+      "refinement": "bidirectional",
+      "files": [
+        "gse-one/src/activities/review.md",
+        "gse-one/src/activities/tests.md",
+        "gse-one/src/activities/produce.md",
+        "gse-one/src/activities/fix.md",
+        "gse-one/src/agents/code-reviewer.md",
+        "gse-one/src/agents/security-auditor.md",
+        "gse-one/src/agents/test-strategist.md",
+        "gse-one/src/agents/devil-advocate.md",
+        "gse-one/src/agents/architect.md",
+        "gse-one/src/agents/requirements-analyst.md",
+        "gse-one/src/agents/ux-advocate.md",
+        "gse-one-spec.md",
+        "gse-one-implementation-design.md"
+      ],
+      "scope": "Review + tests + produce + their 7 invoked agents coherent as the QA subsystem.",
+      "checks": [
+        "/gse:review spawns the correct 5 specialized agents (code-reviewer, security-auditor, requirements-analyst, architect, test-strategist) + devil-advocate",
+        "Agent invocations documented in the activity",
+        "Test Review Layering (3 tiers: STRATEGY, TST-SPEC, IMPL) applied",
+        "RVW-NNN, TST-NNN, REQ-NNN formats consistent",
+        "Each specialized agent's checklist align with its activity's workflow",
+        "Fix workflow matches findings structure"
+      ]
+    },
+    {
+      "id": "delivery-compound-cluster",
+      "category": "D",
+      "type": "horizontal_cluster",
+      "refinement": "bidirectional",
+      "files": [
+        "gse-one/src/activities/deliver.md",
+        "gse-one/src/activities/compound.md",
+        "gse-one/src/activities/integrate.md",
+        "gse-one/src/templates/sprint/compound.md",
+        "gse-one/src/templates/sprint/methodology-feedback.md",
+        "gse-one-spec.md",
+        "gse-one-implementation-design.md"
+      ],
+      "scope": "End-of-sprint delivery + capitalization + upstream integration coherent as a closing flow.",
+      "checks": [
+        "/gse:deliver → /gse:compound → /gse:integrate flow sequence documented",
+        "Safety backup tags (gse-backup/*) format consistent",
+        "Methodology feedback export schema matches template",
+        "Upstream repo resolution (integrate Axe 2) matches git config conventions",
+        "Compound Axes (1 capitalization, 2 upstream feedback, 3 coaching recipes) well-separated",
+        "Deliver Step 9 (freeze sprint) consistent with design §5.16"
+      ]
+    },
+    {
+      "id": "methodology-design-critique",
+      "category": "E",
+      "type": "qualitative_critique",
+      "refinement": "bidirectional",
+      "files": [
+        "gse-one-spec.md",
+        "gse-one-implementation-design.md",
+        "README.md",
+        "CLAUDE.md"
+      ],
+      "scope": "Strategic critique of the methodology design as a whole. Not about coherence, but about quality of the methodology choices themselves.",
+      "checks": [
+        "Fitness for purpose: Are the 23 commands, 11 agents, 16 principles actually effective for the stated goals (Built by AI / Governed by Humans, structured SDLC for AI+human pair)?",
+        "Complexity economy: Are there mechanisms that bring little value for their cognitive cost? Redundancies? Unnecessary abstraction layers?",
+        "Principle coherence: Do the 16 principles form a coherent whole, or are some weak, rarely applicable, or conflicting?",
+        "Mode balance: Are Micro / Lightweight / Full genuinely distinct in usage, or do they overlap?",
+        "Positioning: What does GSE-One offer that other methodologies (Agile, XP, Scrum, AI-native approaches) don't? Is the differentiator clear and defended?",
+        "Design testability: Can the methodology design choices be validated empirically, or do they rest on intuition?"
+      ]
+    },
+    {
+      "id": "ai-era-adequacy-critique",
+      "category": "E",
+      "type": "qualitative_critique",
+      "refinement": "bidirectional",
+      "files": [
+        "gse-one-spec.md",
+        "gse-one/src/agents/coach.md",
+        "gse-one/src/agents/devil-advocate.md",
+        "gse-one/src/agents/guardrail-enforcer.md",
+        "gse-one/src/activities/learn.md",
+        "gse-one/src/activities/review.md",
+        "gse-one/src/activities/hug.md",
+        "gse-one-implementation-design.md"
+      ],
+      "scope": "Critique of adequacy to the current generative AI era (2024-2026): leverages AI strengths, mitigates AI risks.",
+      "checks": [
+        "Leverage of LLM strengths: Does the methodology exploit current capabilities (long context, multi-file reasoning, tool use, parallelism)?",
+        "Mitigation of LLM risks: Are hallucinations, sycophancy, over-confidence, scope creep, state forgetting adequately covered by P15/P16?",
+        "Effective human governance: Is 'Governed by Humans' operationalized, or is it declarative? Are Gates sufficient?",
+        "Forward-compatibility: What risks becoming obsolete with LLM evolution (longer context, MCPs, agentic patterns)?",
+        "Agent integrity design: Is the trio devil-advocate + guardrail + review the right design to challenge AI outputs?",
+        "AI-native onboarding: Does a junior discovering AI via GSE-One acquire good reflexes, or can they develop dangerous habits (over-dependence, loss of critical thinking)?"
+      ]
+    },
+    {
+      "id": "user-value-critique",
+      "category": "E",
+      "type": "qualitative_critique",
+      "refinement": "bidirectional",
+      "files": [
+        "README.md",
+        "CLAUDE.md",
+        "gse-one/src/activities/hug.md",
+        "gse-one/src/activities/go.md",
+        "gse-one/src/activities/learn.md",
+        "gse-one/src/activities/status.md",
+        "gse-one/src/activities/health.md",
+        "gse-one/src/activities/deploy.md",
+        "gse-one/src/templates/profile.yaml",
+        "gse-one-spec.md"
+      ],
+      "scope": "Critique of value delivered to the different user profiles.",
+      "checks": [
+        "Solo novice journey: Can a developer installing GSE-One for their first project be productive in < 1 hour? Major frictions?",
+        "Expert user journey: Does an experienced developer feel constrained by the methodology, or assisted? Bypass-friendly?",
+        "Instructor journey: Is a training session with 20 learners smooth end-to-end? Likely breaking points?",
+        "Learner journey: Can a novice in a training session follow without external help?",
+        "Forker journey: Does a developer forking gensem for customization have enough support? Sufficient documentation?",
+        "Accessibility: Does the vocabulary (23 commands, 11 agents, 16 principles) create an entry barrier?",
+        "Return on investment: Is the learning curve proportional to the gain?"
+      ]
+    },
+    {
+      "id": "robustness-and-recovery-critique",
+      "category": "E",
+      "type": "qualitative_critique",
+      "refinement": "bidirectional",
+      "files": [
+        "gse-one/src/agents/guardrail-enforcer.md",
+        "gse-one/src/agents/devil-advocate.md",
+        "gse-one/src/activities/deliver.md",
+        "gse-one/src/activities/pause.md",
+        "gse-one/src/activities/resume.md",
+        "gse-one/plugin/hooks/hooks.claude.json",
+        "gse-one/plugin/hooks/hooks.cursor.json",
+        "gse-one-spec.md",
+        "gse-one-implementation-design.md"
+      ],
+      "scope": "Critique of robustness to failures, recovery, and resilience.",
+      "checks": [
+        "Failure scenarios: What happens if Claude crashes mid-sprint? Network down during deploy? .gse/ corruption?",
+        "Documented recovery: Are all recovery scenarios documented and testable?",
+        "Rollback: Are all destructive actions reversible? (commits, merges, deploys, destroy)",
+        "Guardrail coherence: Do hooks cover the right critical cases without being too noisy?",
+        "Human-in-the-loop: Where can the human intervene? Where must they? Is the balance right?",
+        "Graceful degradation: If a specialized agent fails, does the system continue?"
+      ]
+    }
+  ]
+}

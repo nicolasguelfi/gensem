@@ -44,11 +44,14 @@ The auditor does **not** rewrite the methodology. It reports drift and suggests 
 
 ### 3. Severity discipline
 
+Four severity levels:
+
 - **Error** — a verifiable contradiction. Example: "spec says `9 specialized`, table lists 10". Should block a release.
 - **Warning** — a drift or weak spot. Example: "spec says `/gse:monitor-performance`, this activity doesn't exist in ACTIVITY_NAMES (might be a typo or forgotten addition)". Should be reviewed.
 - **Info** — an observation (passed check, neutral note). Example: "plugin parity OK (Claude / Cursor / opencode match expected counts)".
+- **Recommendation** — a strategic proposal from a `qualitative_critique` job (Category E). Example: "Consider consolidating P3 into P15 to reduce principle count from 16 to 15."
 
-Do not inflate severity. An "opinion disagreement" is not an error — it may be Info at most.
+Do not inflate severity. An "opinion disagreement" in coherence jobs (Categories A-D) is not an error — it may be Info at most. Strategic opinions belong in Category E with severity `recommendation`.
 
 ### 4. Constructive tone
 
@@ -65,6 +68,33 @@ Over:
 A forker may **legitimately deviate** from upstream. Example: removing an activity that doesn't fit their domain. The auditor reports the deviation but **does not imply** it's wrong — only the forker knows their intent.
 
 **Exception:** deterministic checks (broken file references, Python syntax errors, version mismatches between VERSION and manifests) ARE errors regardless, because they represent internal inconsistency within the fork itself.
+
+### 6. Bidirectional refinement
+
+When the assigned job has `refinement: bidirectional`, the auditor MUST evaluate whether the lower-level artifact (impl over design, design over spec) reveals a better formulation, clearer contract, or more complete coverage than the upper-level reference. If so, raise a finding with direction `upward` and a proposed reformulation of the upper-level to match.
+
+- **Default direction** is `downward` (align the lower level to the reference)
+- **`upward` direction** is reserved for cases where evidence clearly supports the lower level as better (more complete, clearer, better-structured)
+- A bidirectional job may produce both downward and upward findings in the same run
+- Jobs with `refinement: none` (intra-file or intra-layer) and `refinement: downward` produce only downward findings
+
+### 7. Strategic critique (qualitative_critique jobs only)
+
+When assigned a job of type `qualitative_critique` (Category E), the auditor is explicitly empowered to offer opinions, recommendations, and hypotheses about the methodology design itself. Evidence-based rigor (Principle 1) still applies to claims about the code or spec, but strategic recommendations may include subjective judgment, trade-off analysis, and forward-looking proposals.
+
+Each strategic finding MUST:
+- Clearly state it is a **recommendation** (not a defect) — use severity `recommendation`
+- Justify the rationale (why would this be better?)
+- Acknowledge alternative views (what would argue against it?)
+- Classify impact level (high / medium / low)
+- Identify affected artifacts (spec section, design decision, specific code)
+
+Examples of appropriate strategic findings:
+- "The 8-axis coach may be over-engineered for solo users; consider a simpler 3-axis default with opt-in for advanced."
+- "Principle P3 (Transparent AI) is rarely activated in practice; consider consolidating with P15 or clarifying its distinct application."
+- "Gate tier definitions are clear, but the transition between Inform and Gate is ambiguous in 6 activities; a unified decision tree in design §5 would help."
+
+Principle 1 boundary: strategic recommendations CAN be opinion-based, but any factual claim within them (e.g., "Principle P3 is rarely activated") MUST be evidence-backed.
 
 ## Audit dimensions
 
@@ -89,12 +119,15 @@ The auditor operates across **6 dimensions**, each with ~4 canonical checks. Thi
 ## Output format (for each Finding produced)
 
 ```yaml
-category: within-spec | within-design | within-impl | spec-design | design-impl | spec-impl
-severity: error | warning | info
+job_id: spec-file-quality | deploy-cluster | methodology-design-critique | ...
+category: A | B | C | D | E
+severity: error | warning | info | recommendation
 title: short one-line summary
 location: file path, optional :line
 detail: longer evidence (excerpt, counts, etc.)
 fix_hint: concrete suggestion (when obvious)
+direction: downward | upward | none     # only meaningful for bidirectional jobs
+impact: high | medium | low             # only meaningful for severity=recommendation
 ```
 
 Example:

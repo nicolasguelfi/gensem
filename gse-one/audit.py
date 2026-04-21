@@ -6,11 +6,14 @@ Usage:
     python3 gse-one/audit.py                       # full, markdown output
     python3 gse-one/audit.py --format json         # for CI / scripting
     python3 gse-one/audit.py --category version    # only one category
+    python3 gse-one/audit.py --cluster deploy-cluster  # only files in a cluster
+    python3 gse-one/audit.py --list-clusters       # show catalog clusters
     python3 gse-one/audit.py --fail-on error       # exit 1 on errors
 
 For reasoning-based checks (LLM), use the `/gse-audit` slash command in
 Claude Code — it invokes this script for deterministic checks, then
-performs semantic reasoning via the methodology-auditor agent.
+performs semantic reasoning via the methodology-auditor agent across 20
+audit jobs defined in .claude/audit-jobs.json.
 
 This tool audits the gensem repo itself (not user projects). It lives in
 gse-one/ alongside gse_generate.py (both are maintainer tools).
@@ -71,11 +74,12 @@ CATEGORIES = [
 @dataclass
 class Finding:
     category: str
-    severity: str  # "error" | "warning" | "info"
+    severity: str  # "error" | "warning" | "info" | "recommendation"
     title: str
     detail: str = ""
     fix_hint: str = ""
     location: str = ""
+    file: str = ""  # canonical file path (relative to repo root) for cluster mapping
 
 
 @dataclass
@@ -1037,6 +1041,16 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Run only specified categories (can be repeated)",
     )
     p.add_argument(
+        "--cluster",
+        metavar="JOB_ID",
+        help="Filter findings to files within the named catalog job (e.g. deploy-cluster)",
+    )
+    p.add_argument(
+        "--list-clusters",
+        action="store_true",
+        help="List all catalog jobs with their IDs and file counts, then exit",
+    )
+    p.add_argument(
         "--fail-on",
         choices=["error", "warning"],
         default=None,
@@ -1045,9 +1059,93 @@ def _build_parser() -> argparse.ArgumentParser:
     return p
 
 
+def _filter_by_cluster(report: Report, job_id: str) -> Report:
+    """Return a new Report with findings filtered to files in the named job.
+
+    Findings without a file attribution (global checks like 'version',
+    'plugin_parity', 'git') are retained as context; only file-scoped
+    findings are filtered.
+    """
+    # Import locally to avoid hard dependency at module load
+    try:
+        from audit_catalog import load_catalog, files_in_cluster, CatalogError
+    except ImportError:
+        # audit_catalog.py not importable — return report unchanged
+        return report
+    try:
+        jobs = load_catalog(REPO_ROOT)
+    except CatalogError as e:
+        report.findings.append(
+            Finding(
+                "catalog",
+                "warning",
+                "Cluster filter requested but catalog load failed",
+                str(e),
+                "Check .claude/audit-jobs.json exists and is valid",
+            )
+        )
+        return report
+
+    target = next((j for j in jobs if j.id == job_id), None)
+    if not target:
+        report.findings.append(
+            Finding(
+                "catalog",
+                "error",
+                f"Cluster '{job_id}' not found in catalog",
+                "Available: " + ", ".join(j.id for j in jobs),
+                "Check the catalog or use --list-clusters",
+            )
+        )
+        return report
+
+    cluster_files = files_in_cluster(target, REPO_ROOT)
+    kept = []
+    for f in report.findings:
+        # Keep findings without a file attribution (global checks)
+        if not f.file:
+            kept.append(f)
+            continue
+        # Keep findings whose file is in the cluster
+        abs_path = str((REPO_ROOT / f.file).resolve())
+        if abs_path in cluster_files:
+            kept.append(f)
+    report.findings = kept
+    return report
+
+
+def _list_clusters() -> int:
+    try:
+        from audit_catalog import load_catalog, CatalogError
+    except ImportError:
+        print("error: audit_catalog module not available", file=sys.stderr)
+        return 2
+    try:
+        jobs = load_catalog(REPO_ROOT)
+    except CatalogError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 2
+
+    by_cat = {}
+    for job in jobs:
+        by_cat.setdefault(job.category, []).append(job)
+    for cat in sorted(by_cat):
+        print(f"\nCategory {cat}:")
+        for job in by_cat[cat]:
+            file_count = len(job.files)
+            print(
+                f"  {job.id:40s} [{job.type:22s}] files={file_count}"
+            )
+    return 0
+
+
 def main(argv: Optional[list] = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
+
+    # Sidebar: --list-clusters is a standalone mode
+    if args.list_clusters:
+        return _list_clusters()
 
     # Context detection: must be in a gensem-like repo
     if not (REPO_ROOT / "gse-one-spec.md").exists():
@@ -1066,6 +1164,9 @@ def main(argv: Optional[list] = None) -> int:
         return 3
 
     report = run_audit(args.category)
+
+    if args.cluster:
+        report = _filter_by_cluster(report, args.cluster)
 
     if args.format == "json":
         print(render_json(report))

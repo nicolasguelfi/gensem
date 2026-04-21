@@ -5,6 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.45.0] - 2026-04-21
+
+Layers impacted: **tooling** (repo-level, not plugin)
+
+**Tooling refactor** — massively expands `/gse-audit` with a declarative catalog of 20 parallel audit jobs spanning 5 categories, including 4 strategic critique jobs that empower the LLM to offer opinions on methodology design. No changes to the distributed plugin (spec, design, activities, agents, tools, templates all unchanged).
+
+### Added
+- **`.claude/audit-jobs.json`** — declarative catalog of 20 audit jobs across 5 categories:
+  - A: File quality (2 jobs, non-directional)
+  - B: Intra-layer uniformity (5 jobs, non-directional)
+  - C: Layer pair spec ↔ design (1 job, bidirectional)
+  - D: Horizontal clusters (8 jobs, bidirectional): governance, deploy, sprint-lifecycle, state-management, cross-cutting, coach-pedagogy, quality-assurance, delivery-compound
+  - E: Strategic critique (4 jobs, bidirectional): methodology-design, ai-era-adequacy, user-value, robustness-and-recovery
+- **`gse-one/audit_catalog.py`** — loader + validator (stdlib only). Validates schema, resolves globs, provides `find_job` / `is_file_in_cluster` helpers. CLI for inspection: `--list`, `--show <id>`, `--validate`.
+- **Refinement taxonomy**: `none` (intra-file or intra-layer, no cross-level), `downward` (high level = reference), `bidirectional` (may propose upward corrections when lower level is better).
+- **Bidirectional refinement Principle 6** in `methodology-auditor` agent: for `bidirectional` jobs, actively look for cases where implementation reveals a better formulation than design, or design a better formulation than spec. Propose upward updates.
+- **Strategic critique Principle 7** in `methodology-auditor`: for Category E (`qualitative_critique`), the auditor is empowered to offer opinions and recommendations about methodology design itself. Severity `recommendation` (not error/warning/info). Each recommendation must include impact level (high/medium/low), rationale, alternative views.
+- **New severity level `recommendation`**: distinct from error/warning/info. Never triggers CI exit codes. Reserved for Category E jobs.
+- **Cluster-aware `audit.py`**: new flags `--cluster <id>` to filter findings to a specific catalog job, and `--list-clusters` to display all catalog entries.
+- **Segmented report**: final output has two parts — **Part 1** coherence findings (Categories A-D), **Part 2** strategic recommendations (Category E).
+
+### Changed
+- **`.claude/commands/gse-audit.md`** rewritten as a parallel orchestrator: reads the catalog, spawns N sub-agents in ONE message (parallel via Agent tool calls), aggregates findings, renders segmented report. New flags: `--job`, `--category`, `--coherence-only`, `--strategic-only`.
+- **`.claude/agents/methodology-auditor.md`** extended with Principles 6 (bidirectional refinement) and 7 (strategic critique). Output format now includes `direction` and `impact` fields.
+- **`gse-one/audit.py`** `Finding` dataclass gained a `file` field for cluster-filtering support. Docstring updated with new flags.
+- **README "Auditing the plugin" section** rewritten to reflect: 20 jobs in 5 categories, parallel execution, segmented report (coherence vs strategic), catalog customization workflow for forkers.
+
+### Design decisions
+
+1. **Why 5 categories (A-E) instead of merging A+B?** File-quality and intra-layer-uniformity serve different purposes: A audits individual files (can't be a group), B audits groups of same-level files (uniformity across a set). Keeping them distinct preserves clarity.
+
+2. **Why `recommendation` as a separate severity?** Strategic critiques (Category E) are judgment-based and should never block CI. Keeping them separate from `error`/`warning` means they're surfaced as proposals, not defects.
+
+3. **Why `bidirectional` default for cross-layer and Category E?** The refinement direction is normally downward (spec → design → impl), but the methodology may genuinely improve by recognizing cases where the implementation reveals a better abstraction than the spec captured. Allowing upward propositions keeps the methodology evolving.
+
+4. **Why JSON catalog instead of YAML?** To stay within stdlib (Q4 validation). A forker can add a job without needing PyYAML.
+
+### Notes for users
+- End users who installed GSE-One for their project: unaffected. No new plugin command.
+- Forkers: inherit all 20 jobs automatically via `git clone`. Add custom jobs by editing `.claude/audit-jobs.json`.
+- CI integration: use `python3 gse-one/audit.py --fail-on error` (deterministic only; strategic recommendations never block).
+
 ## [0.44.0] - 2026-04-21
 
 Layers impacted: **tooling** (repo-level, not plugin)

@@ -59,6 +59,17 @@ Any project convention, rule, preference, or decision that Claude must remember 
 
 **How to apply:** When the user gives durable feedback or establishes a convention, update `CLAUDE.md` (or the appropriate in-repo doc) via the full build pipeline. Never silently save to auto-memory. If auto-memory entries are found for this project on any machine, they should be migrated into `CLAUDE.md` and deleted.
 
+### Repo-level tooling (`.claude/`)
+
+The `.claude/` directory at the repo root contains **maintainer tools** that are **not** part of the distributed plugin:
+
+- `.claude/commands/gse-audit.md` — `/gse-audit` slash command for methodology coherence audits
+- `.claude/agents/methodology-auditor.md` — agent adopted during `/gse-audit`
+
+These are inherited automatically when someone clones gensem (or a fork of it). They are Claude Code-only (v1). The Python engine at `gse-one/audit.py` provides CLI access independent of the editor.
+
+**Do not move these tools into `gse-one/plugin/`** — that would distribute them to all end users of GSE-One, polluting the methodology for people who only use the plugin without forking. Maintainer tools live at `.claude/` (repo-local) or `gse-one/` (e.g., `audit.py` alongside `gse_generate.py`), never in `gse-one/plugin/`.
+
 ## Language
 
 The user communicates in French. Respond in French for conversation, English for code/commits.

@@ -18,7 +18,8 @@ GSE-One is an AI engineering companion that brings structured software developme
 5. [Publish the Plugin](#publish-the-plugin)
 6. [Command Reference](#command-reference)
 7. [Deployment](#deployment)
-8. [Versioning](#versioning)
+8. [Auditing the plugin](#auditing-the-plugin)
+9. [Versioning](#versioning)
 
 ---
 
@@ -351,6 +352,85 @@ Suggested workflow:
 5. Open a PR describing: the scope, what changed upstream, what you tested
 
 Thank you — contributions keep `/gse:deploy` usable across releases of Hetzner, Coolify, Cloudflare, and domain registrars.
+
+---
+
+## Auditing the plugin
+
+GSE-One ships with a coherence audit tool for **maintainers and forkers** of the methodology repository (not for user projects — for those, use `/gse:status`, `/gse:health`, `/gse:review`, `/gse:assess`, `/gse:compound`, `/gse:collect`). Run it regularly to detect drift between spec, design, and implementation layers.
+
+### Two access points
+
+**Slash command (Claude Code, interactive):**
+
+```
+/gse-audit
+```
+
+Runs the full audit: deterministic Python engine + LLM semantic reasoning via the `methodology-auditor` agent. Available in any Claude Code session opened at the root of gensem or a fork. The command is defined in `.claude/commands/gse-audit.md` and the agent in `.claude/agents/methodology-auditor.md`.
+
+**CLI (for CI or quick checks, Python only):**
+
+```bash
+cd gensem  # or your fork
+python3 gse-one/audit.py                    # full deterministic report (markdown)
+python3 gse-one/audit.py --format json      # JSON for CI/scripting
+python3 gse-one/audit.py --category version # single category
+python3 gse-one/audit.py --fail-on error    # exit code 1 on errors (CI)
+```
+
+Pure Python stdlib. **Optional dependency:** `pip install pyyaml` enables YAML schema validation (skipped gracefully if PyYAML is absent).
+
+### What the audit covers
+
+**Deterministic checks (Python engine, 12 categories):**
+
+| # | Category | Examples |
+|:-:|---|---|
+| 1 | Version consistency | VERSION ↔ 3 manifests ↔ CHANGELOG latest entry |
+| 2 | File integrity | `ACTIVITY_NAMES` + `SPECIALIZED_AGENTS` sources exist; no orphans |
+| 3 | Plugin parity | Claude / Cursor / opencode expected counts match |
+| 4 | Cross-file references | `/gse:X` mentions resolve; referenced agents exist |
+| 5 | Numeric consistency | Spec "23 commands" = `len(ACTIVITY_NAMES)`; "10 specialized" = `len(SPECIALIZED_AGENTS)` |
+| 6 | Link integrity | No dead `gse-one/...` paths in docs |
+| 7 | Git hygiene | No uncommitted `plugin/` (regenerated) |
+| 8 | Python quality | Syntax OK; `@gse-tool` headers present on tools |
+| 9 | Template schema | JSON parses; YAML parses (if PyYAML); Dockerfile templates have `ARG SOURCE_COMMIT` |
+| 10 | TODO / FIXME scan | Report any open markers |
+| 11 | Test coverage structural | Public functions in `deploy.py` have matching test |
+| 12 | Last-verified freshness | `last verified YYYY-MM-DD` markers older than 180 days |
+
+**LLM-driven checks (via `/gse-audit` only, 6 dimensions × ~4 checks):**
+
+| Dimension | Type | Checks |
+|---|:-:|---|
+| Within-spec | intra | Terminology stability; principles consistency; modes distinctness; Gates strictness |
+| Within-design | intra | Pattern consistency `§5.x`; rationale documented; self-consistency |
+| Within-implementation | intra | Skill structure uniform; error message tone; `@gse-tool` semantic quality; docstring quality |
+| Spec ↔ design | cross | Each principle implemented; no design decision contradicts spec |
+| Design ↔ implementation | cross | Code matches description; no undocumented patterns |
+| Spec ↔ implementation | cross | Every `/gse:X` exists; every agent exists; counts match |
+
+### When to run
+
+- Before any release commit (catches drift introduced since last audit)
+- After significant changes (new activity, new agent, schema changes)
+- In a fork, before proposing changes upstream
+- Weekly during active development
+- In CI, in `--deterministic-only --fail-on error` mode (future — not wired by default)
+
+### Fork inheritance
+
+The `.claude/` directory at repo root is **included via `git clone`**. When you fork gensem, the audit tooling comes with your fork automatically — no additional install step. Open your fork in Claude Code and `/gse-audit` is immediately available.
+
+The `gse-one/audit.py` script also travels with the fork. Run it from the fork's root directory; it auto-detects the repo and adapts.
+
+### Exit codes (CLI)
+
+- `0` — all checks passed (or only info-level findings)
+- `1` — errors found (if `--fail-on error`)
+- `2` — warnings or errors found (if `--fail-on warning`)
+- `3` — not a GSE-One repository (context detection failed)
 
 ---
 

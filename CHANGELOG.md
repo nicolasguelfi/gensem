@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.44.0] - 2026-04-21
+
+Layers impacted: **tooling** (repo-level, not plugin)
+
+**Tooling-only release** — adds a methodology coherence audit tool for maintainers and forkers of the gensem repository. No changes to the distributed plugin (spec, design, activities, agents, tools, templates all unchanged). The audit does NOT apply to user projects — for those, existing commands `/gse:status`, `/gse:health`, `/gse:review`, `/gse:assess`, `/gse:compound`, `/gse:collect` remain the right surface.
+
+### Added
+- **`.claude/commands/gse-audit.md`** — slash command for Claude Code, invokable as `/gse-audit` from the root of gensem or a fork. Orchestrates Phase 0 context detection + Phase 1 deterministic Python engine + Phases 2–3 LLM semantic reasoning + Phase 4 unified report.
+- **`.claude/agents/methodology-auditor.md`** — specialized agent adopted during `/gse-audit`. Evidence-based, severity-classified, constructive, forker-respectful. Not part of the distributed plugin (local to repo).
+- **`gse-one/audit.py`** — Python engine (stdlib-only, ~600 L). 12 deterministic categories: version consistency, file integrity, plugin parity, cross-file references, numeric consistency, link integrity, git hygiene, Python quality, template schema, TODO/FIXME scan, test coverage structural, last-verified freshness. CLI with `--format {md,json}`, `--category`, `--fail-on {error,warning}`. Exit codes: 0 pass, 1 errors, 2 warnings, 3 not-a-gensem-repo.
+- **Optional PyYAML dependency** — `gse-one/audit.py` uses PyYAML if installed for YAML schema validation; skips gracefully with an info finding otherwise.
+- **README section "Auditing the plugin"** — documents slash command + CLI access, 12 deterministic categories, 6 LLM dimensions, fork inheritance via `git clone`.
+- **CLAUDE.md paragraph on `.claude/` repo-level tooling** — documents that maintainer tools live at `.claude/` or `gse-one/`, never in `gse-one/plugin/` (would pollute end-user distribution).
+
+### Architecture rationale
+The audit was deliberately placed **outside the plugin** for three reasons:
+1. **Scope discrimination** — the plugin has 6 existing commands already covering user-project inspection (status, health, review, assess, compound, collect). Adding a 24th `/gse:audit` activity would create overlap and confuse end users.
+2. **Forker ergonomics** — `.claude/` directories are inherited automatically via `git clone`. Forkers of gensem get the audit tool with zero install step.
+3. **Maintainer-tool separation** — `.claude/` (repo-local) and `gse-one/audit.py` (alongside `gse_generate.py`) both clearly signal "maintainer only". The plugin distribution (`gse-one/plugin/`) remains focused on end-user methodology.
+
+### Notes for users
+- End users who installed GSE-One for their project are **unaffected**. No new command appears in `/gse:` autocomplete.
+- Forkers automatically inherit `/gse-audit` in their fork's Claude Code session.
+- CI integration (GitHub Actions running `audit.py --fail-on error`) is documented as future work.
+
 ## [0.43.0] - 2026-04-21
 
 Layers impacted: **spec**, **design**, **implementation**, **tools**, **tests**, **docs**

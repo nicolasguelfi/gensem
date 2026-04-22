@@ -45,7 +45,7 @@ For each TASK in `backlog.yaml` with `git.worktree_status: active`:
    ```
 4. Update TASK in `backlog.yaml`:
    - `git.uncommitted_changes: 0`
-   - `git.last_pause_commit: {hash}`
+   - `git.last_commit: {now ISO 8601}`
 
 If no worktrees are active (strategy is `branch-only` or `none`):
 1. Check current branch for uncommitted changes
@@ -57,8 +57,7 @@ Report: "Auto-committed {N} worktree(s) with changes."
 
 Create a checkpoint file at `.gse/checkpoints/checkpoint-{YYYY-MM-DD-HHMM}.yaml` using the checkpoint.yaml template (`plugin/templates/checkpoint.yaml` — authoritative schema). Populate all fields from the current session state:
 
-- `checkpoint.timestamp`: current ISO 8601 timestamp
-- `timestamp`: ISO 8601 current time
+- `timestamp`: ISO 8601 current time (flat top-level field per `checkpoint.yaml` schema)
 - `user`: from `profile.yaml → user.name`
 - `last_task`: current TASK from session context (e.g., task the user was producing)
 - `note`: from `--note` flag if provided, else empty

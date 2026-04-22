@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.48.2] - 2026-04-22
+
+Layers impacted: **implementation** (`pause.md` only)
+
+**Post-audit proposition P7 — State-management errors in `pause.md`.** Two localized bugs in the `/gse:pause` activity (session pause — auto-commit active worktrees and save a checkpoint for later resume).
+
+### Fixed
+- **`pause.md` Step 2 duplicate line with invalid nested path removed.** The list of checkpoint fields to populate previously contained both `checkpoint.timestamp: current ISO 8601 timestamp` (using a nested path that has no corresponding structure in the `checkpoint.yaml` template) AND `timestamp: ISO 8601 current time` (flat, correct). The nested-path line was a historical editing artifact — deleting it removes the ambiguity. The surviving flat line gains a parenthetical annotation ("flat top-level field per `checkpoint.yaml` schema") to prevent the duplication from recurring.
+- **`pause.md` Step 1 orphan field `git.last_pause_commit` replaced by schema-declared `git.last_commit`.** The activity previously wrote `git.last_pause_commit: {hash}` into each TASK entry's `git:` block in `backlog.yaml`. This field was undeclared in the `backlog.yaml` template schema AND had no reader anywhere in the repo (`resume.md` uses `saved_last_commit` from the checkpoint file, not from backlog). Since pause creates a real commit, it now updates the schema-declared `git.last_commit: {ISO 8601 timestamp}` field instead — aligning the behavior with the existing schema and giving the field a real-time semantic (previously unused).
+
+### Notes
+- Plugin is not yet distributed to end users, so backward-compatibility is not required. Schema changes can remove or rename fields without migration paths. This rule will be added to CLAUDE.md at the next batch update.
+- No spec/design modifications — the spec does not descend to this level of per-activity field lists, and the design does not describe `pause.md` line-by-line. The work is fully localized to the implementation layer of a single file.
+- No impact on `backlog.yaml` template (already correct — `last_commit` is declared, `last_pause_commit` was never part of the schema) or on `checkpoint.yaml` template (already authoritative and flat). `resume.md` is unaffected — it reads from the checkpoint, not from the now-removed `last_pause_commit` backlog field.
+
 ## [0.48.1] - 2026-04-22
 
 Layers impacted: **spec** (§12.3 origin enum, §13.1 deploy.app_type enum), **implementation** (3 activities: reqs.md, assess.md, backlog.md)

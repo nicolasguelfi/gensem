@@ -58,7 +58,7 @@ gse-one/
 │   │   ├── devil-advocate.md
 │   │   ├── coach.md
 │   │   └── deploy-operator.md
-│   └── templates/                       # 28 templates (+ MANIFEST.yaml descriptor)
+│   └── templates/                       # 29 templates (MANIFEST.yaml is one of them, acting as self-descriptor; counted in §11.1 and §12)
 │
 ├── plugin/                              # Single deployable directory (Claude + Cursor + opencode)
 │   ├── .claude-plugin/plugin.json       # Claude Code manifest
@@ -66,7 +66,7 @@ gse-one/
 │   ├── skills/                          # 23 skills (shared, `name:` field included)
 │   ├── commands/                        # 23 flat /gse-<name>.md (Cursor + opencode)
 │   ├── agents/                          # 11 agents (shared, incl. orchestrator)
-│   ├── templates/                       # 28 templates (shared)
+│   ├── templates/                       # 29 templates (shared — MANIFEST.yaml included)
 │   ├── rules/
 │   │   └── gse-orchestrator.mdc         # Cursor-only (ignored by Claude/opencode)
 │   ├── hooks/
@@ -146,7 +146,7 @@ ONE directory (`plugin/`) serves both platforms. Shared components — skills, a
 | `rules/gse-orchestrator.mdc` | ignored | **used** | Cursor always-on methodology rule |
 | `skills/` (23) | **shared** | **shared** | All activity skills |
 | `agents/` (11 in source, 10 for Cursor) | **shared** (11: 10 specialized + orchestrator) | **shared** (10: specialized only) | Agent roles for sub-agent delegation |
-| `templates/` (28) | **shared** | **shared** | All artefact/config templates |
+| `templates/` (29) | **shared** | **shared** | All artefact/config templates (MANIFEST.yaml included — self-descriptor) |
 
 Claude ignores the `rules/` directory silently. Cursor ignores `settings.json` silently. The orchestrator agent (`agents/gse-orchestrator.md`) exists in the source `plugin/` directory for Claude Code, but the installer **excludes it from Cursor** installations — Cursor loads the orchestrator identity via `rules/gse-orchestrator.mdc` instead, avoiding double-loading of the same ~400-line content.
 
@@ -1335,8 +1335,9 @@ The spec-level *Sprint Freeze* guardrail materializes as follows:
 
 - `/gse:task` (creates a new TASK)
 - `/gse:produce` (transitions TASK `planned` → `in-progress` → `review`)
-- `/gse:fix` (transitions TASK `review` → `fixing` → `done`)
-- `/gse:review` (adds RVW findings, transitions TASK `in-progress` → `review`)
+- `/gse:review` (transitions TASK `review` → `reviewed` if no HIGH/MEDIUM findings, else `review` → `fixing`)
+- `/gse:fix` (transitions TASK `fixing` → `done`)
+- `/gse:deliver` (transitions TASK `reviewed` or `done` → `delivered`)
 
 **Activities exempt from the Sprint Freeze preflight** (operate only on closed sprints or do not mutate TASK state within a frozen sprint): `/gse:compound`, `/gse:integrate`, `/gse:pause`, `/gse:resume`, `/gse:go`, `/gse:status`, `/gse:health`, `/gse:backlog`, `/gse:learn`, `/gse:hug`, `/gse:collect`, `/gse:assess`, `/gse:plan --strategic`, `/gse:deploy`, `/gse:deliver`.
 
@@ -1673,6 +1674,16 @@ _Optional section. Lists ambiguities to resolve in downstream activities, each t
 - `/gse:reqs` reads the intent artefact to cross-check that all user-stated goals are covered by at least one REQ. Requirements get `traces.derives_from: [INT-001, ...]`.
 
 **Pivot / re-capture command:** out of scope for v0.28 — will be added later as `/gse:intent --pivot` or similar. For now, if the user wants to replace the intent, they manually archive `docs/intent.md` and re-run `/gse:go` on a greenfield-looking project (or use `/gse:hug --update` to reset the first-project flag).
+
+**Exempt / skip conditions:**
+- Existing project (non-greenfield) → no Intent Capture; inferred implicit from existing artefacts.
+- Adopted project (`/gse:go --adopt`) → no Intent Capture; the adoption flow has its own analysis (see spec §3 Adopt Mode).
+- User explicit skip ("I know the process", "no need") → no `intent.md` written, Inform note logged.
+- Existing `docs/intent.md` present → skip Intent Capture, use the existing artefact.
+
+**Failure modes (Intent Capture):**
+- User refuses to describe intent → `/gse:go` proceeds to Step 6 (Complexity Assessment) without an intent artefact. A one-line Inform note is displayed: *"Intent Capture declined — I'll infer from your first sprint work. You can create `docs/intent.md` manually at any time."*
+- User describes intent but declines to validate the reformulation → agent writes the artefact with `status: draft` and proceeds. The draft can be promoted to `approved` by running `/gse:go` again.
 
 **Open Questions Resolution — Design Mechanics (spec P6 Open Questions + activity-entry scan):**
 
@@ -2085,18 +2096,6 @@ scaffold_path: ""  # populated only if variant: scaffold, e.g., "./" or "fronten
 - Scaffold build fails (post-invocation) → the PREVIEW variant cannot be validated; agent asks the user whether to debug the scaffold (continues PREVIEW) or revert to static.
 - User forgets to replace all `PREVIEW:` markers before DELIVER → the DELIVER review flags them via the same grep; explicit DEC- required to ship code with remaining placeholders.
 
-
-
-**Exempt / skip conditions:**
-- Existing project (non-greenfield) → no Intent Capture; inferred implicit from existing artefacts.
-- Adopted project (`/gse:go --adopt`) → no Intent Capture; the adoption flow has its own analysis (see spec §3 Adopt Mode).
-- User explicit skip ("I know the process", "no need") → no `intent.md` written, Inform note logged.
-- Existing `docs/intent.md` present → skip Intent Capture, use the existing artefact.
-
-**Failure modes:**
-- User refuses to describe intent → `/gse:go` proceeds to Step 6 (Complexity Assessment) without an intent artefact. A one-line Inform note is displayed: *"Intent Capture declined — I'll infer from your first sprint work. You can create `docs/intent.md` manually at any time."*
-- User describes intent but declines to validate the reformulation → agent writes the artefact with `status: draft` and proceeds. The draft can be promoted to `approved` by running `/gse:go` again.
-
 **Checkpoint schema (spec §12.5):**
 ```yaml
 timestamp: 2026-04-11T16:30:00
@@ -2199,17 +2198,20 @@ The coach is a dedicated specialized sub-agent responsible for **observing the A
 
 Invoked by the orchestrator with a `moment` tag. Each axis is activated by specific moments:
 
-| Moment | Axes activated |
-|--------|----------------|
-| `activity_start:/gse:*` | Pedagogy (if `learning_goals` non-empty and cap not exhausted) |
-| `sprint_close` (end of `/gse:compound` Axe 2) | Velocity, Health, Quality |
-| `mid_sprint_stall` (when `sessions_without_progress ≥ 2`) | Velocity, Health |
-| `gate_sequence_end` (after P16 counter transitions) | Engagement |
-| `activity_skip_event` | Process deviation |
-| `session_boundary` (end of session, resume, long gap) | Sustainability |
-| `compound_axe_3` | All 8 axes + recipe curation |
-| `inferred_gap_trigger` (friction pattern detected, if `proactive_gap_detection: true`) | Pedagogy |
-| `profile_drift_recurrence` | Profile calibration |
+| Moment tag                                                                                 | Axes activated                                                                              | Source activity                                  |
+|--------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|--------------------------------------------------|
+| `activity_start` (cross-cutting — dispatched centrally by orchestrator, not per-activity)  | 1 (pedagogy) — only if `learning_goals` non-empty + cap not exhausted                       | any lifecycle activity (orchestrator-delegated)  |
+| `/gse:go` after recovery check                                                             | 2-8 (workflow overview)                                                                     | `/gse:go`                                        |
+| `/gse:pause`                                                                               | 2-8 (end-of-session check)                                                                  | `/gse:pause`                                     |
+| `/gse:compound` Axe 2 feed                                                                 | 2-8 (feeds methodology capitalization — all 7 workflow axes)                                | `/gse:compound` Axis 2 Step 2.7                  |
+| `/gse:compound` Axe 3 feed                                                                 | 1, 2 (pedagogy + profile calibration — feeds competency update + learning_goals evolution)  | `/gse:compound` Axis 3 Step 3                    |
+| Sprint promotion (`/gse:plan --strategic`)                                                 | 3, 4, 5, 8 (retrospective cross-sprint analysis)                                            | `/gse:plan --strategic`                          |
+| `mid_sprint_stall` (when `sessions_without_progress ≥ 2`)                                  | 3 (sprint velocity), 4 (workflow health)                                                    | `/gse:go` (auto-detected)                        |
+| `gate_sequence_end` (after P16 counter transitions)                                        | 6 (engagement pattern)                                                                      | any Gate emitting activity                       |
+| `activity_skip_event` (an activity is skipped or bypassed)                                 | 7 (process deviation)                                                                       | orchestrator-driven                              |
+| `session_boundary` (end of session, resume, long gap)                                      | 8 (sustainability)                                                                          | `/gse:pause`, `/gse:resume`                      |
+| Profile drift threshold reached (signal in `status.yaml → profile_drift_signals{}`)        | 2 (profile_calibration, targeted suggestion)                                                | orchestrator-driven (status.yaml signal)         |
+| Inferred pedagogical gap detected (if `proactive_gap_detection: true`)                     | 1 (pedagogy, targeted preamble)                                                             | orchestrator-driven (status.yaml signal)         |
 
 **Inputs passed to the coach:**
 - `moment` tag + activity name (when applicable)
@@ -2222,30 +2224,31 @@ Invoked by the orchestrator with a `moment` tag. Each axis is activated by speci
 **Outputs (returned to orchestrator — zero or more blocks):**
 
 ```yaml
-# Pedagogy axis outputs
-- verdict: skip | propose
+# Pedagogy axis outputs (axis 1)
+- coach: skip | propose
   axis: pedagogy
   # if skip:
   reason: "already covered (LRN-002)" | "previously declined" | "cap reached" | "no overlap" | ...
   # if propose:
   topic: "{precise formulation, 1 sentence}"
   trigger: explicit-goal | inferred-gap | gate-preamble | compound-review
+  severity: low | medium | high          # used by the orchestrator to prioritize when multiple proposals compete
   preamble:
     core_concept: "{1-2 sentences}"
     example: "{concrete 3-10 line example}"
     pitfall: "{common mistake + fix hint}"
   suggested_depth: quick | deep
 
-# Workflow axes outputs
-- verdict: advise
-  axis: sprint_velocity | workflow_health | quality_trends | engagement_pattern | process_deviation | sustainability | profile_calibration
-  severity: inform | gate
+# Workflow axes outputs (axes 2-8)
+- coach: advise
+  axis: profile_calibration | sprint_velocity | workflow_health | quality_trends | engagement_pattern | process_deviation | sustainability
+  severity: low | medium | high          # used by the orchestrator to prioritize advice (HIGH surfaced first)
   observation: "{1-2 sentences of what the coach has noticed}"
   evidence: ["{concrete signal 1}", "{concrete signal 2}"]
   suggestion: "{actionable next step — may cite an existing command like /gse:hug --update}"
 ```
 
-On `propose` (pedagogy), the orchestrator presents the 5-option P14 Gate. On `advise` with `severity: inform`, the orchestrator emits a one-line Inform note. On `advise` with `severity: gate`, the orchestrator presents a 3-option Gate (*Adopt / Defer / Discuss*). Every invocation respects `coach.max_advice_per_check` (default 3 blocks returned across all workflow axes).
+On `coach: propose` (pedagogy), the orchestrator presents the 5-option P14 Gate. On `coach: advise` (workflow), the orchestrator emits a one-line Inform note — **workflow-axis outputs are always Inform-tier** per spec §P14 — Knowledge Transfer (Coaching), they never block. The `severity` field (`low | medium | high`) prioritizes ordering when multiple blocks compete for attention, but never escalates to a Gate. A `severity: gate` escalation path was considered in earlier design iterations but is not implemented — if a specific future signal justifies blocking, it will require a dedicated spec update. Every invocation respects `coach.max_advice_per_check` (default 3 blocks returned across all workflow axes).
 
 **Persistence model:**
 

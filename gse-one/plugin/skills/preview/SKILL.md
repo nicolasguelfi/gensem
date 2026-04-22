@@ -287,6 +287,25 @@ Preview: TASK-018 — Import JWT Module from SRC-001 (Import)
   - Original tests (SRC-003) can be adapted with minimal changes
 ```
 
+### Step 2.5 — UX Heuristic Pass (ux-advocate sub-agent)
+
+**Applicability:** this step runs **only** for UI-relevant previews (UI preview, Feature walkthrough with UI surface). For API / Architecture / Data Model / Import previews in non-UI projects, the step is skipped silently with a one-line Inform note: *"UX heuristic pass skipped — no UI-relevant preview in this sprint."* Read `config.yaml → project.domain`: applicable when `web` or `mobile`; non-applicable for `cli`, `library`, `api` (pure backend), `scientific`, `data`.
+
+When applicable, invoke the `ux-advocate` sub-agent (`$(cat ~/.gse-one)/agents/ux-advocate.md` — adopt this role) to apply **UX heuristics and accessibility checks** to the generated preview artefact (wireframe, mockup, or scaffold) **before** soliciting human feedback at Step 3.
+
+The agent emits findings tagged `[UX-HEURISTIC]` covering:
+- **Nielsen's 10 heuristics** — visibility of system status, match with real world, user control, consistency, error prevention, recognition over recall, flexibility, minimalist design, error recovery, help/documentation.
+- **WCAG AA accessibility** — contrast ratios, keyboard navigation paths, screen reader landmarks, focus management, text sizing, non-color-only indicators.
+- **Domain-specific patterns** — e-commerce checkout flow completeness, form-field validation affordances, loading-state conventions (if the domain triggers relevant patterns in the agent's checklist).
+- **Cognitive load** — information hierarchy, scan path, count of simultaneous user choices.
+
+**Triage:**
+- **HIGH** findings block Step 3: the prototype must be amended before the user validation Gate (e.g., missing focus indicator on interactive controls, color-only status signaling).
+- **MEDIUM** findings are presented to the user at Step 3 alongside the prototype as a "things to watch" list, letting the user decide whether to address them before PRODUCE or defer them to /gse:review IMPL tier.
+- **LOW** findings are appended to `docs/sprints/sprint-{NN}/preview.md` under `## UX Notes` for visibility at PRODUCE and REVIEW time.
+
+**Rationale:** UX issues detected at the prototype stage (before investing in production code) are 10× cheaper to address than those surfaced after implementation. This pass complements — not replaces — the human feedback at Step 3: automatic heuristic checks plus human judgment on the domain-specific experience.
+
 ### Step 3 — Collect Feedback
 
 After presenting previews, ask for feedback (Gate):

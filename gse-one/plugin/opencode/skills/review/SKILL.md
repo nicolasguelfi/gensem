@@ -23,7 +23,7 @@ Arguments: $ARGUMENTS
 Before executing, read:
 1. `.gse/status.yaml` — current sprint and lifecycle state
 2. `.gse/config.yaml` — project configuration (language, framework, review settings)
-3. `.gse/backlog.yaml` — tasks with `status: done` (candidates for review)
+3. `.gse/backlog.yaml` — tasks with `status: review` (candidates for review — set by `/gse:produce`)
 4. `.gse/profile.yaml` — user expertise level (affects finding presentation)
 
 ## Workflow
@@ -45,15 +45,14 @@ On option 1: invoke the mode-appropriate opening sequence inline; after promotio
 
 Before reviewing any TASK, verify test execution:
 
-1. **Check test evidence** — For each TASK with `status: done`, read `test_evidence` in `backlog.yaml`.
+1. **Check test evidence** — For each TASK with `status: review` (i.e., produced and awaiting review), read `test_evidence` in `backlog.yaml`.
 2. **If test evidence is absent or `status: skipped`** — **Hard guardrail: block review.** Report: "Tests were not run for this task. Tests must pass before review." For beginners: "I need to verify that what I built works correctly before I check my own work. Let me run the tests first." Then execute tests for this TASK and return to review only after tests pass.
 3. **If test evidence `status: fail`** — **Soft guardrail: warn and continue.** Report: "Tests are currently failing for this task. Review will proceed, but test failures will be included as findings." Add a RVW- finding with severity HIGH for the failing tests.
 4. **If test evidence `status: pass`** — Proceed to Step 1.
 
 ### Step 1 — Identify Review Scope
 
-1. Read `backlog.yaml` and select tasks with `status: done` that have not been reviewed.
-   **Update each selected TASK:** set `status: review` in `backlog.yaml`. This marks them as under review and prevents `/gse:produce` from picking them up.
+1. Read `backlog.yaml` and select tasks with `status: review` (i.e., TASKs that `/gse:produce` has marked ready for review and that have not yet been reviewed). The `review` status is set by PRODUCE; REVIEW consumes it and promotes it to either `reviewed` (clean) or `fixing` (findings) at Step 6.
 2. For each task, identify the feature branch: `git.branch` field
 3. Generate the diff against the sprint branch:
    ```
@@ -244,9 +243,9 @@ Report:
 
 **Update TASK statuses** in `backlog.yaml` based on review results:
 - If HIGH or MEDIUM findings exist for a TASK → set `status: fixing` (requires `/gse:fix` before delivery)
-- If no HIGH or MEDIUM findings → set `status: done` (LOW findings are tracked but non-blocking; user can still address them via `/gse:fix --severity LOW`)
+- If no HIGH or MEDIUM findings → set `status: reviewed` (LOW findings are tracked but non-blocking; the user can still address them via `/gse:fix --severity LOW`, which would transition `reviewed` → `fixing` → `done`)
 
-**Rationale:** this threshold aligns with the canonical rule in spec §14 and design §10.1 (FIX is inserted into `workflow.pending` if HIGH or MEDIUM findings exist). MEDIUM findings weight significantly in the `review_findings` health formula (×0.8); letting them pass without triage would silently accumulate tech debt. The user retains full agency via `/gse:fix --severity HIGH` to narrow the fix scope.
+**Rationale:** this threshold aligns with the canonical rule in spec §14 and design §10.1 (FIX is inserted into `workflow.pending` if HIGH or MEDIUM findings exist). MEDIUM findings weight significantly in the `review_findings` health formula (×0.8); letting them pass without triage would silently accumulate tech debt. The user retains full agency via `/gse:fix --severity HIGH` to narrow the fix scope. The distinction between `reviewed` (clean first pass) and `done` (fixed after findings) preserves the signal for coach Axis 5 (`quality_trends`): a high ratio of `reviewed` vs `done` indicates high PRODUCE quality.
 
 If findings with severity HIGH or MEDIUM exist:
 - Recommend `/gse:fix` before delivery

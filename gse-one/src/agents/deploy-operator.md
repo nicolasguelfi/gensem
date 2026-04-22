@@ -101,8 +101,8 @@ When executing commands on the remote server:
 Phase 1: setup             — Install CLI tools, obtain credentials, save to .env
 Phase 2: provision         — Create server + firewall (as root)
 Phase 3: secure            — Create deploy user, harden SSH, UFW, fail2ban (root → deploy)
-Phase 4: install-coolify   — Install Coolify v4, verify Docker/Traefik containers
-Phase 5: configure-domain  — DNS wildcard, SSL via Let's Encrypt, close temporary port 8000
+Phase 4: coolify           — Install Coolify v4, verify Docker/Traefik containers
+Phase 5: dns               — DNS wildcard, SSL via Let's Encrypt, close temporary port 8000
 Phase 6: deploy            — Create Coolify project/environment/app, build, health check
 ```
 

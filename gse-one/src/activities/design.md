@@ -200,6 +200,26 @@ Check the design for structural quality:
 
 Report findings using the architect agent checklist (see `agents/architect.md`).
 
+### Step 5.5 — Security Design Pass (security-auditor sub-agent)
+
+Once the architecture decisions (DES-NNN) are drafted and the structural Quality Checklist (Step 5) is clean, invoke the `security-auditor` sub-agent (`$(cat ~/.gse-one)/agents/security-auditor.md` — adopt this role) to perform **threat modeling at the design layer**, complementing the later code-level security review during `/gse:review`.
+
+The agent reviews each DES-NNN through the OWASP Top 10 + CWE lens and flags:
+- **Authentication / authorization boundaries** — where identity is checked, where privileges escalate.
+- **Data exposure risks** — what crosses trust boundaries (network, storage, logs); where secrets live in the design.
+- **Input validation boundaries** — what components receive untrusted input; where validation is placed.
+- **Crypto choices** — algorithms cited, key-management implications, deprecated primitives.
+- **Third-party / supply-chain risks** — external dependencies introduced by DES-NNN.
+- **Secret handling patterns** — credentials, API keys, tokens surfaced in the design.
+
+**Triage:**
+- Findings emitted as RVW-NNN with `perspective: security-auditor` and tag `[DESIGN-SECURITY]`.
+- **HIGH** findings block Persist: the user must amend the DES-NNN or create a compensating DEC-NNN acknowledging the risk with a mitigation plan.
+- **MEDIUM** findings trigger a Gate: *Amend the design* / *Accept with DEC-NNN justification* / *Defer to implementation review*.
+- **LOW** findings are informational and appended to `docs/sprints/sprint-{NN}/design.md` under `## Security Notes` for visibility at PRODUCE and REVIEW time.
+
+**Rationale:** architectural security flaws (e.g., session-token storage scheme, auth boundary placement, crypto algorithm choice) are far cheaper to fix at design than at code-review. This pass front-loads AI-integrity per spec §P15 + §P16 and mirrors the architect checklist consultation at Step 5 (both are design-time audits, one structural, one security-focused).
+
 ### Step 6 — Persist
 
 Save the design document to `docs/sprints/sprint-{NN}/design.md`:

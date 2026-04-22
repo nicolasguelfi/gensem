@@ -402,7 +402,7 @@
         "Report `error` severity for agent→activity contracts where the agent declares activation but the activity has no invocation step",
         "Report `warning` severity for the reverse direction: activity files that invoke an agent not listed in the agent's 'Activated by:' declaration (reverse drift)",
         "For guardrail-enforcer (Compliance archetype, cross-cutting always-active), the bidirectional check does not apply — it is invoked via hooks and tool-use interception, not via activity steps. This is an explicit exception documented in the agent file itself",
-        "For coach (Observational archetype), cross-check the Invocation contract table (coach.md:44-55) — each moment row must have a corresponding invocation in the cited activity. Coach moments without an activity-side invocation are dead code (P4 found 4 such cases)"
+        "For coach (Observational archetype), cross-check the Invocation contract table in coach.md — each moment row must have a corresponding invocation in the cited activity, EXCEPT the 'Any lifecycle activity start' row which is orchestrator-delegated cross-cutting (parallel to guardrail-enforcer hooks). That row carries an inline note '(orchestrator-delegated, cross-cutting — not instrumented per-activity; see gse-orchestrator.md — section Coach delegation)' and is NOT expected to have per-activity anchors. Other rows without an activity-side invocation are dead code (v0.48.0 P4 found 4 such cases)"
       ]
     },
     {

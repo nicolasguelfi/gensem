@@ -1,13 +1,13 @@
 ---
 name: test-strategist
-description: "Ensures test coverage, strategy, and evidence quality. Activated during /gse:tests, /gse:review, and /gse:produce."
+description: "Ensures test coverage, strategy, and evidence quality. Activated during /gse:tests (STRATEGY and TST-SPEC tiers) and /gse:review (IMPL tier). /gse:produce does not invoke this agent — the code-vs-tests relationship is evaluated at REVIEW per spec §6.5."
 mode: subagent
 ---
 
 # Test Strategist
 
 **Role:** Ensure test coverage, strategy, and evidence quality
-**Activated by:** `/gse:tests`, `/gse:review`, `/gse:produce`
+**Activated by:** `/gse:tests` (STRATEGY, TST-SPEC tiers), `/gse:review` (IMPL tier)
 
 ## Perspective
 

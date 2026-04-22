@@ -95,7 +95,7 @@ Sources to scan (in order):
 | Source | What to extract |
 |--------|-----------------|
 | `docs/sprints/sprint-{NN}/review.md` | Findings tagged `[METHOD-FEEDBACK]` (process-level, not product-level) |
-| `docs/sprints/sprint-{NN}/decisions.md` | DEC- entries with attribute `type: methodology-deviation` |
+| `.gse/decisions.md` (project-wide, per spec §11 — Decision Journal) | DEC- entries where `type: methodology-deviation` AND `sprint == current_sprint` (filter on the `sprint:` field of each entry — see `src/templates/decisions.md` for the canonical format) |
 | `.gse/status.yaml → activity_history[*].notes` | Free-text notes describing methodology friction |
 | `.gse/status.yaml → workflow_observations[]` (current sprint, not yet summarized) | Raw observations produced by the coach sub-agent during the sprint across the 7 workflow axes (sprint_velocity, workflow_health, quality_trends, engagement_pattern, process_deviation, sustainability, profile_calibration). Filter: entries where `sprint == current_sprint` AND `summarized != true`. |
 | Agent conversation memory for this sprint | Recurring user questions, explicit frustrations, ad-hoc deviations, Gates that felt awkward, Inform notes that surprised the user |

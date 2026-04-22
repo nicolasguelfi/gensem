@@ -312,6 +312,23 @@ Reliability:
 - **Intermediate:** Present the summary matrix with brief explanations.
 - **Expert:** "Quality checklist: 7/8 NFRs fully specified. Rate limiting unspecified — add to REQ-007 or defer?"
 
+### Step 7.5 — Requirements Quality Pass (requirements-analyst sub-agent)
+
+Once the REQ list is drafted (Steps 1-6) and the inline Quality Checklist (Step 7) has surfaced dimension-level gaps, invoke the `requirements-analyst` sub-agent (`$(cat ~/.gse-one)/agents/requirements-analyst.md` — adopt this role) to run its **checklist against the drafted REQ entries**. This is a REQ-level audit (per-REQ) complementing Step 7's dimension-level audit.
+
+The agent returns findings tagged `[REQ-QUALITY]` covering:
+- **Completeness** — no orphan REQ without acceptance criteria, no incomplete FR/NFR pair.
+- **Testability** — each REQ has at least one measurable verification path (Given/When/Then or equivalent).
+- **Ambiguity** — no vague terms ("fast", "secure", "user-friendly") without a numeric threshold or observable criterion.
+- **Inter-REQ consistency** — no pair of REQs contradicts the other (REQ-003 "JWT with 15 min expiry" vs REQ-008 "sessions persist across browser restarts" is a contradiction).
+- **Alignment with INT-001** — no REQ strays from the intent described in `docs/intent.md` (if present).
+
+**Triage:**
+- HIGH or MEDIUM findings **must be resolved before Persist**: the user may amend the REQ inline, or accept the REQ as-is and create a DEC-NNN documenting the accepted risk.
+- LOW findings are appended to the sprint's `reqs.md` under an `## Open Questions` section with `resolves_in: DESIGN | PRODUCE` or `status: accepted` if deemed acceptable.
+
+**Beginner adaptation** (per P9): instead of listing findings with tags, present them as plain-language questions: *"REQ-003 talks about 'fast response' — do you have a specific time limit in mind? e.g., under 1 second."*
+
 ### Step 8 — Persist
 
 Save requirements to `docs/sprints/sprint-{NN}/reqs.md`:

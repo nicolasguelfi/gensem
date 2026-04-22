@@ -11,7 +11,7 @@ Arguments: $ARGUMENTS
 | Flag / Sub-command | Description |
 |--------------------|-------------|
 | `<description>`    | Free-text description of the task to execute |
-| `--type TYPE`      | Force artefact type (feat/fix/doc/test/refactor/task) |
+| `--type TYPE`      | Force artefact type (canonical enum per spec §P6 — Artefact ID allocation): `code` \| `requirement` \| `design` \| `test` \| `doc` \| `config` \| `import` \| `spike`. Default: inferred from description (see Step 1). |
 | `--complexity N`   | Override complexity estimate (1-5) |
 | `--no-review`      | Mark task as not requiring review (for trivial tasks) |
 | `--spike`          | Create a spike (exploratory experiment). Complexity-boxed (max 3 points), non-deliverable, bypasses REQS/TESTS guardrails, must produce a DEC- |
@@ -52,15 +52,17 @@ Before any other work, verify the current sprint is writeable. This preflight im
 ### Step 1 — Task Analysis
 
 1. Parse the task description from `$ARGUMENTS`
-2. Infer artefact type from description if `--type` not provided:
+2. Infer artefact type from description if `--type` not provided. The inferred value MUST belong to the canonical enum defined in spec §P6 — Artefact ID allocation: `code | requirement | design | test | doc | config | import | spike`. Note: the enum describes **the class of artefact produced by the TASK**, not the type of modification (no `feat`/`fix`/`refactor` — those describe git commit intent, not artefact class; a fix and a feature both produce the `code` artefact class).
    - `--spike` flag → `spike`
-   - Keywords like "fix", "bug" -> `fix`
-   - Keywords like "add", "create", "implement" -> `feat`
-   - Keywords like "document", "readme", "comment" -> `doc`
-   - Keywords like "test", "spec" -> `test`
-   - Keywords like "refactor", "clean", "reorganize" -> `refactor`
-   - Keywords like "spike", "experiment", "try", "explore", "prototype" -> `spike`
-   - Default: `task`
+   - Keywords like "fix", "bug", "debug", "refactor", "clean", "reorganize", "add", "create", "implement", "update" → `code`
+   - Keywords like "document", "readme", "comment", "write docs" → `doc`
+   - Keywords like "test", "spec", "coverage", "write tests" → `test`
+   - Keywords like "spike", "experiment", "try", "explore", "prototype" → `spike`
+   - Keywords like "configure", "setup", "CI", "CD", "deploy config" → `config`
+   - Keywords like "import", "migrate data", "ingest" → `import`
+   - Keywords like "new requirement", "REQ-", "add feature spec" → `requirement`
+   - Keywords like "architecture decision", "DES-", "design document" → `design`
+   - Default: `code` (the majority case for ad-hoc TASKs that modify production code)
 3. Estimate complexity (1-5) if `--complexity` not provided:
    - 1: trivial change (typo, config tweak)
    - 2: small change (single file, straightforward)

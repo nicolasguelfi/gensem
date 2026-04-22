@@ -16,7 +16,11 @@ items: []
   #     implements: []                   # requirements this task implements [REQ-NNN, ...]
   #     derives_from: []                 # design/intent this derives from [DES-NNN, INT-NNN, ...]
   #   acceptance_criteria: ""            # User-visible success definition
-  #   status: open                       # open | planned | in-progress | review | fixing | done | delivered | deferred
+  #   status: open                       # open | planned | in-progress | review | reviewed | fixing | done | delivered | deferred
+  #                                      # `review`   : produced, awaiting /gse:review
+  #                                      # `reviewed` : reviewed clean (no HIGH/MEDIUM findings) — ready to merge
+  #                                      # `done`     : reviewed + fixed (FIX applied) — ready to merge
+  #                                      # `delivered`: merged by /gse:deliver
   #   requires_review: true              # set false for complexity <= 1 OR --no-review OR spikes
   #   delivered_at: null                 # ISO 8601 timestamp, set by /gse:deliver Step 4
   #   completed_at: null                 # ISO 8601 timestamp, set when status → done (for ad-hoc TASKs without deliver)

@@ -45,7 +45,7 @@ The orchestrator invokes the coach at these moments:
 
 | Moment | Axes activated |
 |--------|----------------|
-| Any lifecycle activity start | 1 (only if `learning_goals` non-empty + cap not exhausted) |
+| Any lifecycle activity start *(orchestrator-delegated, cross-cutting — not instrumented per-activity; see `gse-orchestrator.md` — section "Coach delegation")* | 1 (only if `learning_goals` non-empty + cap not exhausted) |
 | `/gse:go` after recovery check | 2-8 (workflow overview) |
 | `/gse:pause` | 2-8 (end-of-session check) |
 | `/gse:compound` Axe 2 feed | 2-8 (feeds methodology capitalization) |
@@ -53,6 +53,8 @@ The orchestrator invokes the coach at these moments:
 | Sprint promotion (`/gse:plan --strategic`) | 3, 4, 5, 8 (retrospective cross-sprint analysis) |
 | Profile drift threshold reached | 2 (targeted suggestion) |
 | Inferred pedagogical gap detected | 1 (targeted preamble) |
+
+**Note on cross-cutting invocation (row 1):** the axis 1 (pedagogy) at activity-start is dispatched **centrally by the orchestrator** (`gse-orchestrator.md` — section "Coach delegation"), not by individual activity files. This is by design, parallel to the `guardrail-enforcer` cross-cutting invocation via hooks: duplicating the invocation in all 15 lifecycle activities would be fragile (every future activity would have to remember the snippet). The bidirectional activity-anchor check performed by `/gse-audit` (job `invocation-contract-consistency`) explicitly excludes this row — see `.claude/audit-jobs.json` check 5 for the documented exception.
 
 ## Evaluation algorithm
 

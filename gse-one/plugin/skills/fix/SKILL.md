@@ -53,7 +53,7 @@ Before applying any fix, verify the current sprint is writeable. This preflight 
 1. Read `docs/sprints/sprint-{NN}/review.md` for all RVW-NNN findings
 2. Filter by arguments (severity, task, specific finding)
 3. Sort by severity (HIGH first), then by task
-4. **Verify TASK status** — Each TASK with findings should have `status: fixing` (set by REVIEW). If a TASK is still `status: review` or `status: done`, set it to `fixing` now.
+4. **Verify TASK status** — Each TASK with findings should have `status: fixing` (set by REVIEW). If a TASK still has `status: review` (REVIEW not yet run) or `status: reviewed` (clean first-pass but user invokes `/gse:fix --severity LOW` to address non-blocking findings), set it to `fixing` now.
 5. Present fix plan: list of findings to address with estimated effort
 6. Wait for user confirmation (Gate)
 

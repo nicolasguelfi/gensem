@@ -59,7 +59,7 @@ This ensures rollback is always possible.
 
 Verify delivery readiness:
 
-1. **Review status** — Check that all sprint TASKs are ready for delivery (`backlog.yaml` TASK `status: done`). If any task has `status: in-progress`, `status: planned`, `status: review`, or `status: fixing`:
+1. **Review status** — Check that all sprint TASKs are ready for delivery (`backlog.yaml` TASK `status: reviewed` or `status: done` — both are terminal "ready to merge" statuses per spec §12.3 Status lifecycle). If any task has `status: in-progress`, `status: planned`, `status: review`, or `status: fixing`:
    - Report: "Task TASK-{ID} is not complete (status: {status})."
    - Present Gate: **Wait** / **Deliver partial** / **Discuss**
 

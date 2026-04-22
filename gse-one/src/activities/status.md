@@ -75,7 +75,7 @@ ARTEFACTS
 
 ### Step 4 — Pending Reviews
 
-If any tasks have `status: done` but no review:
+If any tasks have `status: review` (produced and awaiting `/gse:review`):
 
 ```
 PENDING REVIEW

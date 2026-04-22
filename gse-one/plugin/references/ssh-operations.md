@@ -47,8 +47,8 @@ REMOTE
 |--------------------|------------------|--------|
 | provision (created)| `root`           | Only root exists at this point |
 | secure (hardening) | `root` → `deploy`| Switch to deploy at the end of the phase |
-| install-coolify    | `deploy`         | Coolify installer runs with sudo |
-| configure-domain   | `deploy`         | Post-hardening, sudo available |
+| coolify            | `deploy`         | Coolify installer runs with sudo (Phase 4 — install Coolify v4) |
+| dns                | `deploy`         | Post-hardening, sudo available (Phase 5 — DNS wildcard + SSL + port 8000 close) |
 | All maintenance ops| `deploy`         | Standard operations |
 
 ## Server IP resolution

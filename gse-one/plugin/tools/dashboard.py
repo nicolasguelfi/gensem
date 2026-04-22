@@ -715,7 +715,7 @@ def generate_html(data, use_cdn=True):
       <li class="{'done' if data['reqs_approved'] else 'pending'}">Requirements ({data['reqs_total']} REQs{', approved' if data['reqs_approved'] else ''})</li>
       <li class="{'done' if data['has_design'] else 'pending'}">Design</li>
       <li class="{'done' if data['has_test_strategy'] else 'pending'}">Test Strategy</li>
-      <li class="{phase_status('LC02', phase)}">Production ({tc.get('done', 0) + tc.get('delivered', 0)}/{data.get('total_tasks', 0)} tasks)</li>
+      <li class="{phase_status('LC02', phase)}">Production ({tc.get('reviewed', 0) + tc.get('done', 0) + tc.get('delivered', 0)}/{data.get('total_tasks', 0)} tasks)</li>
       <li class="{'done' if data['has_review'] else 'pending'}">Review{' (' + findings_html + ')' if rf else ''}</li>
       <li class="{'done' if data['has_compound'] else 'pending'}">Capitalization (COMPOUND)</li>
     </ul>

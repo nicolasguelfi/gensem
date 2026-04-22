@@ -436,7 +436,7 @@ An agent is a named role that shapes how the coding agent reasons about a specif
 | **gse-orchestrator** | Main identity. Manages lifecycle, state, decisions, and dispatches to specialized agents. | Always active |
 | **requirements-analyst** | Ensures requirements are complete, testable, and traceable. | `/gse:reqs`, `/gse:review` |
 | **architect** | Evaluates architecture decisions for quality, scalability, maintainability. | `/gse:design`, `/gse:review` |
-| **test-strategist** | Ensures test coverage, strategy, and evidence quality. | `/gse:tests`, `/gse:review`, `/gse:produce` |
+| **test-strategist** | Ensures test coverage, strategy, and evidence quality. | `/gse:tests` (STRATEGY, TST-SPEC tiers), `/gse:review` (IMPL tier) |
 | **code-reviewer** | Reviews code for quality, security, maintainability. | `/gse:review` |
 | **security-auditor** | Identifies security vulnerabilities and risks. | `/gse:design`, `/gse:review` |
 | **ux-advocate** | Evaluates user experience and accessibility. | `/gse:preview`, `/gse:review` |
@@ -463,7 +463,7 @@ The 16 principles are organized into four categories:
 ### P1 — Iterative & Incremental Lifecycle
 Documents and artefacts correspond to increments. They must be modular at the file system level and easily traceable across iterations. Every artefact version is associated with a sprint.
 
-Operationally, this is ensured by: sprint artefacts in `docs/sprints/sprint-NN/` (Section 12), git branches per sprint and per task (Section 9), and YAML frontmatter with sprint number on every artefact (Section 12.2).
+Operationally, this is ensured by: sprint artefacts in `docs/sprints/sprint-NN/` (Section 12 — Artefact Storage Conventions), git branches per sprint and per task (Section 10 — Version Control Strategy), and YAML frontmatter with sprint number on every artefact (Section 12.2 — Frontmatter).
 
 ### P2 — Agile Terminology
 All terminology is inherited from the agile engineering methods domain (sprints, backlogs, user stories, etc.). See the Glossary (Section 15) for all defined terms.
@@ -2287,11 +2287,14 @@ docs/
 | `open` | `null` | `null` | Created (pool or backlog add) |
 | `planned` | `planned` | `null` | PLAN (promoted to sprint, branch name assigned) |
 | `in-progress` | `active` | `active` | PRODUCE (branch + worktree created) |
-| `review` | `active` | `active` | REVIEW (under review) |
-| `fixing` | `active` | `active` | FIX (fix branch in progress) |
-| `done` | `active` | `active` | FIX complete — ready to merge |
+| `review` | `active` | `active` | PRODUCE completed — TASK ready to be reviewed by REVIEW |
+| `reviewed` | `active` | `active` | REVIEW with no HIGH/MEDIUM findings — ready to merge (no fix needed) |
+| `fixing` | `active` | `active` | REVIEW found HIGH/MEDIUM findings — FIX branch in progress |
+| `done` | `active` | `active` | FIX complete — ready to merge (fix applied) |
 | `delivered` | `deleted` | `removed` | DELIVER (merged, cleaned up) |
 | `deferred` | `null` or `deleted` | `null` or `removed` | Deferred to future sprint |
+
+Both `reviewed` and `done` are terminal "ready to merge" statuses consumed by `/gse:deliver`. The distinction is preserved for quality trend analysis: a high ratio of `reviewed` vs `done` signals high PRODUCE quality (few findings requiring fix). The coach Axis 5 (`quality_trends`) reads this distribution.
 
 ### 12.4 Status State File
 
@@ -2508,7 +2511,7 @@ Users can customize GSE-One behavior via `.gse/config.yaml`:
 # .gse/config.yaml
 project:
   name: "My Project"
-  domain: "web"                        # web | embedded | scientific | cli | library | mobile
+  domain: "web"                        # 9 canonical values per §3.2.1 — Smart Profile Interview: web | api | cli | data | mobile | embedded | library | scientific | other
   # Optional: sub-domains for monorepos (calibrates test pyramid per sub-project)
   # sub_domains:
   #   - path: frontend/
@@ -2575,12 +2578,17 @@ git:
   backup_retention_days: 30            # how long to keep backup tags
 
 github:
-  enabled: false                       # auto-detected when git remote exists
-  repo: ""                             # auto-detected from git remote
+  enabled: false                       # auto-detected when git remote exists; if false, COMPOUND Axe 2 is skipped
+  repo: ""                             # auto-detected from git remote — the project's OWN GitHub repo (for issue sync)
+  upstream_repo: ""                    # optional override for COMPOUND Axe 2 methodology feedback
+                                       # Target repo resolution order (per design §5.17 — Coach & Methodology Feedback):
+                                       #   (1) this field if non-empty (user override — private forks, corporate trackers)
+                                       #   (2) plugin manifest default:
+                                       #       - Claude/Cursor: plugin.json → repository
+                                       #       - opencode:      opencode.json → gse.repository
+                                       #   (3) none of the above → skip Axe 2 with an Inform note
   sync_mode: manual                    # manual | on-activity | real-time
   auto_close_on_deliver: true          # close linked issues when TASK is delivered
-  # Methodology feedback (COMPOUND Axe 2) targets the GSE-One plugin repo,
-  # read from plugin.json → repository. Not configured here.
 
 testing:
   framework: auto                      # auto-detect | pytest | jest | vitest | go-test | ...

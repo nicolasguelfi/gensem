@@ -1,5 +1,5 @@
 <!-- GSE-ONE START -->
-<!-- gse-one-version: 0.50.0 -->
+<!-- gse-one-version: 0.51.0 -->
 # GSE-One Methodology (opencode edition)
 
 This section is managed by GSE-One. Edit `gse-one/src/` and regenerate — do not hand-edit between the START/END markers.
@@ -148,11 +148,22 @@ Rationale: the two mechanisms close the loop between agent autonomy and human go
    - **`collaborative`** (default) — per-question Gate with agent-proposed answer + rationale + P8 consequence horizons. User validates or modifies. Batch by theme if ≥ 3 questions (P9).
    - **`supervised`** — neutral Gate per question, no pre-answer. User provides answer directly.
 
-**Recording is mandatory in all three modes.** For each resolved question, the agent updates the origin artefact's `## Open Questions` entry in place: sets `status: resolved`, fills `resolved_at`, `resolved_in`, `answer`, `answered_by` (`user` | `agent`), `confidence` (P15 tag), `traces` (list of IDs, e.g., DEC-NNN created as a consequence). Substantial resolutions (high-impact) also produce a `DEC-NNN` in `docs/sprints/sprint-{NN}/decisions.md` with `traces.derives_from: [OQ-NNN]`. Resolutions with `impact: scope-shaping` propagate to `backlog.yaml` (task sizing updates) and may trigger a tactical replan notice if the current sprint plan is affected.
+**Recording is mandatory in all three modes.** For each resolved question, the agent updates the origin artefact's `## Open Questions` entry in place: sets `status: resolved`, fills `resolved_at`, `resolved_in`, `answer`, `answered_by` (`user` | `agent`), `confidence` (P15 tag), `traces` (list of IDs, e.g., DEC-NNN created as a consequence). Substantial resolutions (high-impact) also produce a `DEC-NNN` in `.gse/decisions.md` (the project-wide decision journal per spec §11 — Decision Journal) with `traces.derives_from: [OQ-NNN]` and a `sprint: {NN}` field identifying the sprint that originated the resolution (so COMPOUND Axis 2 and other consumers can filter by sprint). Resolutions with `impact: scope-shaping` propagate to `backlog.yaml` (task sizing updates) and may trigger a tactical replan notice if the current sprint plan is affected.
 
 **Activities concerned:** `/gse:assess`, `/gse:plan`, `/gse:reqs`, `/gse:design`. Other activities do not scan — open questions targeting them are a configuration error (the agent flags a parse warning at Step 0 of any concerned activity that encounters an unsupported `resolves_in` value).
 
 **Rationale:** before v0.29, scope-shaping questions raised during Intent Capture or ASSESS had no formal consumption slot between ASSESS and PLAN (learner05 training feedback: had to treat as DEC-003 deviation and elicit 9 questions ad-hoc). Integrating the scan as a transversal activity-entry rule — with scope-resolve absorbed as Step 0 of `/gse:plan` — preserves P5 (planning transversality) without introducing a new skill, and ensures open questions are resolved at their logical home regardless of when they were raised.
+
+**TASK status state machine — canonical transitions (spec §12.3 Status lifecycle):** every activity that mutates a TASK status in `.gse/backlog.yaml` MUST respect the following transitions. The orchestrator refuses any write that bypasses them:
+
+- `/gse:task` — creates a TASK with `status: open` or `status: planned` (depending on sprint assignment).
+- `/gse:plan` — promotes pool TASKs to `status: planned` when assigning them to the sprint.
+- `/gse:produce` — transitions `planned → in-progress` (on branch/worktree setup, Step 2) and `in-progress → review` (on Finalize, Step 5). The TASK leaves PRODUCE with `status: review`, not `done`.
+- `/gse:review` — consumes TASKs with `status: review`. Transitions `review → reviewed` if no HIGH/MEDIUM findings (clean first-pass), or `review → fixing` if findings exist.
+- `/gse:fix` — consumes TASKs with `status: fixing`. Transitions `fixing → done` when the fix is applied.
+- `/gse:deliver` — consumes TASKs with `status: reviewed` OR `status: done` (both are "ready to merge"). Transitions to `status: delivered` after successful merge.
+
+**Rationale for the reviewed/done split:** both statuses mean "ready to merge", but the distinction is preserved for the coach Axis 5 (`quality_trends`): a high ratio of `reviewed` (clean first-pass) vs `done` (fixed after findings) signals high PRODUCE quality. Collapsing them would silently erase this signal. The cost is one extra enum value in `backlog.yaml`; the benefit is a measurable quality trend the methodology is designed to surface.
 
 **Coach delegation — pedagogy + workflow monitoring (8 axes):** the orchestrator delegates observation of the AI+user collaboration to the **`coach`** sub-agent (see `agents/coach.md` for the full algorithm). The coach covers **8 axes** grouped into two categories:
 

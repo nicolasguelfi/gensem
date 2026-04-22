@@ -841,7 +841,7 @@ Proactive proposals use the structured interaction pattern (P4):
 **Context:** <why this matters for your project right now>
 
 **Options:**
-1. Quick overview (5 min) — concise introduction with key concepts + how they apply to your project
+1. Quick overview (5 min) — concise introduction
 2. Deep session (15 min) — worked example + practice exercise
 3. Not now — remind me next sprint
 4. Not interested — don't propose this topic again

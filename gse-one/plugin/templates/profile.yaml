@@ -66,5 +66,5 @@ competency_map:
     # git-rebase:
     #   level: explained             # not-seen | mentioned | explained | practiced
     #   last_session: "2026-01-15"   # ISO 8601 date of last interaction
-    #   mode: deep                   # quick | deep (from /gse:learn session)
+    #   mode: deep                   # contextual | quick | deep (mirrors LRN mode — see learn.md Step 4)
     #   note: LRN-003                # reference to learning note if produced

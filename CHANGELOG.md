@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.59.2] - 2026-04-22
+
+Layers impacted: **spec** (§P14 intra-spec consistency — option 1 fluff cleaned), **design** (§5.1 `/gse:learn` proactive preamble — 4→5 options with pointer to canonical), **implementation** (orchestrator P14 bullet — canonical wording; activities go.md — moment tag fix; agents/coach.md — 4 rows added to Invocation contract, axis 1 orphan trigger retracted, preamble history paraphrase aligned, Meta-2 cross-cutting note extended; templates/profile.yaml — LRN mode enum).
+
+**Patch release — coach invocation drift + P14 preamble canonical wording sweep.** Closes Cluster 5 of the 2026-04-22 v0.57.0 audit. Eight misalignments across the coach ecosystem — from a missing moment-tag word in `/gse:go` (potentially silencing coach axes 2-8 at post-recovery) to a spec-intra inconsistency on the P14 preamble canonical wording.
+
+### Changed
+
+- **`gse-one/src/activities/go.md` Step 2.8** — moment tag corrected from `/gse:go after recovery` to canonical `/gse:go after recovery check` (aligns with coach.md Invocation contract + design §5.17 + design §5.14). If the coach compares moment tags literally, the post-recovery workflow overview (axes 2-8) now activates as documented.
+- **`gse-one/src/agents/gse-orchestrator.md` P14 bullet** — 5-option wording aligned on spec §P14 canonical (line 951 declares *"implementations use this exact wording"*). Changes: `Quick overview — ~5 min` → `Quick overview (5 min) — concise introduction`; `Deeper session — full explanation` → `Deep session (15 min) — worked example + practice`; 5th option `Discuss` enriched to `Discuss — tell me more before I decide`. Cross-platform coherence preserved (orchestrator source of truth for Claude Code, Cursor rule, opencode AGENTS.md).
+- **`gse-one-implementation-design.md` §5.1 `/gse:learn` proactive preamble** — previously showed only 4 options (missing *"Discuss"* + used *"Deeper session"*). Now points to spec §P14 canonical with the full 5-option block inline (preserving a self-sufficient read while removing the 4-option drift).
+- **`gse-one/src/agents/coach.md` Invocation contract table** — expanded from 8 to 12 rows, adding `mid_sprint_stall`, `gate_sequence_end`, `activity_skip_event`, `session_boundary` in alignment with design §5.17. Each event-trigger row is explicitly annotated *(event trigger, cross-cutting)* with its detection source. The *Note on cross-cutting invocation* is extended from covering row 1 only to covering row 1 + rows 7-12, clarifying that event triggers (counter thresholds, status.yaml signals) are dispatched by the orchestrator not by activities.
+- **`gse-one/src/agents/coach.md` Evaluation algorithm (axis 1)** — *"preamble history"* paraphrase replaced with canonical field name `learning_preambles[] (from status.yaml)`.
+- **`gse-one-spec.md` §P14 Proactive proposals template (line 844)** — option 1 fluff *"with key concepts + how they apply to your project"* removed to match exactly the canonical line 951 *"Quick overview (5 min) — concise introduction"*. Spec §P14 now has a single canonical form at both declaration sites (template + canonical block).
+- **`gse-one/src/templates/profile.yaml` (line 69, `competency_map.topics.mode`)** — enum comment `# quick | deep` upgraded to `# contextual | quick | deep (mirrors LRN mode — see learn.md Step 4)`. Aligns with spec §P14 + learn.md + learning-note.md — the `contextual` mode is now representable in the competency map.
+
+### Removed
+
+- **`gse-one/src/agents/coach.md` axis 1 Invocation point column (line 33)** — orphan trigger *"Gate decisions with high pedagogical load"* retracted. No corresponding row in the Invocation contract table, no activity wiring. Axis 1 keeps two real triggers (Activity start + detected inferred-gap threshold), both properly anchored.
+
+### Audit trail
+
+- **Cluster 5 of 10** from the 2026-04-22 v0.57.0 audit resolved per user validation of Q1–Q10 (all approved, full scope): moment tag fix (Q1 A1), design §5.1 pointer to canonical (Q2 B2), coach.md table expansion (Q3 C1), profile.yaml enum (Q4 D1), axis 1 orphan retraction (Q5 E1), orchestrator P14 canonical (Q6 F1), preamble history rename (Q7 G1), spec §P14 fluff cleanup (Q8 H1), Meta-2 annotations (Q9 I1), patch bump (Q10).
+- **Remaining audit clusters:** Cluster 6 (broken cross-references), Cluster 7 (3rd test guardrail in deliver.md), Cluster 8 (design §5.16 `/gse:deliver` Sprint Freeze double-listing), Cluster 9 (deploy `skip` role retraction). The final cluster will ship as minor v0.60.0.
+
 ## [0.59.1] - 2026-04-22
 
 Layers impacted: **design** (§10.1 Sprint Plan Lifecycle maintenance — explicit transition triggers), **implementation** (orchestrator Sprint Plan Maintenance Step 4.2 — explicit triple-trigger rule; activities compound, pause, resume, integrate, deliver — retraction of direct cursor writes).

@@ -31,7 +31,7 @@ Priorities:
 
 | # | Axis | Signal source | Output type | Invocation point |
 |---|------|---------------|-------------|------------------|
-| 1 | **Pedagogy** | `profile.yaml → dimensions.learning_goals` + current activity context + `docs/learning/LRN-*` history + inferred-gap signals (repeated questions, hesitations, explicit confusion, shotgun-fix correlation with P16 root-cause counter) | 5-option P14 preamble (Quick overview / Deep session / Not now / Not interested / Discuss) | Activity start (when `learning_goals` non-empty + cap not exhausted), Gate decisions with high pedagogical load, detected inferred-gap threshold |
+| 1 | **Pedagogy** | `profile.yaml → dimensions.learning_goals` + current activity context + `docs/learning/LRN-*` history + inferred-gap signals (repeated questions, hesitations, explicit confusion, shotgun-fix correlation with P16 root-cause counter) | 5-option P14 preamble (Quick overview / Deep session / Not now / Not interested / Discuss) | Activity start (when `learning_goals` non-empty + cap not exhausted), detected inferred-gap threshold |
 | 2 | **Profile calibration** | Per-dimension drift signals: repeated user requests for simpler/longer explanations, mismatched vocabulary, repeated *"go ahead / you decide"* or *"wait, let me think"*, emoji preference mismatches, etc. | Inform advice: *"Your X preference seems miscalibrated — consider `/gse:hug --update`"* | On threshold (default 3 signals on same dimension), at `/gse:go` after recovery |
 | 3 | **Sprint velocity** | Estimated vs consumed complexity points across the last N sprints (from `activity_history`, `plan-summary.md`, `backlog.yaml`) | Inform advice: *"Stable at X pts / sprint for 3 sprints — current plan is Y pts, consider adjusting"* | At `/gse:plan --strategic` (sprint promotion), at `/gse:compound` Axe 2 |
 | 4 | **Workflow health** | Activity skip patterns in `plan.yaml.workflow.skipped`, activity re-runs, non-standard sequences | Inform advice: *"DESIGN skipped in 2 of last 3 sprints — is this deliberate?"* | At `/gse:go` after recovery, at sprint promotion, at `/gse:compound` Axe 2 |
@@ -52,10 +52,14 @@ The orchestrator invokes the coach at these moments:
 | `/gse:compound` Axe 2 feed | 2-8 (feeds methodology capitalization) |
 | `/gse:compound` Axe 3 feed | 1, 2 (feeds competency update + potential `learning_goals` evolution via user consent) |
 | Sprint promotion (`/gse:plan --strategic`) | 3, 4, 5, 8 (retrospective cross-sprint analysis) |
-| Profile drift threshold reached | 2 (targeted suggestion) |
-| Inferred pedagogical gap detected | 1 (targeted preamble) |
+| `mid_sprint_stall` (when `sessions_without_progress ≥ 2`) *(event trigger, cross-cutting — detected by orchestrator at `/gse:go`/`/gse:resume`)* | 3 (sprint velocity), 4 (workflow health) |
+| `gate_sequence_end` (after P16 counter transitions) *(event trigger, cross-cutting — dispatched by orchestrator after any Gate close)* | 6 (engagement pattern) |
+| `activity_skip_event` (an activity is skipped or bypassed) *(event trigger, cross-cutting — orchestrator-driven)* | 7 (process deviation) |
+| `session_boundary` (end of session, resume, long gap) *(event trigger, cross-cutting — dispatched at `/gse:pause` / `/gse:resume` / long-absence detection)* | 8 (sustainability) |
+| Profile drift threshold reached *(event trigger, cross-cutting — signal in `status.yaml → profile_drift_signals{}`)* | 2 (profile_calibration, targeted suggestion) |
+| Inferred pedagogical gap detected *(event trigger, cross-cutting — signal in `status.yaml → detected_gaps[]`)* | 1 (targeted preamble) |
 
-**Note on cross-cutting invocation (row 1):** the axis 1 (pedagogy) at activity-start is dispatched **centrally by the orchestrator** (`gse-orchestrator.md` — section "Coach delegation"), not by individual activity files. This is by design, parallel to the `guardrail-enforcer` cross-cutting invocation via hooks: duplicating the invocation in all 15 lifecycle activities would be fragile (every future activity would have to remember the snippet). The bidirectional activity-anchor check performed by `/gse-audit` (job `invocation-contract-consistency`) explicitly excludes this row — see `.claude/audit-jobs.json` check 5 for the documented exception.
+**Note on cross-cutting invocations (row 1 + rows 7-12):** row 1 (activity-start pedagogy) and rows 7-12 (event-driven triggers: `mid_sprint_stall`, `gate_sequence_end`, `activity_skip_event`, `session_boundary`, Profile drift, Inferred gap) are all **orchestrator-delegated cross-cutting invocations**, not instrumented per-activity. Row 1 fires on every lifecycle activity start; rows 7-12 fire when the orchestrator detects the triggering signal (counter threshold, status.yaml signal, session boundary, etc.). Duplicating these invocations in individual activity files would be fragile — every future activity would have to remember the snippet. This is by design, parallel to the `guardrail-enforcer` cross-cutting invocation via hooks. The bidirectional activity-anchor check performed by `/gse-audit` (job `invocation-contract-consistency`) explicitly excludes these rows — see `.claude/audit-jobs.json` check 5 for the documented exception. The per-activity rows (2-6: `/gse:go` after recovery check, `/gse:pause`, `/gse:compound` Axe 2 feed, `/gse:compound` Axe 3 feed, Sprint promotion) are anchored in their respective activity files and subject to the bidirectional check.
 
 ## Evaluation algorithm
 
@@ -63,7 +67,7 @@ The orchestrator invokes the coach at these moments:
 
 Contextual evaluation (not a lookup):
 
-1. Gather inputs: activity context, `learning_goals`, existing LRN, preamble history, friction signals.
+1. Gather inputs: activity context, `learning_goals`, existing LRN, `learning_preambles[]` (from status.yaml), friction signals.
 2. Evaluate: is there non-trivial overlap between a learning goal (explicit or inferred) and what this activity will exercise?
 3. Short-circuit conditions (skip silently): topic already covered (LRN exists), previously `not-interested`, `not-now` for this activity, sprint cap reached, axis disabled.
 4. Otherwise: formulate a **precise topic** (not "testing" but "property-based testing, specifically relevant to the state invariants in your design") and propose a 5-option P14 preamble.

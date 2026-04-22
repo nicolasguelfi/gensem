@@ -667,19 +667,21 @@ Consultation mode — read and display, no session.
 This is triggered by other skills (go, compound, plan, review) at transition points.
 The learn skill receives the topic and trigger context.
 
-1. Present using the structured interaction pattern:
+1. Present using the canonical 5-option P14 preamble — see spec §P14 — P14 preamble — 5-option format (canonical) for the authoritative source. The preamble block is:
    ```
    **Learning opportunity:** <topic>
    **Context:** <why this matters now>
    **Options:**
-   1. Quick overview (5 min)
-   2. Deeper session (15 min)
+   1. Quick overview (5 min) — concise introduction
+   2. Deep session (15 min) — worked example + practice
    3. Not now — remind me next sprint
-   4. Not interested in this topic
+   4. Not interested — don't propose this topic again
+   5. Discuss — tell me more before I decide
    ```
-2. If accepted: run the reactive workflow above
-3. If "not now": record in profile as deferred
-4. If "not interested": record in profile as declined (never propose again)
+2. If accepted (option 1 or 2): run the reactive workflow above with the matching mode
+3. If "Not now" (option 3): record in `status.yaml → learning_preambles[]` as deferred
+4. If "Not interested" (option 4): record in `status.yaml → learning_preambles[]` as declined (never propose again)
+5. If "Discuss" (option 5): engage conversationally; re-propose the preamble after clarification
 
 ## Contextual Tips (cross-cutting)
 

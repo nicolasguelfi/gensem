@@ -852,16 +852,20 @@ Every learning session — whether contextual or explicit — produces a **learn
 
 ```markdown
 ---
-gse:
-  type: learning-note
-  topic: git-branching
-  sprint: 3
-  mode: deep                        # contextual | quick | deep
-  trigger: proactive                # reactive | proactive | contextual
-  related_activity: /gse:deliver
-  traces:
-    derives_from: [DEC-012, TASK-007]  # artefacts that motivated this lesson
-  created: 2026-04-10
+id: LRN-003
+artefact_type: learning
+title: "Git branching — how your project uses branches"
+topic: git-branching
+sprint: 3
+status: done
+mode: deep                          # contextual | quick | deep
+trigger: proactive                  # reactive | proactive | contextual
+related_activity: /gse:deliver
+author: agent
+created: 2026-04-10
+traces:
+  triggered_by: [TASK-007]          # task during which the learning opportunity arose
+  derives_from: [DEC-012, TASK-007] # artefacts that motivated this lesson
 ---
 
 # Git Branching — How Your Project Uses Branches
@@ -890,7 +894,7 @@ gse:
 - `/gse:learn --notes` — list all learning notes by topic
 - `/gse:learn --notes git` — show the note on git
 - `/gse:learn --notes --recent` — notes from the current sprint
-- During any activity, the agent can reference: "See your note on testing strategies (`docs/learning/testing-strategies.md`) for a refresher"
+- During any activity, the agent can reference: "See your note on testing strategies (`docs/learning/LRN-{NNN}-testing-strategies.md`) for a refresher"
 
 #### Knowledge tracking
 
@@ -2166,7 +2170,7 @@ Each structured artefact (markdown) includes a YAML frontmatter for traceability
 ```yaml
 ---
 gse:
-  type: requirement | design | test | review | plan-summary | compound | decision | learning-note | code | test-campaign
+  type: requirement | design | test | review | plan-summary | compound | decision | code | test-campaign
   sprint: 3
   branch: gse/sprint-03/feat/user-auth
   traces:                                 # typed trace links (P6)

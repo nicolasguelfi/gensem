@@ -54,27 +54,31 @@ Knowledge transfer is cumulative and tracked. The agent maintains learning notes
    - "Not interested" permanently excludes this topic from proposals
    - After choosing 1 or 2, the learn skill generates a learning note
 
-4. **Learning notes** — Learning content is stored in `docs/learning/` with topic-based filenames:
+4. **Learning notes** — Learning content is stored in `docs/learning/` with LRN-numbered filenames (pattern `LRN-{NNN}-{topic-slug}.md`, canonical per `plugin/templates/MANIFEST.yaml`):
    ```
    docs/learning/
-   ├── git-branching.md
-   ├── testing-strategies.md
-   ├── merge-strategies.md
-   └── dependency-management.md
+   ├── LRN-001-git-branching.md
+   ├── LRN-002-testing-strategies.md
+   ├── LRN-003-merge-strategies.md
+   └── LRN-004-dependency-management.md
    ```
-   Each note has a specific YAML frontmatter:
+   Each note has a specific YAML frontmatter (flat schema, per spec §P14 canonical format):
    ```yaml
    ---
-   gse:
-     type: learning-note
-     topic: git-branching
-     sprint: 3
-     mode: deep                    # contextual | quick | deep
-     trigger: proactive            # reactive | proactive | contextual
-     related_activity: /gse:deliver
-     traces:
-       derives_from: [DEC-012, TASK-007]  # artefacts that motivated this lesson
-     created: 2026-04-10
+   id: LRN-003
+   artefact_type: learning
+   title: "Git branching — how your project uses branches"
+   topic: git-branching
+   sprint: 3
+   status: done
+   mode: deep                    # contextual | quick | deep
+   trigger: proactive            # reactive | proactive | contextual
+   related_activity: /gse:deliver
+   author: agent
+   created: 2026-04-10
+   traces:
+     triggered_by: [TASK-007]
+     derives_from: [DEC-012, TASK-007]
    ---
    ```
    Each learning note:

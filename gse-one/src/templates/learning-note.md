@@ -1,14 +1,18 @@
 ---
-gse:
-  type: learning-note
-  topic: ""                            # e.g., git-branching
-  sprint: 1                            # numeric sprint number
-  mode: ""                             # contextual | quick | deep
-  trigger: ""                          # reactive | proactive | contextual
-  related_activity: ""                 # e.g., /gse:deliver
-  traces:
-    derives_from: []                   # artefacts that motivated this lesson, e.g., [DEC-012, TASK-007]
-  created: ""                          # ISO 8601 date
+id: LRN-                               # e.g., LRN-003 (sprint-scoped auto-incremented per spec §4)
+artefact_type: learning
+title: ""                              # e.g., "Git branching — how your project uses branches"
+topic: ""                              # e.g., git-branching (short slug for the filename)
+sprint: 1                              # numeric sprint number
+status: done                           # draft | done
+mode: ""                               # contextual | quick | deep
+trigger: ""                            # reactive | proactive | contextual
+related_activity: ""                   # e.g., /gse:deliver
+author: agent                          # agent | pair (human/agent co-authored)
+created: ""                            # ISO 8601 date
+traces:
+  triggered_by: []                     # activity context — e.g., [TASK-007]
+  derives_from: []                     # artefacts that motivated this lesson — e.g., [DEC-012, TASK-007]
 ---
 
 # {Topic} — How Your Project Uses {Topic}

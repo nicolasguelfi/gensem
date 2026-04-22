@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.48.4] - 2026-04-22
+
+Layers impacted: **spec** (§P14, §12.2 enum), **implementation** (`learning-note.md` template, `knowledge-transfer.md` principle)
+
+**Post-audit proposition P9 — Learning-note frontmatter unification.** Three sources (template, spec §P14, principle file) used a legacy `gse:` nested schema for learning notes, while the activity `learn.md` Step 4 used a flat `id: LRN-NNN` + `artefact_type: learning` schema consistent with the document-level artefact pattern established by `intent.md`. This created a 3-way contradiction. Resolution: align all sources on the flat schema (the canonical form per spec §4 traceability table which lists `LRN-` as a prefix, and per `MANIFEST.yaml` which declares the filename pattern `LRN-{NNN}-{topic-slug}.md`).
+
+### Changed
+- **Template `gse-one/src/templates/learning-note.md`** — rewrote frontmatter from the nested `gse:{type,topic,sprint,mode,trigger,related_activity,traces,created}` form to the flat form `id / artefact_type / title / topic / sprint / status / mode / trigger / related_activity / author / created / traces:{triggered_by, derives_from}`. Added previously-missing fields: `id` (canonical prefix per spec §4), `title`, `status`, `author`, `traces.triggered_by`. Content sections of the template (Key Concepts / How This Applies to Your Project / Practice Exercise / Quick Reference Card) unchanged.
+- **Spec §P14 frontmatter example (lines 853-865)** — rewrote to the same flat format as the template. Now consistent with `learn.md` Step 4 and with `intent.md` (the existing document-level artefact precedent).
+- **Spec §P14 path example (line 893)** — `docs/learning/testing-strategies.md` → `docs/learning/LRN-{NNN}-testing-strategies.md`, matching `MANIFEST.yaml` ligne 123 target pattern.
+- **Spec §12.2 `gse.type` enumeration (line 2169)** — removed `learning-note` from the list. The `gse.type` field lives in the *nested* frontmatter schema used by section-level artefacts (requirements, designs, tests, reviews, plan-summary, compound, decision, code, test-campaign — all multi-artefact-per-file). Document-level artefacts (intent, learning) use the flat schema with `artefact_type:` at the top level and do not belong in this enum. `intent` was already absent from the list — the removal of `learning-note` completes the separation.
+- **Principle `gse-one/src/principles/knowledge-transfer.md` frontmatter example (lines 65-79)** — rewrote to the same flat format. Added explanatory note: *"flat schema, per spec §P14 canonical format"*.
+- **Principle filename tree (lines 57-64)** — `git-branching.md`/etc. → `LRN-001-git-branching.md`/etc. Tree preamble rewritten to point to the canonical MANIFEST pattern.
+
+### Notes
+- Plugin not yet distributed — schema change applied directly without migration path. No generated learning notes exist in production user projects yet; future notes will be created with the flat schema from day one.
+- `learn.md` Step 4 (the activity that actually creates learning notes) was already correct and unchanged. The work was to align the descriptive sources (template, spec, principle) with the prescriptive activity.
+- No impact on MANIFEST.yaml (already correct), `coach.md` (only references `docs/learning/LRN-*` pattern), or any other file. Cross-platform parity identical; 49 unit tests pass.
+
 ## [0.48.3] - 2026-04-22
 
 Layers impacted: **implementation** (`principles/knowledge-transfer.md` only)

@@ -112,7 +112,7 @@ Create a new TASK entry in `backlog.yaml`:
 - id: TASK-{next_id}
   title: "{description}"
   artefact_type: spike
-  # Spike-specific fields (spec §12.3 artefact_type=spike extensions):
+  # Spike-specific fields (spec §12.3 — Unified Backlog, artefact_type=spike extensions):
   question: "{the technical question to answer}"
   complexity_cap: {estimated, max 3}
   deliverable: false                  # cannot be merged to main

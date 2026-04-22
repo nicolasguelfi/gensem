@@ -104,13 +104,17 @@ Create a learning note artefact:
 id: LRN-{NNN}
 artefact_type: learning
 title: "{Topic}"
+topic: {topic-slug}                     # short slug, same as filename stem (e.g., property-based-testing)
 sprint: {current_sprint}
 status: done
+mode: {contextual | quick | deep}       # 3 values per spec §P14 — Knowledge Transfer (Coaching)
+trigger: {reactive | proactive | contextual}  # how the learning episode was initiated (spec §P14)
+related_activity: {/gse:activity}       # activity context (e.g., /gse:deliver, /gse:produce)
+author: agent                            # agent | pair (human/agent co-authored)
 created: {date}
-author: agent
-mode: quick | deep
 traces:
-  triggered_by: [TASK-{NNN}]  # if learning was triggered during a task
+  triggered_by: [TASK-{NNN}]            # task during which the opportunity arose (if any)
+  derives_from: [DEC-{NNN}, TASK-{NNN}] # artefacts that motivated this lesson (optional)
 ---
 ```
 

@@ -227,7 +227,7 @@ Verify the project environment is ready. **This step is blocking** — do NOT me
    - If no: acknowledge and continue without git. Note that some GSE features (branching, version control guardrails) will be unavailable.
 2. **Create `.gse/` directory** — If it does not exist:
    - Create `.gse/` with subdirectories: `profiles/`, `checkpoints/`
-   - Copy `config.yaml` from the template (`$(cat ~/.gse-one)/templates/config.yaml`) with default values. Leave `lifecycle.mode` empty — `/gse:go` will fill it after Complexity Assessment (spec §14.3 Step 6).
+   - Copy `config.yaml` from the template (`$(cat ~/.gse-one)/templates/config.yaml`) with default values. Leave `lifecycle.mode` empty — `/gse:go` will fill it after Complexity Assessment (spec §14.3 — Orchestrator Decision Logic, Step 6 — Complexity Assessment).
    - Add to `.gitignore`: entries for `.gse/local/` (machine-specific state)
 3. **Save profile** — Write the completed profile to `.gse/profile.yaml` (or `.gse/profiles/{username}.yaml` in team mode)
 

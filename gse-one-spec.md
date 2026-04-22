@@ -2881,7 +2881,7 @@ If `config.yaml → git.strategy` is `worktree` or `branch-only`:
 2. If this fails → **Hard guardrail**: auto-fix by committing `.gitignore` (or creating it if missing): `git add .gitignore && git commit -m "chore: initialize repository"`. For beginners: "I need to save a first checkpoint in version control before we can organize the work properly."
 3. If `main` exists → proceed to Step 2
 
-This is a **safety net** for cases where HUG Step 4 was interrupted or the foundational commit was not created. Without a commit on `main`, all branching operations (sprint branch, feature branches) will fail.
+This is a **safety net** for cases where HUG Step 4 — Git Initialization was interrupted or the foundational commit was not created. Without a commit on `main`, all branching operations (sprint branch, feature branches) will fail.
 
 **Step 2 — Determine next action:**
 
@@ -3201,8 +3201,8 @@ When changing any concept, verify alignment across all layers:
 | If you change... | Also check... |
 |---|---|
 | An enum (e.g., verbosity scale) | Spec table, HUG skill, profile YAML example, orchestrator |
-| A lifecycle phase ordering | Orchestrator decision tree, go.md decision tree, spec Section 14.3 |
+| A lifecycle phase ordering | Orchestrator decision tree, go.md decision tree, spec §14.3 — Orchestrator Decision Logic (/gse:go) |
 | A guardrail severity level | guardrails.md, orchestrator lifecycle guardrails, go.md, affected skill |
 | A principle rule number | Principle file, spec, any skill that references "(P{N})" |
-| The project layout | Orchestrator Project Layout, spec Section 12.1, affected skills |
-| A TASK artefact_type | Spec Section 4, task.md, produce.md, guardrails.md |
+| The project layout | Orchestrator Project Layout, spec §12.1 — Directory Layout, affected skills |
+| A TASK artefact_type | Spec §P6 — Traceability (artefact_type enum at lines 549-560), task.md, produce.md, guardrails.md |

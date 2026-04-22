@@ -4,7 +4,9 @@ This reference provides Hetzner Cloud data consulted by `/gse:deploy` and any
 future deployment-related skill. Read this before making sizing decisions or
 advising users on server configuration.
 
-## 1. Hetzner Cloud Server Types (prices as of April 2026, EUR/month excl. VAT)
+## 1. Hetzner Cloud Server Types (EUR/month excl. VAT)
+
+> Last verified: 2026-04-22
 
 ### CAX Series — ARM (Ampere Altra) — Best value
 
@@ -46,6 +48,8 @@ advising users on server configuration.
 
 ## 2. Hetzner Load Balancers
 
+> Last verified: 2026-04-22
+
 | LB   | Services | Targets | SSL Certs | Connections | Traffic | Price/mo |
 |------|----------|---------|-----------|-------------|---------|----------|
 | LB11 | 5        | 25      | 10        | 10,000      | 1 TB    | ~6 €     |
@@ -58,6 +62,8 @@ load balancer. Without sticky sessions, a user's requests may be routed to
 different servers mid-session, breaking the long-lived connection.
 
 ## 3. Other Hetzner Pricing
+
+> Last verified: 2026-04-22
 
 | Resource              | Price                 |
 |-----------------------|-----------------------|
@@ -73,6 +79,8 @@ different servers mid-session, breaking the long-lived connection.
 
 ## 4. Datacenters
 
+> Last verified: 2026-04-22
+
 | Location       | ID   | Region     | Latency EU | Latency US | ARM available |
 |----------------|------|------------|------------|------------|---------------|
 | Falkenstein    | fsn1 | Germany    | ~10-20 ms  | ~100 ms    | Yes           |
@@ -84,6 +92,8 @@ different servers mid-session, breaking the long-lived connection.
 Default recommendation: **fsn1** for EU users, **ash** for US users.
 
 ## 5. Application Resource Profiles
+
+> Last verified: 2026-04-22
 
 Approximate resource consumption by application type. Use these figures to
 estimate server capacity and recommend sizing.

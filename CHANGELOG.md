@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.51.1] - 2026-04-22
+
+Layers impacted: **spec** (§P1 verified in v0.51.0, §P6 row consistency, §14.3 narrative, Appendix C cascade table), **agents** (gse-orchestrator, coach), **activities** (hug, go, plan, task, learn), **references** (hetzner-infrastructure, ssh-operations), **templates** (backlog.yaml, config.yaml, deploy-env.example, sprint/compound.md)
+
+**Patch release — v0.50 audit warnings (first batch: simple documentation and consistency fixes).** Applies 31 corrections from 8 confirmed warning clusters out of 12 verified by parallel methodology-auditor sub-agents with anti-false-positive discipline (Principles 1, 8, 9). Four additional clusters were verified as FALSE POSITIVES and documented below to refine future audits.
+
+### Changed
+
+- **Cross-reference convention sweep (WC1 — 13 fixes)** — applied CLAUDE.md "number + name" convention to number-only cross-references found across the corpus:
+  - `go.md:77` — "HUG Step 5.5" → "HUG Step 5.5 — Dashboard Initialization"
+  - `sprint/compound.md:46` — "§2.1–§2.6" → "§2.1–§2.6 — Axe 2 (Methodology Capitalization) steps"
+  - `sprint/compound.md:71` — "§3" → "§3 — Axe 3 (Competency Capitalization) steps"
+  - `spec Appendix C cascade table` — three rows (§14.3, §12.1, artefact_type) now cite "§N — Name" form; critically, the `artefact_type` row pointed to the WRONG section (§4 Collect, which is unrelated) and is corrected to `§P6 — Traceability (artefact_type enum at lines 549-560)`.
+  - `hug.md:229` — "§14.3 Step 6" → "§14.3 — Orchestrator Decision Logic, Step 6 — Complexity Assessment"
+  - `go.md:88` + `go.md:94` + `spec §14.3:2884` — "HUG Step 4" → "HUG Step 4 — Git Initialization"
+  - `plan.md:186` — "see §10.1 for per-mode lists" (WRONG: §10.1 is Branch Model) → "see spec §14 — Standard Activity Groups (Lifecycle Phases) for per-mode lists"
+  - `task.md:115` + `backlog.yaml:40` — "spec §12.3" → "spec §12.3 — Unified Backlog"
+- **Coach opt-in → opt-out label (WC2)** — `coach.md:136` header corrected from "(pedagogy axis, opt-in)" to "(pedagogy axis, opt-out — on by default; set `coach.proactive_gap_detection: false` in `config.yaml` to disable)". The `config.yaml` default is `true`, so the feature is opt-out, not opt-in; the previous label was factually inverted.
+- **SSH ConnectTimeout consistency (WC3 — 7 fixes)** — added `-o ConnectTimeout=10` to every SSH invocation in `ssh-operations.md` §"Connection patterns" and sub-sections. The file's §"Timeouts and retries" declares this timeout mandatory ("Always use…"), but the example invocations did not include it. Deploy.md's actual real-usage examples (lines 207, 241) already apply the rule; the reference file is now self-consistent.
+- **Hetzner freshness markers (WC4 — 5 updates)** — added `> Last verified: 2026-04-22` markers to §1 (Server Types), §2 (Load Balancers), §3 (Other Pricing), §4 (Datacenters), §5 (Application Resource Profiles). Prior state: only §1 had a month-level "April 2026" parenthetical; now all five volatile sections carry ISO-date markers scannable by future audit passes.
+- **deploy-env.example completeness (WC5)** — added commented placeholders for `SERVER_IP`, `SSH_USER`, `SSH_KEY` under a new "Filled automatically during Phase 2 (Provision) — or set manually if BYO server" banner, parallel to the existing Coolify banner. Keeps the reference template complete for forkers and BYO-server advanced users (deploy.py writes these keys programmatically during provisioning, but the template documentation was incomplete).
+- **config.yaml section ordering and count (WC8)** — swapped Section 14 (Compound) and Section 15 (Coach) to restore monotone 1..15 numbering (Compound now physically precedes Coach). Updated header comment from "~50 keys across 11 sections" to "~60 keys across 15 sections" (the previous claim was stale since v0.49 feature additions).
+- **Orchestrator P6 bullet completeness (WC9)** — extended the P6 bullet in `gse-orchestrator.md:31` to match spec §P6 canonical enums:
+  - ID prefixes: 8 → 11 values (added TCP-, INT-, OQ-; each actively used elsewhere — TCP- in test-campaign reports, INT-001 in Intent Capture, OQ- in Open Questions Resolution).
+  - `artefact_type`: 7 → 8 values (added `spike`; already referenced in the orchestrator's own lifecycle guardrails at lines 431-432 but missing from the enum line — self-inconsistency fixed).
+- **LRN frontmatter completeness (WC12)** — `learn.md` Step 4 frontmatter template now emits the full canonical set per spec §P14: added `topic`, `trigger` (with canonical enum `reactive | proactive | contextual`), `related_activity`, `traces.derives_from`. The `mode` enum is expanded from 2 values (`quick | deep`) to 3 (`contextual | quick | deep`) aligning with spec §P14. The `gse-one/src/templates/learning-note.md` template was already correct — only the activity's embedded template drifted.
+
+### Notes
+
+- **Verified false positives (4 clusters — no action, documented for future audit refinement):**
+  - **WC6** — Python audit flagged "CLAUDE.md line 178 claims '10 principles'". Verified: the phrase is "10 principle titles" (partial count of titles affected by a near-mistake in the 2026-04-21 audit session, NOT a total count). Same paragraph cites P1-P16 three times nearby. Audit engine's numeric detector should recognize partitive semantics.
+  - **WC7** — Python audit flagged broken doc links in CHANGELOG.md and README.md. Verified: CHANGELOG references to `tutor.md` are historical (file legitimately removed in v0.37.0 when merged into coach.md; Keep-a-Changelog mandates preserving past release narratives). README.md all 10 referenced paths resolve. Audit engine's link checker should exclude CHANGELOG historical references and may have a path-resolution bug in the README scan.
+  - **WC10** — Audit flagged devil-advocate.md missing `perspective:` field. Verified: the field IS present on lines 60, 68, 76, 84 under each RVW-NNN example, positioned identically to the other 6 reviewer agents. Likely detector missed 2-space indentation under RVW-NNN headers.
+  - **WC11** — Audit flagged fix.md missing explicit dashboard regeneration call (which review.md and produce.md have). Verified: the PostToolUse hook on Edit/Write/MultiEdit (hooks.claude.json:28-54) runs `dashboard.py --if-stale` automatically after every structured-artefact write. The explicit calls in review.md/produce.md are belt-and-suspenders for pedagogical user-facing moments; fix.md's summary-driven finalization tone legitimately omits the explicit call without loss of correctness.
+- **Verification methodology** — each warning cluster was independently verified by a dedicated methodology-auditor sub-agent applying Principles 1 (evidence-based), 8 (verify-before-report), and 9 (anti-rigidity check). 12 sub-agents ran in parallel; each returned a verdict CONFIRMED | FALSE_POSITIVE | NEEDS_REFINEMENT. Two clusters were NEEDS_REFINEMENT — their corrections were applied with the auditor-proposed refinements (WC1.4 target corrected from wrong §4 to correct §P6; WC1.9 target corrected from wrong §10.1 to correct §14; WC5 scope clarified to reference-only placeholders).
+- **Patch bump rationale (0.51.0 → 0.51.1)** — no schema changes, no behavior changes, no new activities or fields. All modifications are documentation consistency, cross-reference conventions, and template completeness. Per SemVer, patch is appropriate.
+- Pipeline: 61 unit tests pass; cross-platform parity identical; `gse_generate.py --verify` clean.
+
 ## [0.51.0] - 2026-04-22
 
 Layers impacted: **spec** (§P1, §1.6, §12.3, §13.1), **design** (§3.1, §5 Intent Capture, §5.16, §5.17, §10.1), **agents** (gse-orchestrator, coach, deploy-operator, test-strategist), **activities** (reqs, design, preview, produce, review, fix, deliver, task, status, compound), **templates** (backlog.yaml, decisions.md), **tools** (dashboard.py), **references** (ssh-operations.md), **maintainer tooling** (.claude/audit-jobs.json)

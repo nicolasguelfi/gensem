@@ -185,7 +185,7 @@ Initialize `.gse/plan.yaml` from the `plan.yaml` template (`plugin/templates/pla
 - `tasks[]`: selected items with `id`, `order`, `complexity`, `branch` (from Step 6)
 - `budget.total`: sum of selected task complexity (must not exceed `config.yaml complexity.budget_per_sprint`)
 - `budget.consumed`: 0, `budget.remaining`: same as total
-- `workflow.expected`: activity sequence for the mode (see §10.1 for per-mode lists)
+- `workflow.expected`: activity sequence for the mode (see spec §14 — Standard Activity Groups (Lifecycle Phases) for per-mode lists)
 - `workflow.completed`: pre-populate with COLLECT, ASSESS if already ran in LC01 + current PLAN
 - `workflow.active`: `reqs` (next activity after PLAN in both Full and Lightweight)
 - `workflow.pending`: remaining activities from expected minus completed minus active

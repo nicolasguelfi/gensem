@@ -5,6 +5,11 @@
 HETZNER_API_TOKEN=your-token-here
 DEPLOY_DOMAIN=your-domain.com
 
-# Filled automatically after Coolify installation:
+# Filled automatically during Phase 2 (Provision) — or set manually if BYO server (Phase 2 skip rule):
+# SERVER_IP=1.2.3.4
+# SSH_USER=deploy
+# SSH_KEY=~/.ssh/gse-deploy
+
+# Filled automatically after Coolify installation (Phase 4):
 # COOLIFY_URL=https://coolify.your-domain.com
 # COOLIFY_API_TOKEN=your-coolify-token

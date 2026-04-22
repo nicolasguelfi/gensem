@@ -37,7 +37,7 @@ items: []
   #   github_issue: null                 # GitHub issue number, null if not enabled (top-level, not nested in traces)
   #   # --- artefact_type: spike extensions ---
   #   question: null                     # spike-specific: the technical question to answer
-  #   complexity_cap: null               # spike-specific: integer cap (max 3 per spec §12.3 spike rules)
+  #   complexity_cap: null               # spike-specific: integer cap (max 3 per spec §12.3 — Unified Backlog spike rules)
   #   deliverable: true                  # false for spikes (cannot be merged to main)
   #   outcome: null                      # spike-specific: pending | yes | no | partial (after completion)
   #   # Test evidence — written by /gse:produce and /gse:tests --run,

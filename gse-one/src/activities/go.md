@@ -74,7 +74,7 @@ If `config.yaml → dependency_audit: true` (default for projects with package m
 
 1. **Validate tool registry** — Run `cat ~/.gse-one`. If the file is missing or the path it contains does not exist, warn the user: "GSE-One registry not found. Run `python3 install.py` to fix." and skip dashboard generation.
 2. **Regenerate `docs/dashboard.html`** — Run `python3 "$(cat ~/.gse-one)/tools/dashboard.py"` to update the dashboard with current state.
-3. This runs silently — no message to the user unless it's the first generation (in which case, inform per HUG Step 5.5 rules).
+3. This runs silently — no message to the user unless it's the first generation (in which case, inform per HUG Step 5.5 — Dashboard Initialization rules).
 
 ### Step 2.7 — Git Baseline Verification
 
@@ -85,13 +85,13 @@ If `.gse/config.yaml` → `git.strategy` is `worktree` or `branch-only`:
    git rev-parse --verify main
    ```
 2. **If this fails** (no commits on `main`) — **Hard guardrail**: the repository was initialized but has no foundational commit. This blocks all branching operations.
-   - **Git Identity Verification preflight (Hard guardrail, spec P12.6):** Before any auto-fix commit, apply the Git Identity Verification preflight as defined in `/gse:hug` Step 4 (detection logic + Git Identity Gate with 5 options: set global / set local / quick placeholder / I'll set it myself / discuss). If the identity is missing, resolve it through the Gate before proceeding. This guarantees the auto-fix commit below will not fail silently on fresh machines, classroom laptops, or CI containers.
+   - **Git Identity Verification preflight (Hard guardrail, spec P12.6):** Before any auto-fix commit, apply the Git Identity Verification preflight as defined in `/gse:hug` Step 4 — Git Initialization (detection logic + Git Identity Gate with 5 options: set global / set local / quick placeholder / I'll set it myself / discuss). If the identity is missing, resolve it through the Gate before proceeding. This guarantees the auto-fix commit below will not fail silently on fresh machines, classroom laptops, or CI containers.
    - If `.gitignore` exists but is not committed: auto-fix by committing it: `git add .gitignore && git commit -m "chore: initialize repository"`.
    - If no files exist to commit: create `.gitignore` and commit it.
    - For beginners: "I need to save a first checkpoint in version control before we can organize the work properly. I'll do it now."
 3. **If `main` exists** — proceed to Step 3.
 
-This step is a **safety net** for cases where HUG Step 4 was interrupted or the foundational commit was not created.
+This step is a **safety net** for cases where HUG Step 4 — Git Initialization was interrupted or the foundational commit was not created.
 
 ### Step 2.8 — Coach Workflow Overview (post-recovery)
 

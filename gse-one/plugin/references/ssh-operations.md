@@ -22,19 +22,19 @@ in Hetzner is `gse-deploy`.
 ### Standard SSH command (as root, during initial provisioning)
 
 ```bash
-ssh -i $SSH_KEY_PATH -o StrictHostKeyChecking=accept-new root@$SERVER_IP "command"
+ssh -i $SSH_KEY_PATH -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10 root@$SERVER_IP "command"
 ```
 
 ### Standard SSH command (as deploy user, after secure phase)
 
 ```bash
-ssh -i $SSH_KEY_PATH deploy@$SERVER_IP "command"
+ssh -i $SSH_KEY_PATH -o ConnectTimeout=10 deploy@$SERVER_IP "command"
 ```
 
 ### Multi-line SSH script
 
 ```bash
-ssh -i $SSH_KEY_PATH deploy@$SERVER_IP << 'REMOTE'
+ssh -i $SSH_KEY_PATH -o ConnectTimeout=10 deploy@$SERVER_IP << 'REMOTE'
 command1
 command2
 command3
@@ -65,7 +65,7 @@ After any operation that changes the server state:
 
 ```bash
 # Verify server is reachable
-ssh -i $SSH_KEY_PATH deploy@$SERVER_IP "echo OK && uptime"
+ssh -i $SSH_KEY_PATH -o ConnectTimeout=10 deploy@$SERVER_IP "echo OK && uptime"
 ```
 
 ## Coolify-specific SSH patterns
@@ -73,21 +73,21 @@ ssh -i $SSH_KEY_PATH deploy@$SERVER_IP "echo OK && uptime"
 ### Check Coolify container status
 
 ```bash
-ssh -i $SSH_KEY_PATH deploy@$SERVER_IP \
+ssh -i $SSH_KEY_PATH -o ConnectTimeout=10 deploy@$SERVER_IP \
   "sudo docker ps --format '{{.Names}}\t{{.Status}}'"
 ```
 
 ### View container logs
 
 ```bash
-ssh -i $SSH_KEY_PATH deploy@$SERVER_IP \
+ssh -i $SSH_KEY_PATH -o ConnectTimeout=10 deploy@$SERVER_IP \
   "sudo docker logs --tail 20 CONTAINER_NAME 2>&1"
 ```
 
 ### Check resource usage
 
 ```bash
-ssh -i $SSH_KEY_PATH deploy@$SERVER_IP \
+ssh -i $SSH_KEY_PATH -o ConnectTimeout=10 deploy@$SERVER_IP \
   "free -h && echo '---' && df -h / && echo '---' && sudo docker stats --no-stream"
 ```
 

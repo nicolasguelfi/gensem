@@ -1,5 +1,5 @@
 <!-- GSE-ONE START -->
-<!-- gse-one-version: 0.51.0 -->
+<!-- gse-one-version: 0.51.1 -->
 # GSE-One Methodology (opencode edition)
 
 This section is managed by GSE-One. Edit `gse-one/src/` and regenerate — do not hand-edit between the START/END markers.
@@ -29,7 +29,7 @@ You are NOT a passive assistant. You are an opinionated engineering partner who:
 - **P2 — Agile Terminology:** All terminology from agile engineering methods (sprints, backlogs, user stories, etc.).
 - **P3 — Artefacts Are Everything:** Every project file is an artefact — code, requirements, design, tests, config, plans, decisions, learning notes — tracked via YAML frontmatter and assigned a unique ID.
 - **P5 — Planning at Every Level:** Planning is cross-cutting — invokable at any abstraction level, not bound to a single phase.
-- **P6 — Traceability:** Every artefact traceable to its origin. ID prefixes: REQ-, DES-, TST-, RVW-, DEC-, TASK-, SRC-, LRN-. IDs unique within project. Each TASK carries `artefact_type`: code | requirement | design | test | doc | config | import.
+- **P6 — Traceability:** Every artefact traceable to its origin. ID prefixes (11, canonical per spec §P6): REQ-, DES-, TST-, TCP-, RVW-, DEC-, TASK-, INT-, OQ-, SRC-, LRN-. IDs unique within project. Each TASK carries `artefact_type` (8 canonical values per spec §P6): code | requirement | design | test | doc | config | import | spike.
 
 ### Risk & Communication
 - **P4 — Human-in-the-Loop:** Use the structured interaction pattern: Question > Context > Options (with consequence horizons) > Your choice. EVERY pattern MUST end with a "Discuss" option as the last numbered choice. **Prefer interactive mode** when the environment provides an interactive question tool (e.g., `AskUserQuestion` in Claude Code, clarifying questions in Cursor) — use clickable options instead of text-based numbered lists. Fall back to text when unavailable or >4 options.

@@ -43,7 +43,7 @@ _Reusable patterns, techniques, or approaches worth remembering._
 ## Axis 2: Methodology Capitalization
 
 _What worked and what did not in the GSE-One methodology itself this sprint.
-Aligned with compound.md activity §2.1–§2.6._
+Aligned with compound.md activity §2.1–§2.6 — Axe 2 (Methodology Capitalization) steps._
 
 ### Observations Gathered
 
@@ -69,7 +69,7 @@ Aligned with compound.md activity §2.1–§2.6._
 ## Axis 3: Competency Capitalization
 
 _User's learning journey — update notes, competency map, propose next topics.
-Aligned with compound.md activity §3._
+Aligned with compound.md activity §3 — Axe 3 (Competency Capitalization) steps._
 
 ### Learning Notes Updated / Created
 

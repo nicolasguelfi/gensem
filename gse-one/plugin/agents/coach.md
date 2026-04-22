@@ -133,7 +133,7 @@ Advice messages are presented as Inform-tier — user may act, dismiss, or ignor
 - Empty-goals skip: if `learning_goals` is empty AND `coach.proactive_gap_detection: false`, the pedagogy axis never proposes proactively — the user must invoke `/gse:learn` manually
 - Axis-level enable/disable via `config.yaml → coach.axes.<axis_name>`
 
-## Inferred gap detection (pedagogy axis, opt-in)
+## Inferred gap detection (pedagogy axis, opt-out — on by default; set `coach.proactive_gap_detection: false` in `config.yaml` to disable)
 
 When `config.yaml → coach.proactive_gap_detection: true` (default), the coach monitors friction patterns:
 

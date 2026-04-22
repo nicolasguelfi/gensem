@@ -350,7 +350,8 @@
         "Test Review Layering (3 tiers: STRATEGY, TST-SPEC, IMPL) applied",
         "RVW-NNN, TST-NNN, REQ-NNN formats consistent",
         "Each specialized agent's checklist align with its activity's workflow",
-        "Fix workflow matches findings structure"
+        "Fix workflow matches findings structure",
+        "Reviewer-archetype agents (code-reviewer, security-auditor, requirements-analyst, architect, devil-advocate, ux-advocate, test-strategist) MUST expose `perspective:` inside their Output Format example block. The field lives under RVW-NNN headers inside a fenced code block, typically at 2-space indentation — NOT at top-level YAML. When verifying presence, use an indent-tolerant regex (e.g., `^\\s*perspective:\\s*<agent-name>` anywhere in the file, OR grep-search for `perspective:` and confirm it appears within ~10 lines of at least one `RVW-` marker). Applying a strict top-level regex produces false positives (v0.50 audit WC10 on devil-advocate.md where `perspective: devil-advocate` was present indented at lines 60/68/76/84 but missed)."
       ]
     },
     {

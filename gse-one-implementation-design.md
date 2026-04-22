@@ -2531,7 +2531,7 @@ All three platforms still receive the 10 specialized agents (`code-reviewer.md`,
 
 ## 7. Hooks Design
 
-GSE-One implements **3 system hooks** (spec P13 — Event-Driven Behaviors) — deterministic, rigid checks where the risk of the AI forgetting is too high. All hook commands use cross-platform Python (`python3 -c`). The commands are defined as shared constants in the generator and emitted in platform-specific JSON wrappers.
+GSE-One implements **3 system hooks** (spec P13 — Event-Driven Behaviors) — deterministic, rigid checks where the risk of the AI forgetting is too high. The hook tier assigned to each check (Soft / Hard / Emergency) derives from the **P11 guardrail taxonomy** defined in spec §P11 — Guardrails: Soft warns without blocking, Hard blocks until documented rationale, Emergency halts until explicit risk acknowledgment. All hook commands use cross-platform Python (`python3 -c`). The commands are defined as shared constants in the generator and emitted in platform-specific JSON wrappers.
 
 | Hook | Event | Matcher | Level | Exit |
 |------|-------|---------|-------|------|

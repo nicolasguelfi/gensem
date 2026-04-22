@@ -772,7 +772,7 @@ GSE-One uses two categories of automated behaviors: **system hooks** (determinis
 
 #### System hooks
 
-System hooks are reserved for actions where deterministic enforcement is critical — the risk of the AI forgetting or adapting incorrectly is too high. They are implemented as `PreToolUse`/`PostToolUse` commands in Claude Code and Cursor:
+System hooks are reserved for actions where deterministic enforcement is critical — the risk of the AI forgetting or adapting incorrectly is too high. They are implemented uniformly across the three supported platforms: as `PreToolUse`/`PostToolUse` command hooks on Claude Code and Cursor, and as a native TypeScript plugin (`tool.execute.before/after` handlers in `plugins/gse-guardrails.ts`) on opencode. The underlying hook logic is shared — each platform receives the transport format it understands; the transpilation is performed at generation time by `gse_generate.py`:
 
 | Hook | Trigger | Action | Level | Principle Enforced |
 |------|---------|--------|-------|--------------------|
@@ -1154,6 +1154,22 @@ The HUG activity captures and maintains the following profile dimensions:
 - **Team context:** detected from git log (multiple committers?)
 
 Only dimensions that cannot be reliably inferred are asked explicitly. For a typical solo project, the interview should have 4-5 questions, not 13.
+
+### 3.2.2 Profile Update Mode
+
+When invoked as `/gse:hug --update`, the activity re-opens an existing profile and lets the user change selected dimensions. Changes take effect on the very next skill invocation — no session restart required. Certain dimensions carry **user-visible behavioral consequences**: when they change, the agent explicitly confirms the new behavior so the user understands the impact.
+
+| Changed dimension | Behavioral impact | Notification shown to user |
+|---|---|---|
+| `it_expertise` | Vocabulary, question cadence, artefact approval, knowledge transfer calibration | *"I'll adjust how I explain things and how many questions I ask at once."* |
+| `language.chat` | All chat output language | *"From now on, I'll communicate in [new language]."* |
+| `decision_involvement` | Gate frequency, supervised-mode override | *"I'll [ask more / ask less] before making technical choices."* |
+| `preferred_verbosity` | Output length and detail level | *"I'll make my responses [shorter / more detailed]."* |
+| `contextual_tips` | Inline micro-explanations during activities (P14) | *"I'll [start / stop] adding learning tips during activities."* |
+
+Dimensions **not** in this table (e.g., `project_domain`, `team_context`, `learning_goals`, `user.name`) are updated silently — the change is persisted to `profile.yaml` without a behavioral-impact notification because these dimensions affect static defaults (stack, calibration) rather than per-interaction behavior.
+
+**Invariant:** `/gse:hug --update` never interrupts an in-flight activity. If the user invokes it mid-sprint, the profile change is persisted, the next activity picks up the new values, and no sprint state is lost.
 
 ### 3.3 Learning
 
@@ -2947,7 +2963,13 @@ When the project is **greenfield** (no source files after standard exclusions) a
 4. **Translate to initial backlog items** (no jargon): the agent converts the validated intent into concrete TASK goals in `backlog.yaml`. Each seeded TASK carries `traces.derives_from: [INT-001]` preserving the intent → backlog provenance.
 5. After intent is captured and backlog items created, proceed to **Step 6 (Complexity Assessment)** to determine the appropriate mode. The mode determines the lifecycle path (Micro → PRODUCE, Lightweight → PLAN, Full → COLLECT). Present each activity in plain language for beginners; direct technical terms for intermediate/expert.
 6. **Exit condition:** the user can skip Intent Capture at any time by saying *"I know the process"* / *"no need, let's proceed"* / equivalent. If skipped, no `intent.md` is written and the agent proceeds directly to Step 6. An Inform note is logged noting intent was declined.
-7. **Pivot / re-capture:** if at a later date the user wants to replace or evolve the intent (project pivot, scope reset), the existing `INT-001` is archived to `docs/archive/intent-vNN.md` and a new `INT-002` is created with the updated content. Downstream artefacts pointing to the old `INT-001` are not rewritten — the archive preserves the historical trace.
+
+7. **Skip conditions (exempt):** Intent Capture is fully skipped in the following cases, regardless of any user verbal cue in step 6:
+   - **Non-greenfield** — the project already contains source files (outside the standard exclusions). Intent is inferred from existing artefacts.
+   - **Adopt mode** — `/gse:go --adopt` has its own adoption flow; Intent Capture does not apply (see §3 Adopt Mode).
+   - **Existing intent artefact** — a `docs/intent.md` with frontmatter `id: INT-*` is already present; the existing artefact is reused without re-capture.
+
+8. **Pivot / re-capture:** if at a later date the user wants to replace or evolve the intent (project pivot, scope reset), the existing `INT-001` is archived to `docs/archive/intent-vNN.md` and a new `INT-002` is created with the updated content. Downstream artefacts pointing to the old `INT-001` are not rewritten — the archive preserves the historical trace.
 
 **Step 6 — Complexity Assessment:**
 

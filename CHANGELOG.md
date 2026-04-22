@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.54.0] - 2026-04-22
+
+Layers impacted: **spec** (§3.2.2 NEW, §14.3 Step 5 skip matrix, §P13 opencode wording), **design** (§7 P11 citation), **activities** (preview, hug), **templates** (profile.yaml comment), **audit engine** (audit.py CHANGELOG filter, partitive lookahead, ±1 info drift), **maintainer tooling** (.claude/audit-jobs.json indent-tolerant perspective guideline)
+
+**Minor release — v0.50 audit warnings batch 4 (upward refinements + audit engine improvements).** Applies 10 confirmed corrections from 4 warning clusters + 1 bonus, verified by 4 parallel methodology-auditor sub-agents. One FALSE POSITIVE (WC22.1) documented with cosmetic comment clarification; one cluster (WC17.4+5) deferred to dedicated v0.55.0 release for bundled deploy.py contract change.
+
+### Added
+
+- **Spec §3.2.2 Profile Update Mode** — new subsection under §3 Command Catalog documenting the `/gse:hug --update` behavior: dimension-to-impact-to-notification table (5 dimensions with user-visible behavioral consequences), silent-update dimensions, and the invariant that --update never interrupts in-flight activities. Upward refinement (WC21.2) — the activity artefact (`hug.md` Step 4.5) already formalized this table; the spec now catches up.
+- **Spec §14.3 Step 5 skip matrix** — new clause #7 enumerating the 3 Intent Capture skip conditions (non-greenfield, adopt mode, existing `intent.md`) that design §5 Intent Capture already documented. Upward refinement (WC21.1) — closes the spec/design gap.
+- **Spec §P13 opencode wording** — Hooks paragraph now explicitly documents all 3 platforms (Claude Code + Cursor via PreToolUse/PostToolUse command hooks; opencode via native TS plugin with `tool.execute.before/after` handlers). Upward refinement (WC21.3) — the design + implementation had supported opencode since the opencode subtree was introduced; the spec P13 text was never refreshed.
+- **Design §7 P11 citation** — opening paragraph now explicitly cites spec §P11 — Guardrails as the source of the Soft/Hard/Emergency tier taxonomy used by hooks. Upward refinement (WC21.4) — the design used the P11 vocabulary 10+ times without attribution, whereas P12/P13/P14/P15/P16 are cited by name; this breadcrumb restores the traceability chain.
+- **hug.md learning_goals Inform** — Step 2 dimensions table row 10 now documents the 3 entry points into `/gse:learn` (direct invocation, coach proactive gap detection, compound Axe 3 retrospective proposal). Clarifies that leaving `learning_goals` empty does NOT disable learning — the opt-in design of the coach preserves user consent while the documentation previously made the paths invisible (WC22.3).
+
+### Changed
+
+- **preview.md Step 2.5 applicability widened** — the UX Heuristic Pass is no longer gated to `project.domain ∈ {web, mobile}` (a narrow 2-domain positive list). Replaced with a **surface-based decision matrix** covering all 9 canonical domain values (spec §3.2.1): `web`/`mobile` always run; `other`/`embedded`/`scientific`/`data` run when the preview artefact has a UI surface; `api`/`cli`/`library` skip. This matches the step's stated intent ("UX issues at prototype stage"), allows scientific Streamlit dashboards and embedded HMIs to benefit from Nielsen + WCAG checks, and eliminates the domain-list drift (WC22.2 NEEDS_REFINEMENT).
+- **profile.yaml dimensions comment clarified** — line 21 comment now explicitly states "12 here + 1 in user.name above = 13 total" to disambiguate the deliberate split between `user.name` and the `dimensions:` block. WC22.1 FALSE POSITIVE from audit v0.50 documented; cosmetic-only (no schema change).
+- **audit.py WC24.1 CHANGELOG filter** — `audit_links()` now skips `CHANGELOG.md` entirely from broken-link detection. CHANGELOG historical entries about removed/merged files (e.g., the v0.37.0 `tutor.md → coach.md` merge narrative) are correct Keep-a-Changelog history, not broken links. False positive class flagged by audit v0.50 WC7 — now eliminated at source.
+- **audit.py WC24.2 partitive lookahead** — the `audit_numeric()` principles-count regex now has a negative lookahead blocking partitive phrasing (`N principle titles/IDs/names/headers/bullets/entries/of N`). Previously "10 principle titles" in CLAUDE.md:205 (a partition 10/16, not a total) triggered a warning "claims 10 — actual is 16". False positive class flagged by audit v0.50 WC6 — now eliminated at source.
+- **audit.py BONUS-3 off-by-one ±1 info drift** — numeric drift of exactly 1 (e.g., "10 specialized agents" vs actual 11) now emits an `info` finding with rationale ("often includes/excludes orchestrator") instead of being silently absorbed. Drift ≥2 remains a `warning`. Makes previously-invisible ±1 drifts auditable without false-positive noise.
+- **.claude/audit-jobs.json WC24.3 indent-tolerant perspective check** — `quality-assurance-cluster` job's checks array now documents that `perspective:` fields in Reviewer-archetype agents live inside Output Format example blocks at indented positions (2-space indent typical), not at top-level YAML. Guides LLM sub-agents to use indent-tolerant matching. False positive class flagged by audit v0.50 WC10 on devil-advocate.md — now documented at source.
+
+### Deferred (v0.55.0)
+
+- **WC17.4 + WC17.5 deploy.py contract unification** — 5 `record_*` functions + 5 `_cmd_record_*` wrappers + 17 docstrings + 10 new contract tests. Scoped to a dedicated release because the unified status-wrapped return contract is a breaking change for Python importers (transparent to the deploy.md skill which parses only exit codes). The v0.54.0 verification pass confirmed: 0 skill impact (14 fire-and-forget call sites in deploy.md), 0 existing-test breakage (49 tests preserved), ~+143/-11 LOC estimate. See v0.53.0 audit-auditor report for the full migration plan.
+
+### Deferred (v0.56.0+ audit engine refactor)
+
+- **BONUS-1** — `audit_cross_refs()` regex charset narrow (`[a-z][a-z-]+` for agent names). Broaden to `[A-Za-z0-9][A-Za-z0-9_-]+` in a future audit engine refresh to tolerate forker agent naming conventions.
+- **BONUS-2** — `audit_links()` regex only matches `gse-one/` prefix. Broaden to include `.claude/`, `assets/`, repo-root files (`VERSION`, `CHANGELOG.md`, `install.py`, `gse-one-spec.md`, …) in a future refresh.
+
+### Notes
+
+- **Direction mix** — 4 upward fixes (WC21.1/2/3/4: spec/design catch up to implementation maturity), 5 downward fixes (WC22.2/3 activity + audit engine improvements + profile.yaml comment), 1 pure refactor (WC24.3 audit-jobs.json).
+- **False positive eliminated at source** — v0.54.0 closes 3 of the 4 false positives detected by the v0.51.1 anti-false-positive protocol (WC6 partitive, WC7 CHANGELOG, WC10 indent-tolerant). WC11 (fix.md dashboard regen covered by PostToolUse hook) remains a documented-as-intentional non-issue.
+- **CLAUDE.md unchanged this release** — v0.53.0 already added the Activity path / structural convention sections. v0.54.0 focuses on spec + design + activities + audit engine, not meta-conventions.
+- **Release 4 of 5 post-audit** — cumulative tally: v0.51.0 errors (15), v0.51.1 simple warnings (31), v0.52.0 structural warnings (8), v0.53.0 structural + Python hygiene (10), v0.54.0 upward + audit improvements (10). Total: **74 corrections applied, 5 false positives documented**.
+- Pipeline: 61 unit tests pass; cross-platform parity identical; `gse_generate.py --verify` clean.
+- **Minor bump rationale (0.53.0 → 0.54.0)** — adds spec §3.2.2 (new sub-chapter), changes audit.py detection semantics (partitive, CHANGELOG filter, ±1 info), widens preview.md applicability rule (surface-based gate). Pre-release backward-compat rule permits the changes without migration tooling.
+
 ## [0.53.0] - 2026-04-22
 
 Layers impacted: **spec** (no-op), **design** (§5.18 subcommand list + state schema), **CLAUDE.md** (2 new convention sections), **agents** (deploy-operator), **activities** (plan, produce, review, fix, deliver, backlog, collect, learn, design, go), **tools** (dashboard.py, audit.py)

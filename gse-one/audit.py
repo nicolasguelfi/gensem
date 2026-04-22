@@ -480,7 +480,10 @@ def audit_numeric() -> list:
             re.IGNORECASE), n_ag, "specialized"),
         (re.compile(r"(?:^|\s)(\d+)\s+commands?\b", re.IGNORECASE), n_act,
          "commands"),
-        (re.compile(r"(?:^|\s)(\d+)\s+principles?\b", re.IGNORECASE),
+        # Negative lookahead skips partitive phrasing like "10 principle titles"
+        # (a partition — 10 out of 16 titles — not a claim of 10 principles total).
+        # Flagged as false positive class by audit v0.50 WC6 on CLAUDE.md:205.
+        (re.compile(r"(?:^|\s)(\d+)\s+principles?\b(?!\s+(?:titles?|IDs?|names?|headers?|bullets?|entries?|of\s+\d+))", re.IGNORECASE),
          n_principles, "principles"),
     ]
 
@@ -494,25 +497,34 @@ def audit_numeric() -> list:
             rel = f
         lines = text.split("\n")
         for pattern, expected, what in patterns:
+            # Key: claimed value; Value: (severity, line_numbers)
+            # severity is "info" for ±1 drift (acceptable — often includes/excludes orchestrator),
+            # "warning" for ≥2 drift (likely a real stale claim)
             claims_by_value: dict = {}
             for i, line in enumerate(lines, 1):
                 for m in pattern.finditer(line):
                     claimed = int(m.group(1))
-                    # Tolerate off-by-one (includes/excludes orchestrator etc.)
-                    if claimed != expected and abs(claimed - expected) > 1:
-                        claims_by_value.setdefault(claimed, []).append(i)
-            for claimed, line_nums in claims_by_value.items():
+                    diff = abs(claimed - expected)
+                    if diff == 0:
+                        continue
+                    severity = "info" if diff == 1 else "warning"
+                    claims_by_value.setdefault((claimed, severity), []).append(i)
+            for (claimed, severity), line_nums in claims_by_value.items():
                 lines_summary = (
                     ", ".join(str(n) for n in line_nums[:6])
                     + (" ..." if len(line_nums) > 6 else "")
                 )
+                if severity == "info":
+                    title = f"{rel.name} claims '{claimed} {what}' — expected {expected} (±1 drift, often includes/excludes orchestrator)"
+                else:
+                    title = f"{rel.name} claims '{claimed} {what}' — actual is {expected}"
                 findings.append(
                     Finding(
                         "numeric",
-                        "warning",
-                        f"{rel.name} claims '{claimed} {what}' — actual is {expected}",
+                        severity,
+                        title,
                         f"{len(line_nums)} occurrence(s) at lines: {lines_summary}",
-                        f"Update to '{expected} {what}'",
+                        f"Update to '{expected} {what}'" if severity == "warning" else "Verify: ±1 drift may be intentional (e.g., specialized vs total agent count)",
                         location=str(rel),
                         file=str(rel),
                     )
@@ -559,6 +571,13 @@ def audit_links() -> list:
         unique_md.append(f)
 
     for f in unique_md:
+        # CHANGELOG.md is intentionally excluded — its entries are historical
+        # records of past release states (Keep-a-Changelog convention), NOT
+        # claims about the current repo state. A reference to a removed file
+        # inside a past release block is correct historical narrative, not a
+        # broken link. (False positive class flagged by audit v0.50 WC7.)
+        if f.name == "CHANGELOG.md":
+            continue
         text = _read_text(f)
         # Match `gse-one/...` paths (simple heuristic)
         for m in re.finditer(r"`(gse-one/[a-zA-Z0-9_./-]+)`", text):

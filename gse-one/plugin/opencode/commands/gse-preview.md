@@ -290,7 +290,23 @@ Preview: TASK-018 — Import JWT Module from SRC-001 (Import)
 
 ### Step 2.5 — UX Heuristic Pass (ux-advocate sub-agent)
 
-**Applicability:** this step runs **only** for UI-relevant previews (UI preview, Feature walkthrough with UI surface). For API / Architecture / Data Model / Import previews in non-UI projects, the step is skipped silently with a one-line Inform note: *"UX heuristic pass skipped — no UI-relevant preview in this sprint."* Read `config.yaml → project.domain`: applicable when `web` or `mobile`; non-applicable for `cli`, `library`, `api` (pure backend), `scientific`, `data`.
+**Applicability:** this step runs whenever the current sprint produces a **UI-relevant preview** — any preview artefact with a user-interface surface (UI preview, Feature walkthrough with a UI surface, or a scaffold-as-preview whose target user is a human viewer). The gate is **surface-based, not domain-gated**: a `scientific` project with a Streamlit dashboard, an `other` project with a web companion, or an `embedded` project with a touchscreen HMI all benefit from the Nielsen + WCAG heuristics.
+
+**Decision matrix (by `config.yaml → project.domain` per spec §3.2.1 — 9 canonical values):**
+
+| Domain | Default applicability | Note |
+|---|:-:|---|
+| `web` | ✓ always | Classic UI target |
+| `mobile` | ✓ always | Native or hybrid UI |
+| `other` | ✓ when preview artefact has UI surface | Case-by-case per the preview output |
+| `embedded` | ✓ when preview artefact has UI surface | HMI, touchscreen, display panels |
+| `scientific` | ✓ when preview artefact has UI surface | Dashboards, Streamlit, notebook widgets |
+| `data` | ✓ when preview artefact has UI surface | Reports, BI dashboards |
+| `api` | ✗ skip | Pure backend — no UI surface |
+| `cli` | ✗ skip | Terminal UX is out of scope for this step |
+| `library` | ✗ skip | No end-user UI |
+
+When skipped, emit a one-line Inform note: *"UX heuristic pass skipped — no UI surface in this sprint's preview artefacts."*
 
 When applicable, invoke the `ux-advocate` sub-agent (`$(cat ~/.gse-one)/agents/ux-advocate.md` — adopt this role) to apply **UX heuristics and accessibility checks** to the generated preview artefact (wireframe, mockup, or scaffold) **before** soliciting human feedback at Step 3.
 

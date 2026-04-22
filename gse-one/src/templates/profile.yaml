@@ -18,7 +18,7 @@ user:
   name: ""                                  # User-provided display name
   git_email: ""                             # Denormalized from `git config user.email` for dashboard/coach reads
 
-dimensions:                                 # Interview dimensions (13)
+dimensions:                                 # Interview dimensions (12 here + 1 in user.name above = 13 total asked at HUG)
   it_expertise: ""                          # beginner | intermediate | advanced | expert
   scientific_expertise: ""                  # none | familiar | practitioner | researcher
   abstraction_capability: ""                # concrete-first | balanced | abstract-first

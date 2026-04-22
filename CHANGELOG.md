@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.60.1] - 2026-04-22
+
+Layers impacted: **design** (§5.18 Subdomain derivation rule + motivating example), **implementation** (activities/deploy.md Step -1 + Step 0 URL announcements; agents/deploy-operator.md status-table example; templates/deploy-env-training.example header comment + examples; tests/test_deploy.py `test_training_mode` assertion).
+
+**Patch release — training subdomain format reordering.** `/gse:deploy` training-mode subdomain format changed from `{DEPLOY_USER}-{project-name}.{DEPLOY_DOMAIN}` to `{project-name}-{DEPLOY_USER}.{DEPLOY_DOMAIN}` (application first). The Python code (`deploy.py build_subdomain`) was corrected out-of-band by the maintainer; this release aligns the 6 documentation/skill files that were still showing the old format, plus the 2 design references (§5.18 rule + motivating example), plus 1 template (`.env.training` header comment) and 1 test assertion that would otherwise fail.
+
+**Rationale.** In training mode, each participant can deploy multiple distinct projects in the same course (e.g., `blog-alice`, `todo-alice`). The varying component (the project) should come first in the subdomain for readability and sorting — a learner scanning the Coolify dashboard sees *what* they deployed before *who* they are. This matches the intuition that users cluster by application domain, not by user identity, when managing multiple apps.
+
+### Changed
+
+- **`gse-one/src/activities/deploy.md` Step -1 (Learner role persistence) + Step 0 (training mode detection)** — two URL announcements to the user upgraded from `{DEPLOY_USER}-{project-name}.{DEPLOY_DOMAIN}` to `{project-name}-{DEPLOY_USER}.{DEPLOY_DOMAIN}`. Regenerates into `plugin/commands/gse-deploy.md`, `plugin/skills/deploy/SKILL.md`, and their opencode mirrors.
+- **`gse-one/src/agents/deploy-operator.md` status-table example** — `alice-blog`/`alice-todo` rows renamed to `blog-alice`/`todo-alice` to reflect the new ordering. Regenerates into `plugin/agents/deploy-operator.md` and `plugin/opencode/agents/deploy-operator.md`.
+- **`gse-one/src/templates/deploy-env-training.example` header comment (lines 10-11)** — the format guide distributed to learners updated + examples (`blog-alice.training.example.com`, `todo-alice.training.example.com`). Regenerates into `plugin/templates/deploy-env-training.example`.
+- **`gse-one-implementation-design.md` §5.18 Subdomain derivation (line 2427) + Multi-application rationale (line 2433)** — rule and motivating example aligned on the new format, plus an inline rationale note explaining the application-first ordering choice for readability.
+- **`gse-one/tests/test_deploy.py::test_training_mode`** — assertion updated from `"alice-todo-app.training.example.com"` to `"todo-app-alice.training.example.com"` to match the new `build_subdomain` output. Test suite stays green (72 tests, 0 skipped).
+
+### Audit trail
+
+- **Out-of-series release**, not part of the 9-cluster 2026-04-22 audit remediation (which concluded at v0.60.0). Triggered by a maintainer code change in `deploy.py` followed by a documentation/test catch-up sweep to restore 3-layer alignment (spec / design / impl) and green test state.
+- **Coherent drift detection** — after the initial 6-file update plan the user provided, a grep sweep detected 3 additional residuals (`deploy-env-training.example`, design §5.18 rule, design §5.18 example) + 1 failing test. Including these keeps the release complete — the alternative would have been an immediate follow-up patch.
+
 ## [0.60.0] - 2026-04-22
 
 Layers impacted: **spec** (§3.8 Deployment row — 4-option menu vs 3-role enum clarified), **design** (§5.18 Onboarding orientation prose + State schema enum — `skip` retracted, menu/enum distinction explicit), **implementation** (`plugin/tools/deploy.py` — record_role docstring; `activities/deploy.md` — Step -1 option (4) clarified; `agents/deploy-operator.md` — two new sections *User role & orientation* and *CDN metadata*).

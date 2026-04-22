@@ -87,7 +87,7 @@ Wait for confirmation → proceed to Step 0.
    ```
    python3 "$(cat ~/.gse-one)/tools/deploy.py" record-role learner
    ```
-4. Say: *"I'll detect your instructor's shared server from the training config and deploy your project at `{DEPLOY_USER}-{project-name}.{DEPLOY_DOMAIN}`. Expected duration: ~5 minutes."*
+4. Say: *"I'll detect your instructor's shared server from the training config and deploy your project at `{project-name}-{DEPLOY_USER}.{DEPLOY_DOMAIN}`. Expected duration: ~5 minutes."*
 5. Proceed to Step 0 (will detect app-only mode → Phase 6).
 
 **(4) Skip** — Meta-action (not a role value): no `record-role` call; no `user_role` persisted in `deploy.json`. Proceed directly to Step 0. The 3 role values stored in `user_role` are `solo` / `instructor` / `learner` only — see design §5.18 State schema for the enum.
@@ -123,7 +123,7 @@ The detection logic (which variables map to which starting phase) is documented 
 - Full mode: *"No deployment configuration found. I'll guide you through the complete setup."*
 - Partial: *"I found a server at {IP}. Starting from there."*
 - App-only: *"Deployment infrastructure is ready ({COOLIFY_URL}). I'll deploy your application."*
-- Training: *"Training mode detected. I'll deploy your project on the shared server. The full URL will be shown after Phase 6 (typically `{DEPLOY_USER}-{project-name}.{DEPLOY_DOMAIN}`)."*
+- Training: *"Training mode detected. I'll deploy your project on the shared server. The full URL will be shown after Phase 6 (typically `{project-name}-{DEPLOY_USER}.{DEPLOY_DOMAIN}`)."*
 
 ---
 

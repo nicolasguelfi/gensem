@@ -1,7 +1,7 @@
 {
   "name": "gse",
   "description": "GSE-One \u2014 AI engineering companion for structured SDLC management. 24 commands, adaptive risk analysis, unified backlog, knowledge transfer, worktree isolation.",
-  "version": "0.60.0",
+  "version": "0.60.1",
   "author": {
     "name": "GSE-One Project"
   },

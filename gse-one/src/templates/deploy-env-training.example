@@ -7,7 +7,7 @@ COOLIFY_API_TOKEN=instructor-provided-token
 DEPLOY_DOMAIN=training.example.com
 
 # === SET YOUR LEARNER ID BELOW ===
-# Your apps will be deployed at: {DEPLOY_USER}-{project-name}.{DEPLOY_DOMAIN}
-# Example: alice-blog.training.example.com, alice-todo.training.example.com
+# Your apps will be deployed at: {project-name}-{DEPLOY_USER}.{DEPLOY_DOMAIN}
+# Example: blog-alice.training.example.com, todo-alice.training.example.com
 # Only letters, digits, and hyphens. Max 20 characters recommended.
 DEPLOY_USER=learnerXX

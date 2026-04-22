@@ -149,8 +149,8 @@ Use aligned tables for multi-application status display:
 
 ```
   #  App              Status   URL                              Type      Last deploy
-  1  alice-blog       running  https://alice-blog.domain.com    streamlit 2026-04-20 09:15
-  2  alice-todo       running  https://alice-todo.domain.com    node      2026-04-20 14:02
+  1  blog-alice       running  https://blog-alice.domain.com    streamlit 2026-04-20 09:15
+  2  todo-alice       running  https://todo-alice.domain.com    node      2026-04-20 14:02
 ```
 
 ### Cost display

@@ -83,7 +83,7 @@ class BuildSubdomainTests(unittest.TestCase):
         )
         self.assertTrue(r["ok"])
         self.assertEqual(
-            r["subdomain"], "alice-todo-app.training.example.com"
+            r["subdomain"], "todo-app-alice.training.example.com"
         )
         self.assertEqual(r["deploy_user"], "alice")
 

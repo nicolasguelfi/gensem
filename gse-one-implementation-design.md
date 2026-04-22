@@ -2424,13 +2424,13 @@ The maintenance cost (occasional upstream drift in Coolify API, DNS registrar UI
 **Subdomain derivation.** `/gse:deploy` derives the public subdomain for a deployed application as follows:
 
 - **Solo mode** (no `DEPLOY_USER` in `.env`): `{project-name}.{DEPLOY_DOMAIN}`
-- **Training mode** (`DEPLOY_USER` set): `{DEPLOY_USER}-{project-name}.{DEPLOY_DOMAIN}`
+- **Training mode** (`DEPLOY_USER` set): `{project-name}-{DEPLOY_USER}.{DEPLOY_DOMAIN}` (application first, since each participant can deploy multiple distinct projects — the varying component comes first for readability)
 
 Both `project-name` (derived from the current directory) and `DEPLOY_USER` are sanitized identically: lowercase; any character outside `[a-z0-9-]` replaced with `-`; consecutive hyphens collapsed; leading/trailing hyphens trimmed; truncated to 30 characters per component. If sanitization yields an empty string, the activity aborts with a clear error.
 
 **Rationale.** This pattern serves two goals simultaneously:
 1. **Single wildcard DNS suffices.** Only one record (`*.{DEPLOY_DOMAIN}` → server IP) is needed. In training, the instructor does not need to create a wildcard per learner.
-2. **Multi-application per learner.** A training participant can deploy multiple distinct projects in the same course (e.g., `alice-blog.training.example.com`, `alice-todo.training.example.com`) without collision, each tracked as a separate entry in `.gse/deploy.json → applications[]`.
+2. **Multi-application per learner.** A training participant can deploy multiple distinct projects in the same course (e.g., `blog-alice.training.example.com`, `todo-alice.training.example.com`) without collision, each tracked as a separate entry in `.gse/deploy.json → applications[]`.
 
 The alternative `<project>.<user>.<domain>` pattern was rejected: it requires per-user wildcard records (`*.alice.domain.com`, `*.bob.domain.com`, ...) or an unsupported double-wildcard (`*.*.domain.com`), both incompatible with training mode at scale.
 

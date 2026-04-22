@@ -252,7 +252,7 @@ def build_subdomain(
         }
 
     if user:
-        label = f"{user}-{project_name}"
+        label = f"{project_name}-{user}"
     else:
         label = project_name
 
@@ -1279,8 +1279,8 @@ def training_init(output_path: str = ".env.training") -> dict:
         f"DEPLOY_DOMAIN={domain}\n"
         "\n"
         "# === SET YOUR LEARNER ID BELOW ===\n"
-        f"# Your apps will be deployed at: {{DEPLOY_USER}}-{{project-name}}.{domain}\n"
-        f"# Example: alice-blog.{domain}, alice-todo.{domain}\n"
+        f"# Your apps will be deployed at: {{project-name}}-{{DEPLOY_USER}}.{domain}\n"
+        f"# Example: blog-alice.{domain}, todo-alice.{domain}\n"
         "# Only letters, digits, and hyphens. Max 20 characters recommended.\n"
         "DEPLOY_USER=learnerXX\n"
     )
@@ -1289,7 +1289,7 @@ def training_init(output_path: str = ".env.training") -> dict:
         "status": "ok",
         "path": output_path,
         "domain": domain,
-        "learners_can_deploy_at": f"{{DEPLOY_USER}}-{{project}}.{domain}",
+        "learners_can_deploy_at": f"{{project}}-{{DEPLOY_USER}}.{domain}",
     }
 
 

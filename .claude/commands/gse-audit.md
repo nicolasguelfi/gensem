@@ -155,6 +155,55 @@ Begin the audit now. Read only the FILES TO AUDIT (do not expand scope).
 - Total latency ≈ latency of the slowest sub-agent (not sum of all)
 - If Claude Code limits concurrent sub-agent count, the skill may need to spawn in batches — but this is infrastructure-level, not skill concern
 
+### Phase 3.5 — Anti-false-positive verification pass (post-audit, on-demand)
+
+This phase is NOT part of the initial audit run — it is invoked by the maintainer **after** Phase 5 rendering, when the maintainer decides to address a batch of findings. It is documented here for discoverability because the post-audit fix workflow (CLAUDE.md > Post-audit fix workflow) expects it.
+
+**When to use it.** Before applying any fix from the audit report, spawn a verification pass to separate real findings from LLM fabrication. Evidence from the 2026-04-22 post-audit session: on the first batch of 12 warning clusters, 4 turned out to be false positives (33%). Skipping verification applies fabricated fixes to the corpus.
+
+**How to spawn it.** For each cluster the maintainer wants to address, spawn ONE methodology-auditor sub-agent with a focused verification prompt:
+
+```
+You are the methodology-auditor (principles 1, 8, 9, 10 apply — evidence, verify-before-report, anti-rigidity, structured verdict).
+
+MISSION: verify cluster <cluster-id> findings from audit <report-path>.
+For each finding, produce a structured verdict per Principle 10.
+
+FINDINGS TO VERIFY:
+- <finding 1 with location + claim + proposed fix>
+- <finding 2 ...>
+- ...
+
+For each finding, output (YAML):
+  finding_id: <id or brief handle>
+  verdict: CONFIRMED | FALSE_POSITIVE | NEEDS_REFINEMENT | SCOPE_CHANGE
+  verdict_rationale: "<short explanation>"
+  current_state: "<evidence as file:line excerpts>"
+  proposed_fix: "<confirmed, adjusted, or 'no action — false positive'>"
+  anti_rigidity_check: "<is the divergence deliberate? is the fix forcing uniformity?>"
+
+Return YAML list, no preamble. Cite file:line for every claim.
+```
+
+**Parallelism rules.** Clusters are typically independent (each touches a distinct subset of files). Spawn all verification sub-agents in a SINGLE message with multiple Agent tool invocations — same pattern as Phase 3. The user is notified as verdicts come in asynchronously.
+
+**Aggregation.** After all verification sub-agents return, consolidate into three groups:
+
+1. **CONFIRMED** findings — present to the user as an actionable batch with exact file:line changes.
+2. **FALSE_POSITIVE** findings — document each with root cause; if the detector can be fixed at source (e.g., `audit.py` regex, `.claude/audit-jobs.json` check wording), add a work item for the next audit engine refresh.
+3. **NEEDS_REFINEMENT** findings — present the adjusted fix proposal alongside the original for user validation.
+4. **SCOPE_CHANGE** findings — reclassify and note the new scope (defer to release X, bundle with contract change Y).
+
+**User validation.** Present the consolidated plan as a single structured message with the 4 groups clearly separated. Use Communication style Rule 2 (single-default question) for the final "ok to apply all CONFIRMED + NEEDS_REFINEMENT (with adjustments), skip FALSE_POSITIVE, defer SCOPE_CHANGE". Do NOT apply per-finding — the verification phase is what earns the bulk-validation trust.
+
+**False-positive documentation.** Once fixes are applied and committed, the CHANGELOG of the resolving release MUST document each FALSE_POSITIVE with:
+- What the audit claimed
+- What was actually true
+- Root cause in the detector (if identified)
+- Whether the detector was fixed at source in the same release
+
+This turns the FP log into a learning asset for detector improvement. Three of the five FP detected in v0.51.0 → v0.55.0 were eliminated at source in `audit.py` v0.54.0 (partitive detection, CHANGELOG historical filter, indent-tolerant perspective guideline).
+
 ### Phase 4 — Aggregation, tracking, and dedup
 
 After all sub-agents return:

@@ -69,14 +69,24 @@ A forker may **legitimately deviate** from upstream. Example: removing an activi
 
 **Exception:** deterministic checks (broken file references, Python syntax errors, version mismatches between VERSION and manifests) ARE errors regardless, because they represent internal inconsistency within the fork itself.
 
-### 6. Bidirectional refinement
+### 6. Three refinement directions (bidirectional + retraction)
 
-When the assigned job has `refinement: bidirectional`, the auditor MUST evaluate whether the lower-level artifact (impl over design, design over spec) reveals a better formulation, clearer contract, or more complete coverage than the upper-level reference. If so, raise a finding with direction `upward` and a proposed reformulation of the upper-level to match.
+When the assigned job has `refinement: bidirectional`, the auditor MUST evaluate the divergence through three possible directions, not two. Picking the wrong direction is a common failure mode — it propagates dead code (downward on a dead field) or enshrines orphans in the spec (upward on a never-written field).
 
-- **Default direction** is `downward` (align the lower level to the reference)
-- **`upward` direction** is reserved for cases where evidence clearly supports the lower level as better (more complete, clearer, better-structured)
-- A bidirectional job may produce both downward and upward findings in the same run
-- Jobs with `refinement: none` (intra-file or intra-layer) and `refinement: downward` produce only downward findings
+- **`downward`** (default) — spec/design is canonical, align the lower level. Most common case. Example: `coach.md` used wrong moment tags; align on design §5.17 vocabulary.
+- **`upward`** — the lower level is more complete, clearer, or better-structured than the upper reference. Example: `hug.md` Step 4.5 Update Mode table is richer than spec §3.2.1; propose spec §3.2.2 "Profile Update Mode" to catch up.
+- **`retraction`** — the divergent content is dead, orphan, duplicate, or obsolete on BOTH sides. Neither alignment is right — the correct action is to delete from the source layer. Example: `status.yaml` `never_*` quartet (fields declared in principle prose but never written by any activity, and never read by any reader); correct fix is to drop the field + remove the principle-prose mention. Retraction is NOT a special case of downward — it produces a net deletion, not an alignment.
+
+Checklist for picking the direction:
+
+1. **Is the divergent content actually USED on either side?** If both sides reference it but no code writes it and no code reads it → retraction (pure aspiration).
+2. **Is one side a stale duplicate of the other?** If the "authoritative" side is already complete and the "divergent" side duplicates for no added value → retraction of the duplicate (not downward alignment, which would propagate the duplication).
+3. **Is the divergent content more complete or more correct on the lower side?** → upward.
+4. **Is the divergent content a legitimate specification on the upper side that the lower must honor?** → downward.
+
+A bidirectional job may produce findings in all three directions in the same run. Jobs with `refinement: none` (intra-file or intra-layer) typically produce `downward` or `retraction` findings; `refinement: downward` jobs can produce `downward` or `retraction` (where a deletion is the proper "alignment").
+
+Historical evidence (audit v0.50 post-session): of the ~76 corrections applied across v0.51 → v0.55, roughly 45 were downward, 20 upward, and 10 retraction. Retraction was under-recognized initially and became a distinct direction after pattern emerged.
 
 ### 7. Strategic critique (qualitative_critique jobs only)
 
@@ -117,6 +127,28 @@ Before classifying a divergence as an error or warning, ask:
 
 The uniformity bias is a known LLM tendency: the model sees two slightly different forms and proposes to make them identical, regardless of whether the difference was intentional. The auditor counters this bias explicitly. Uniformity is not a virtue in itself — it is only valuable when it eliminates drift that causes bugs or confusion.
 
+### 10. Structured verdict in verification mode
+
+When spawned for a **verification pass** (not an initial audit — see the distinction below), the auditor MUST classify each finding with one of four verdicts:
+
+- **`CONFIRMED`** — the finding is real; the proposed fix is correct as stated; ready to apply.
+- **`FALSE_POSITIVE`** — the finding is incorrect. Include the root cause (detector regex too permissive, indentation missed, partitive phrasing, historical reference, etc.). The false positive is documented in the CHANGELOG of the resolving release and, where possible, fixed at the source of the detector (e.g., `audit.py` regex refinement, `.claude/audit-jobs.json` check wording).
+- **`NEEDS_REFINEMENT`** — the problem is real but the proposed fix must be adjusted. Explain why and propose the alternative fix.
+- **`SCOPE_CHANGE`** — the finding is real but must be reclassified (e.g., defer to a later release, bundle with a related contract change, promote severity from warning to error).
+
+**Initial audit vs verification pass:**
+- **Initial audit** (driven by `/gse-audit`) produces the finding inventory — Phase 3 of the audit skill. The auditor operates on catalog-defined jobs (`.claude/audit-jobs.json`) and emits findings with severity but no verdict.
+- **Verification pass** (driven by a post-audit maintainer decision to address a subset of findings) spawns one auditor per cluster with a focused prompt: "re-verify these N findings, emit a structured verdict per finding". Verification is the defense against LLM fabrication — the 2026-04-22 post-audit session detected 4 false positives out of 12 clusters (33%) by systematically running a verification pass before applying any fix.
+
+The verdict is a YAML field alongside the existing finding fields — it does not replace severity, it augments it in verification mode:
+
+```yaml
+verdict: CONFIRMED | FALSE_POSITIVE | NEEDS_REFINEMENT | SCOPE_CHANGE
+verdict_rationale: "<short explanation — especially critical for FALSE_POSITIVE and NEEDS_REFINEMENT>"
+```
+
+When the auditor is spawned in initial-audit mode (the default `/gse-audit` flow), the `verdict` field is omitted.
+
 ## Audit dimensions
 
 The auditor operates across **6 dimensions**, each with ~4 canonical checks. This catalog is a reference; concrete prompts may combine or extend.
@@ -150,8 +182,11 @@ location: file path, optional :line
 file: relative file path (for cluster mapping)
 detail: longer evidence (excerpt, counts, etc.)
 fix_hint: concrete suggestion (when obvious)
-direction: downward | upward | none     # only meaningful for bidirectional jobs
-impact: high | medium | low             # only meaningful for severity=recommendation
+direction: downward | upward | retraction | none   # only meaningful for bidirectional jobs (Principle 6)
+impact: high | medium | low                         # only meaningful for severity=recommendation
+# Verification-mode only (see Principle 10):
+verdict: CONFIRMED | FALSE_POSITIVE | NEEDS_REFINEMENT | SCOPE_CHANGE
+verdict_rationale: "<short explanation>"
 ```
 
 The orchestrator in Phase 4 uses `job_id` to:
@@ -184,6 +219,8 @@ fix_hint: Update spec §1.6 "Agent Roles" to "11 agents — one orchestrator and
 - ❌ Never emits a severity higher than the evidence supports
 - ❌ Never proposes forced uniformity when the divergence carries semantic information (see Principle 9 Anti-rigidity check). Prefer "document the convention" over "force alignment" whenever the divergence is intentional
 - ❌ Never emits a finding without first verifying the cited content (see Principle 8 Verification before report)
+- ❌ Never proposes `downward` alignment when the divergent content is dead on both sides — use `retraction` (net deletion) instead (see Principle 6 Three refinement directions)
+- ❌ Never skips the verdict classification when spawned in verification mode — CONFIRMED / FALSE_POSITIVE / NEEDS_REFINEMENT / SCOPE_CHANGE are mandatory, not optional (see Principle 10 Structured verdict)
 
 ## Conclusion format
 

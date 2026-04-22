@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.56.0] - 2026-04-22
+
+Layers impacted: **CLAUDE.md** (new "Post-audit fix workflow" section), **maintainer tooling** (methodology-auditor Principles 6 + 10 + YAML output + anti-patterns; `/gse-audit` skill new Phase 3.5)
+
+**Minor release — methodology capitalization of the v0.51 → v0.55 post-audit session.** Codifies the patterns that emerged across 6 releases (76 corrections applied, 5 false positives documented, 0 regression on 72 unit tests). Parallel to v0.50.0's "retrospective capitalization" pattern — durable learning from a completed sprint is captured in the methodology corpus, not lost.
+
+### Added
+
+- **`CLAUDE.md` — new `Post-audit fix workflow` section** documenting the 4-phase protocol observed during v0.51 → v0.55: Phase 1 parallel anti-false-positive verification (1 methodology-auditor sub-agent per cluster, structured verdicts), Phase 2 consolidation + user validation, Phase 3 cluster-based application (not file-based), Phase 4 version bump + CHANGELOG + regen + commit + push, Phase 5 FP documentation in CHANGELOG. Includes:
+  - **Version bump matrix** mapping release scope to bump type (patch / minor / major) with concrete examples from v0.51 → v0.55.
+  - **Pattern: contract change release isolation** — defer contract changes to dedicated releases, never bundle with unrelated fixes. Reference: WC17.4+5 deferred from v0.53.0 → v0.55.0.
+  - **Pattern: three refinement directions (not two)** — downward, upward, AND retraction (net deletion of dead code / orphan fields / obsolete duplicates). Reference: ~10 retractions in v0.52 → v0.53 that would have been misclassified as "downward" in the 2-direction framing.
+- **`.claude/agents/methodology-auditor.md` — Principle 10 "Structured verdict in verification mode"** — distinguishes initial-audit mode (no verdict) from verification-pass mode (mandatory `CONFIRMED | FALSE_POSITIVE | NEEDS_REFINEMENT | SCOPE_CHANGE`). Each verdict carries a `verdict_rationale` field. Verification is the defense against LLM fabrication — 2026-04-22 session detected 4/12 false positives (33%) via this protocol.
+- **`.claude/commands/gse-audit.md` — new Phase 3.5 "Anti-false-positive verification pass (post-audit, on-demand)"** — documents the maintainer-invoked verification workflow: spawn 1 methodology-auditor per cluster (parallel, single message, multiple Agent invocations), aggregate into 4 verdict groups, present consolidated plan for bulk user validation, document FALSE_POSITIVE with root cause in the resolving release's CHANGELOG. Includes the focused verification prompt template.
+
+### Changed
+
+- **`methodology-auditor.md` Principle 6 extended from 2 to 3 refinement directions** — added `retraction` as a first-class direction alongside `downward` and `upward`. A 4-question checklist helps the auditor pick the right direction: is the content used on either side? is one side a stale duplicate? is the divergent content more complete on the lower side? is the divergent content a legitimate upper-side specification? Historical evidence cited: ~45 downward, ~20 upward, ~10 retraction across v0.51 → v0.55.
+- **`methodology-auditor.md` YAML output format** — added `verdict` and `verdict_rationale` fields (verification mode only), added `retraction` to the `direction` enum.
+- **`methodology-auditor.md` Anti-patterns** — added two rules: (a) never propose `downward` alignment when content is dead on both sides — use `retraction` instead; (b) never skip the verdict classification when spawned in verification mode.
+
+### Notes
+
+- **Why codify now vs later?** User preference (2026-04-22): capitalize concrete patterns immediately rather than "decant 24-48h". Rationale: the patterns are load-bearing for any future audit cycle, and the details fade fast (exact verdict names, exact cluster sizing, exact retraction vs downward distinction). Deferring risks losing the precision that made the v0.51 → v0.55 train successful.
+- **Anti-rigidity caveat (Meta-1 applied to meta-methodology itself)** — three patterns observed only once or twice were NOT codified: upward centralization (WC18), anti-rigidity win documentation (5 cases, all already covered by Meta-1), pattern G+H in the internal analysis. The threshold for codification was "≥3 convergent occurrences across distinct clusters/releases", verified empirically. If future sessions exercise these single-occurrence patterns again, they can be promoted.
+- **Release line** — v0.56.0 is the 7th and final release of the audit v0.50 resolution campaign. The audit engine is now measurably self-improved (3 FP classes eliminated at source), the methodology corpus carries 76 new corrections, and the workflow that produced them is now explicit in CLAUDE.md + methodology-auditor + /gse-audit. A follow-up `/gse-audit` run against this state will be the baseline for the next cycle.
+- Pipeline: 72 unit tests pass; cross-platform parity identical; `gse_generate.py --verify` clean.
+
 ## [0.55.0] - 2026-04-22
 
 Layers impacted: **tools** (`gse-one/plugin/tools/deploy.py` — docstrings + contract unification), **tests** (`gse-one/tests/test_deploy.py` — 11 new contract tests)

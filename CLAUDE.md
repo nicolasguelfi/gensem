@@ -208,6 +208,43 @@ These are meta-rules that govern how the methodology itself is maintained and ev
 
 **Why meta-principles live here (not in spec §2).** Spec §2 principles (P1-P16) are user-facing methodological rules that ship with the plugin. Meta-principles are maintainer rules that govern how we evolve the methodology. Keeping them separate avoids inflating the user-facing principle count and keeps maintainer discipline visible to contributors without burdening end users.
 
+### Post-audit fix workflow
+
+When an audit (`/gse-audit`) produces a batch of findings that the maintainer decides to address, the fix session follows a 4-phase protocol observed across the v0.51.0 → v0.55.0 release train (76 corrections applied, 5 false positives documented, 0 regression on 72 unit tests). Each phase matters — skipping one is the documented failure mode.
+
+**Phase 1 — Parallel anti-false-positive verification.** Before applying any fix, spawn a dedicated methodology-auditor sub-agent per cluster (not per finding — the cluster is the unit of verification). Each sub-agent re-reads the cited files, applies Principles 1 (evidence), 8 (verification), 9 (anti-rigidity), and returns a structured verdict per finding:
+
+- **CONFIRMED** — problem exists, proposed fix is correct → ready to apply.
+- **FALSE_POSITIVE** — problem misidentified; justification documented; no action.
+- **NEEDS_REFINEMENT** — problem exists but the proposed fix must be adjusted; alternative proposed.
+- **SCOPE_CHANGE** — warning reclassified (e.g., simple → structurant, defer to later release).
+
+This phase detected 4 false positives out of 12 clusters in the first post-audit batch (33%) and caught zero false positives in subsequent batches after the lesson was absorbed. Skipping it means mechanically applying audit claims that LLM sub-agents fabricated — the 2026-04-22 session verified at least 5 such fabrications that would have silently degraded the corpus.
+
+**Phase 2 — Consolidation + user validation.** Present the verified plan to the user as a structured list: CONFIRMED findings with exact file:line changes, FALSE_POSITIVE findings with root cause documentation, NEEDS_REFINEMENT findings with the updated proposal. The user validates in bulk (not one by one) — the verification phase is what earns the bulk-validation trust. Use the Communication style Rule 2 (single-default question) for the final "ok to apply?".
+
+**Phase 3 — Cluster-based application.** Apply fixes grouped by cluster theme (same cause root), not by file. A cluster may touch multiple files atomically — that's fine. The benefit is a commit message that tells a coherent story ("TASK state machine drift", "invocation contract drift", "decisions.md path unification") rather than a flat list of unrelated edits. Each cluster → one or more files → one commit message rationale.
+
+**Phase 4 — Version bump + CHANGELOG + regen + commit + push.** Apply the full build pipeline per the `Build pipeline` rule. Use the version bump matrix:
+
+| Release scope | Bump | Example |
+|---|:-:|---|
+| Pure documentation / cosmetic (no schema / behavior change) | patch | v0.51.0 → v0.51.1 (cross-refs, opt-in/opt-out labels, ISO freshness markers) |
+| Schema drops / feature activation / audit engine semantics change / new spec subsection | minor | v0.52.0 (schema orphans retired), v0.53.0 (cursor write centralization), v0.54.0 (new §3.2.2 + partitive detection) |
+| Contract change / new signature / breaking schema shape | minor (pre-1.0) or major (post-1.0) | v0.55.0 record_* status-wrapped contract (pre-1.0 minor) |
+
+**Phase 5 — CHANGELOG FP documentation.** Each false positive detected in Phase 1 is explicitly documented in the CHANGELOG entry of the resolving release, with (a) what was claimed, (b) what was actually true, (c) root cause (if known) in the detector. False positives where the detector can be fixed at source (e.g., audit.py regex) are tracked as work items — 3 of 5 FP in the v0.51 → v0.55 train were eliminated at source in `audit.py` v0.54.0. The CHANGELOG FP section is not a blame trace — it's a learning asset for future detector improvement.
+
+**Pattern: contract change release isolation.** When a fix requires changing a function signature, return shape, or state schema in a way that could cascade to skills/tests/callers, DO NOT bundle it with unrelated fixes. Defer to a dedicated release (v0.55.0 pattern: WC17.4+5 deferred from v0.53.0 → v0.55.0 specifically to allow a cohesive bundle: contract change + docstring sweep + contract tests all in one atomic release). Mixed-intent commits obscure rollback scope.
+
+**Pattern: three refinement directions (not two).** The methodology-auditor Principle 6 originally described two directions — `downward` (impl aligns to spec) and `upward` (spec catches up to impl). A third direction proved necessary in practice:
+
+- **Downward** — spec/design is canonical, impl must align (most common).
+- **Upward** — impl is more complete/correct, spec/design catch up.
+- **Retraction** — dead code, duplicate writes, orphan fields, obsolete tags are removed from the source layer with no equivalent insertion elsewhere. Examples from v0.52 → v0.53: drop `never_*` P16 quartet from status.yaml (pure aspiration, never written); drop top-level `complexity:` block (duplicates plan.yaml.budget); drop `git.commits` (git is authoritative source); strip 15 G-NNN gap-analysis tags (no registry, no traceability value); remove duplicate cursor writes from 5 activities (central protocol handles it). Retraction is NOT the same as downward: it produces a net deletion rather than an alignment.
+
+When an auditor proposes a fix, the three-direction framing is the first classification step. Many "contradictions" are actually retractions (one side is dead) — forcing downward alignment propagates the dead code, forcing upward enshrines it in the spec. Both are worse than retraction.
+
 ## Language
 
 The user communicates in French. Respond in French for conversation, English for code/commits.

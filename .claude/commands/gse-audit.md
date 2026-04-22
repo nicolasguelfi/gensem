@@ -1,5 +1,5 @@
 ---
-description: "Audit the GSE-One methodology repository for coherence (Categories A-D) and strategic quality (Category E). Orchestrates the Python deterministic engine (audit.py) + 20 parallel LLM sub-agents defined in .claude/audit-jobs.json. Invoked from the root of gensem or a fork."
+description: "Audit the GSE-One methodology repository for coherence (Categories A-D) and strategic quality (Category E). Orchestrates the Python deterministic engine (audit.py) + 21 parallel LLM sub-agents defined in .claude/audit-jobs.json. Invoked from the root of gensem or a fork."
 ---
 
 # /gse-audit — Methodology audit (coherence + strategic critique)
@@ -10,21 +10,21 @@ Arguments: $ARGUMENTS
 
 This command audits a **GSE-One methodology repository** (upstream or a fork). It is **not** for auditing user projects — for that, use `/gse:status`, `/gse:health`, `/gse:review`, `/gse:assess`, `/gse:compound`, `/gse:collect`.
 
-The audit covers **20 jobs** in 5 categories, listed in `.claude/audit-jobs.json`. All jobs run in parallel.
+The audit covers **21 jobs** in 5 categories, listed in `.claude/audit-jobs.json`. All jobs run in parallel.
 
 | Category | Purpose | # jobs | Non-directional | Directional |
 |:-:|---|:-:|:-:|:-:|
 | A | File quality (single file, intra-file) | 2 | ✓ | — |
 | B | Intra-layer group (uniformity within a level) | 5 | ✓ | — |
 | C | Layer pair (spec ↔ design) | 1 | — | ✓ |
-| D | Horizontal cluster (impl + design + spec) | 8 | — | ✓ |
+| D | Horizontal cluster (impl + design + spec) | 9 | — | ✓ |
 | E | Qualitative critique (strategic) | 4 | — | ✓ |
 
 ## Options
 
 | Flag | Description |
 |------|-------------|
-| (no args) | Full audit: all 20 jobs in parallel + Python deterministic engine |
+| (no args) | Full audit: all 21 jobs in parallel + Python deterministic engine |
 | `--deterministic-only` | Skip LLM jobs, run Python engine only. Fast. |
 | `--job <id>` | Run only a specific job by id (e.g. `deploy-cluster`) |
 | `--category <A\|B\|C\|D\|E>` | Run only jobs in a specific category |
@@ -39,7 +39,7 @@ The audit covers **20 jobs** in 5 categories, listed in `.claude/audit-jobs.json
 ## Required readings
 
 1. `.claude/agents/methodology-auditor.md` — **adopt this role** for every sub-agent spawn
-2. `.claude/audit-jobs.json` — the catalog of 20 jobs with exact file lists and checks per job
+2. `.claude/audit-jobs.json` — the catalog of 21 jobs with exact file lists and checks per job
 3. Sub-agents load their own files on-demand based on their assigned job specification
 
 ## Workflow
@@ -85,10 +85,10 @@ Read `.claude/audit-jobs.json`:
 python3 gse-one/audit_catalog.py --list
 ```
 
-This gives the list of 20 jobs with their ids, categories, types, and file counts. Select which jobs to run based on the flags:
+This gives the list of 21 jobs with their ids, categories, types, and file counts. Select which jobs to run based on the flags:
 
-- Default (no flag): all 20 jobs
-- `--coherence-only`: Categories A, B, C, D (16 jobs)
+- Default (no flag): all 21 jobs
+- `--coherence-only`: Categories A, B, C, D (17 jobs)
 - `--strategic-only`: Category E (4 jobs)
 - `--category X`: only jobs with that category
 - `--job <id>`: only the named job
@@ -150,7 +150,7 @@ Begin the audit now. Read only the FILES TO AUDIT (do not expand scope).
 
 #### Expected concurrency
 
-- 20 sub-agents running in parallel
+- 21 sub-agents running in parallel
 - Each reads only its assigned files (no duplication of context)
 - Total latency ≈ latency of the slowest sub-agent (not sum of all)
 - If Claude Code limits concurrent sub-agent count, the skill may need to spawn in batches — but this is infrastructure-level, not skill concern
@@ -160,9 +160,9 @@ Begin the audit now. Read only the FILES TO AUDIT (do not expand scope).
 After all sub-agents return:
 
 1. **Track completion per job.** For each of the N jobs you spawned, record whether it returned successfully. Example tally:
-   - 20/20 jobs completed successfully ✓
-   - 19/20 jobs completed, 1 skipped (`<job-id>`, reason: timeout/error) ⚠
-   - 15/20 jobs completed, 5 errored ⚠
+   - 21/21 jobs completed successfully ✓
+   - 20/21 jobs completed, 1 skipped (`<job-id>`, reason: timeout/error) ⚠
+   - 16/21 jobs completed, 5 errored ⚠
 
    This information MUST appear in the Summary section of the final report.
 
@@ -188,7 +188,7 @@ The report must follow this structure. A table-of-contents is **required** whene
 **Repository:** /path/to/gensem
 **VERSION:** X.Y.Z
 **Timestamp:** YYYY-MM-DDThh:mm:ssZ
-**Jobs run:** N/20 completed (A=2, B=5, C=1, D=8, E=4)
+**Jobs run:** N/21 completed (A=2, B=5, C=1, D=9, E=4)
 **Scope:** full (or --coherence-only / --strategic-only / --job / --category)
 
 ## Table of Contents
@@ -217,7 +217,7 @@ The report must follow this structure. A table-of-contents is **required** whene
 | 🔵 Info | N | passes + observations |
 | 💡 Recommendations | N | Category E (strategic) |
 
-**Jobs run:** X/20 completed. [If any skipped or errored, list them.]
+**Jobs run:** X/21 completed. [If any skipped or errored, list them.]
 
 ---
 
@@ -344,11 +344,11 @@ If `--no-save` was passed, skip this entire phase and only output the report to 
 ## Invocation examples
 
 ```
-/gse-audit                                  # full: 20 jobs + Python engine
+/gse-audit                                  # full: 21 jobs + Python engine
 /gse-audit --deterministic-only             # fast Python-only (~5s)
-/gse-audit --coherence-only                 # 16 jobs, skip Category E
+/gse-audit --coherence-only                 # 17 jobs, skip Category E
 /gse-audit --strategic-only                 # 4 jobs, critique only
-/gse-audit --category D                     # only horizontal clusters (8 jobs)
+/gse-audit --category D                     # only horizontal clusters (9 jobs)
 /gse-audit --job deploy-cluster             # single cluster audit
 /gse-audit --format json --fail-on error    # CI mode
 ```

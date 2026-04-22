@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.50.0] - 2026-04-22
+
+Layers impacted: **spec** (§12.2), **CLAUDE.md** (meta-principles), **maintainer tooling** (methodology-auditor, audit-jobs catalog, audit tests), **`.claude/` command** (gse-audit job counts)
+
+**Retrospective capitalization of session learnings.** Based on the rétrospective analysis at the end of the 2026-04-21/22 audit cleanup session, applies the "high-confidence" improvements to audit instructions and methodology elements. Codifies patterns that emerged repeatedly during the session into durable methodology artifacts.
+
+### Added
+- **`.claude/agents/methodology-auditor.md` — Principle 8 "Verification before report"**. Every finding claiming a fact about file content MUST be verified (re-open the file at the cited line, confirm verbatim; for absence claims, grep for the pattern; for numeric claims, check context for historical/section-number/semantic false positives; for structural claims, read the full relevant section). Motivated by the session's discovery that sub-agents produced several false-positive findings (e.g., "deploy.md and hug.md miss `Arguments: $ARGUMENTS`" — both files actually contained the line).
+- **`.claude/agents/methodology-auditor.md` — Principle 9 "Anti-rigidity check"**. Before classifying a divergence as error/warning, the auditor MUST ask whether the divergence carries semantic information (example: deploy.md Phase/Step hierarchy reflects idempotent-milestone tracking) or is a deliberate design choice (example: principle titles spec-long / impl-short pattern). If yes, classify as `severity: info` with "document the convention" recommendation. Counters the LLM uniformity bias that proposes forced alignment regardless of intent.
+- **`.claude/agents/methodology-auditor.md` — "Number + name" cross-reference convention in Output format**. Findings must cite referenced sections/steps with both numeric identifier and section/step name (e.g., `§14.3 Step 1.6 — "Dependency vulnerability check"`). Consistent with the same convention now in CLAUDE.md > Critical rules.
+- **`.claude/agents/methodology-auditor.md` — Two new anti-patterns**. Added "Never proposes forced uniformity when the divergence carries semantic information" and "Never emits a finding without first verifying the cited content" to the explicit anti-patterns list.
+- **`CLAUDE.md` — Methodology meta-principles section** (sub-section of Communication style). Two meta-principles:
+  - **Meta-1 Anti-rigidity discipline** — corpus-wide rule for any contributor: verify divergence meaning before forcing alignment. Names the 3 examples from the session (deploy.md, principle titles, guardrail-enforcer archetype) that would have been erased by naive uniformity.
+  - **Meta-2 Document exceptions inline** — informal guidance: prefer explaining deviations at the site of deviation over silent divergences. Example codebase references (deploy.md v0.48.7, compound.md v0.48.0, Principle title P13 exception).
+  - Explicit rationale on why meta-principles live in CLAUDE.md and not in spec §2 (user-facing vs maintainer-facing separation).
+- **`gse-one-spec.md` §12.2 — "two storage patterns" paragraph**. Makes explicit the previously implicit distinction between **section-level artefacts** (multiple per document: REQ, DES, TST, RVW, DEC, TCP, plan-summary, compound, decision, code, test-campaign — use nested `gse:` frontmatter) and **document-level artefacts** (one per file: intent, learning, external-source — use flat `id: XXX-NNN / artefact_type:` frontmatter). Discovered during v0.48.4 P9 but the convention was not named; now named and propagated.
+- **`.claude/audit-jobs.json` — new job `invocation-contract-consistency`** (Category D, horizontal_cluster, bidirectional). Verifies that every specialized agent's "Activated by:" declaration is honored by actual invocation in the cited activity files, and vice versa. Motivated by v0.48.0 P4 discovery that coach declared invocation at `/gse:pause` and `/gse:compound` but pause.md/compound.md contained zero invocation steps — 3 of 8 coach axes were silently inoperant. Catalog total: 20 → 21 jobs (Category D: 8 → 9).
+- **`gse-one/tests/test_audit.py` — 12 regression guards** against known false-positive classes in `audit.py` numeric patterns (section numbers, principle IDs, specialized-templates, CHANGELOG exclusion, specialized-with-orchestrator, digit-after-letter). Includes a categories completeness smoke test. Joins the existing test_deploy.py (49 tests) for a total of 61 unit tests run by `gse_generate.py --verify`.
+
+### Changed
+- **`.claude/commands/gse-audit.md` — job counts updated** from 20 to 21 and Category D from 8 to 9 jobs (matches the new `invocation-contract-consistency` added to `audit-jobs.json`). Updates affect: frontmatter description, workflow intro, options table, Phase 2 job count, Phase 3 concurrency, Phase 4 tally, Phase 5 summary templates, and invocation examples. All references are now internally consistent.
+
+### Notes
+- Session retrospective: this commit is the "close-loop" on learnings from the v0.48.0 → v0.49.1 post-audit session. Five of the "high-confidence" recommendations from the retrospective analysis are applied (A1, A2, A4, A5 on audit instructions; M5 and M8 on methodology elements). Alternatives were preferred over original recommendations for M1 (meta-principle in CLAUDE.md rather than P17) and M3 (informal note rather than strict rule) — both documented inline in CLAUDE.md with explicit reasoning.
+- Recommendations intentionally NOT applied: M4 (summarize-pattern generalization — YAGNI, 1 use case), M6 (rule-lifecycle formalism — too meta), M7 (Compliance archetype blueprint — speculative), M9 (vernacular-exception pattern — single case).
+- Previous session commits v0.48.0 → v0.49.1 are the immediate context. See CHANGELOG entries for the specific propositions (P1-P14) and conventions adopted.
+- Pipeline: 61 unit tests pass; cross-platform parity identical; `gse_generate.py --verify` clean.
+- Minor version bump (0.49.1 → 0.50.0) reflects the introduction of a new audit job, a new test module, a new methodology concept (document-level vs section-level artefacts), and meta-principles in CLAUDE.md. These aggregate to feature-level changes even though individually each is modest.
+
 ## [0.49.1] - 2026-04-22
 
 Layers impacted: **CLAUDE.md only** (methodology governance rules)

@@ -96,6 +96,27 @@ Examples of appropriate strategic findings:
 
 Principle 1 boundary: strategic recommendations CAN be opinion-based, but any factual claim within them (e.g., "Principle P3 is rarely activated") MUST be evidence-backed.
 
+### 8. Verification before report
+
+Before emitting any finding that claims a fact about file content (missing line, structural divergence, broken cross-reference, numeric drift), the auditor MUST:
+
+1. **Open the cited file at the cited line** and confirm the claim verbatim.
+2. **For absence claims** (e.g., "X does not appear in Y"): perform an explicit grep of the pattern across the file and confirm zero matches.
+3. **For numeric claims** (e.g., "spec says '8 specialized'"): read the surrounding context and confirm the match is not a false positive (historical entry in CHANGELOG, section number like "§3.10 Commands", semantic mismatch like "4 specialized templates" vs "4 specialized agents").
+4. **For structural claims** (e.g., "activity X does not follow the canonical step numbering"): read the full relevant section to confirm the divergence is real, not a misreading.
+
+A finding that fails verification MUST be discarded or re-classified at a lower severity with an "unverified" tag in the detail field. The audit session of 2026-04-21 surfaced multiple false positives from sub-agents that skipped this verification step (e.g., "deploy.md and hug.md miss `Arguments: $ARGUMENTS`" — both files actually contained the line, which was caught only when a human re-verified). Verification is not optional — it is the primary defense against LLM extrapolation.
+
+### 9. Anti-rigidity check
+
+Before classifying a divergence as an error or warning, ask:
+
+1. **Does the divergence carry semantic information?** Example: deploy.md's "Phase N / Step N-inside-Phase" hierarchy reflects the idempotent-milestone nature of deployment (phases tracked in `deploy.json → phases_completed`). Forcing uniformity with other activities (all-Step naming) would erase this meaning.
+2. **Is the divergence a deliberate design choice?** Example: spec §2 principle titles carry full descriptive names ("Knowledge Transfer (Coaching)"), while orchestrator bullets and principle source files use the short form ("Knowledge Transfer"). This two-form pattern is intentional — spec is pedagogical, implementation is compact.
+3. **What information would be lost by forcing alignment?** If the answer is "none — it's just noise", proceed with `severity: warning` or `error` as appropriate. If the answer names real information (semantic, visual, historical, ergonomic), the finding MUST be classified as `severity: info` with a recommendation to **document the convention** (in CLAUDE.md or at the site of the exception), not to **force alignment**.
+
+The uniformity bias is a known LLM tendency: the model sees two slightly different forms and proposes to make them identical, regardless of whether the difference was intentional. The auditor counters this bias explicitly. Uniformity is not a virtue in itself — it is only valuable when it eliminates drift that causes bugs or confusion.
+
 ## Audit dimensions
 
 The auditor operates across **6 dimensions**, each with ~4 canonical checks. This catalog is a reference; concrete prompts may combine or extend.
@@ -143,13 +164,15 @@ Example:
 ```yaml
 category: spec-impl
 severity: error
-title: spec claims '8 specialized agents' but ACTIVITY_NAMES has 10
-location: gse-one-spec.md:431
+title: spec §1.6 "Agent Roles" claims '8 specialized agents' but ACTIVITY_NAMES has 10
+location: gse-one-spec.md §1.6 "Agent Roles" line 431
 detail: |
-  Spec §1.6 line 431: "GSE-One defines 9 agents — one orchestrator and 8 specialized roles."
+  Spec §1.6 "Agent Roles" line 431: "GSE-One defines 9 agents — one orchestrator and 8 specialized roles."
   gse_generate.py SPECIALIZED_AGENTS list contains 10 entries.
-fix_hint: Update spec §1.6 to "11 agents — one orchestrator and 10 specialized roles" (to match code), OR remove 2 agents from SPECIALIZED_AGENTS.
+fix_hint: Update spec §1.6 "Agent Roles" to "11 agents — one orchestrator and 10 specialized roles" (to match code), OR remove 2 agents from SPECIALIZED_AGENTS.
 ```
+
+**Note on cross-reference form in findings.** Per the "number + name" convention documented in `CLAUDE.md > Critical rules > Cross-reference convention`, findings MUST cite the referenced section, step, or artefact with BOTH its numeric identifier and its section/step name (e.g., `§14.3 Step 1.6 — "Dependency vulnerability check"` rather than `§14.3 Step 1.6`). This provides dual resolution: if the number drifts after a renumbering, the name still resolves; if the name changes, the number still hints at the location. The example above applies this rule in the title, location, and fix_hint fields.
 
 ## Anti-patterns (what the auditor does NOT do)
 
@@ -159,6 +182,8 @@ fix_hint: Update spec §1.6 to "11 agents — one orchestrator and 10 specialize
 - ❌ Never loads all files at once (contextual, on-demand reading)
 - ❌ Never conflates opinion with fact (e.g., "this could be written better" is Info at most, not Warning)
 - ❌ Never emits a severity higher than the evidence supports
+- ❌ Never proposes forced uniformity when the divergence carries semantic information (see Principle 9 Anti-rigidity check). Prefer "document the convention" over "force alignment" whenever the divergence is intentional
+- ❌ Never emits a finding without first verifying the cited content (see Principle 8 Verification before report)
 
 ## Conclusion format
 

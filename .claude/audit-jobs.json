@@ -378,6 +378,34 @@
       ]
     },
     {
+      "id": "invocation-contract-consistency",
+      "category": "D",
+      "type": "horizontal_cluster",
+      "refinement": "bidirectional",
+      "files": [
+        "gse-one/src/agents/architect.md",
+        "gse-one/src/agents/code-reviewer.md",
+        "gse-one/src/agents/security-auditor.md",
+        "gse-one/src/agents/requirements-analyst.md",
+        "gse-one/src/agents/devil-advocate.md",
+        "gse-one/src/agents/ux-advocate.md",
+        "gse-one/src/agents/test-strategist.md",
+        "gse-one/src/agents/coach.md",
+        "gse-one/src/agents/guardrail-enforcer.md",
+        "gse-one/src/agents/deploy-operator.md",
+        "gse-one/src/activities/*.md"
+      ],
+      "scope": "Every specialized agent declares an 'Activated by:' contract listing the activities that invoke it. This job verifies the contract is bidirectional — the listed activities actually contain invocation steps for the agent. A broken contract in either direction is a bug (uncovered in v0.48.0 P4: coach claimed invocation at /gse:pause and /gse:compound but pause.md/compound.md contained zero invocation steps — 3 of 8 coach axes were silently inoperant).",
+      "checks": [
+        "For each specialized agent in gse-one/src/agents/*.md, parse the 'Activated by:' declaration (in frontmatter description or the opening **Activated by:** line)",
+        "For each activity cited in 'Activated by:', grep the corresponding activity file (gse-one/src/activities/<name>.md) for an invocation step (explicit 'the orchestrator invokes the <agent-name> agent' phrase, or equivalent)",
+        "Report `error` severity for agent→activity contracts where the agent declares activation but the activity has no invocation step",
+        "Report `warning` severity for the reverse direction: activity files that invoke an agent not listed in the agent's 'Activated by:' declaration (reverse drift)",
+        "For guardrail-enforcer (Compliance archetype, cross-cutting always-active), the bidirectional check does not apply — it is invoked via hooks and tool-use interception, not via activity steps. This is an explicit exception documented in the agent file itself",
+        "For coach (Observational archetype), cross-check the Invocation contract table (coach.md:44-55) — each moment row must have a corresponding invocation in the cited activity. Coach moments without an activity-side invocation are dead code (P4 found 4 such cases)"
+      ]
+    },
+    {
       "id": "methodology-design-critique",
       "category": "E",
       "type": "qualitative_critique",

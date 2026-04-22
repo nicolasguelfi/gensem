@@ -2165,7 +2165,15 @@ This log is not shown to the user by default but is available via `/gse:status -
 
 ### 12.2 Artefact Metadata
 
-Each structured artefact (markdown) includes a YAML frontmatter for traceability:
+Artefacts fall into **two storage patterns** based on their document granularity:
+
+**Section-level artefacts** — multiple artefacts coexist in a single document, each as a sub-section with the artefact ID in the heading (e.g., `## REQ-001 — <title>`, `## DES-003 — <title>`). The document as a whole describes a sprint phase or role (requirements document, design document, test document). The document frontmatter uses the **nested `gse:` form** describing the document, while individual artefact IDs appear as section headers inside the document. Types: `requirement`, `design`, `test`, `review`, `plan-summary`, `compound`, `decision`, `code`, `test-campaign`.
+
+**Document-level artefacts** — one artefact per file, the file IS the artefact. Typically used when the artefact has a standalone identity and scope that doesn't fit alongside others. The frontmatter uses a **flat form** with `id: XXX-NNN` and `artefact_type: <name>` at the top level (no `gse:` wrapper). The filename typically contains the artefact ID (e.g., `LRN-003-git-rebase.md`). Types: `intent` (INT-NNN), `learning` (LRN-NNN), `external-source` (SRC-NNN).
+
+The two patterns are **not interchangeable**. Choosing the wrong pattern for a new artefact type will break downstream activities that consume the artefact (e.g., the `/gse:learn` activity expects flat `id: LRN-NNN` to resolve a learning note; adding it as a section-level artefact in a generic document would make the note undiscoverable by the activity).
+
+The nested schema used by section-level artefacts:
 
 ```yaml
 ---

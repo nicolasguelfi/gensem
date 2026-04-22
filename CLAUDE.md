@@ -171,6 +171,16 @@ When proposing changes, applying fixes, or explaining methodology concepts durin
 
 **Why these rules.** The user works with the methodology from multiple sessions and machines, sometimes coming back cold. Cryptic phrasing forces them to reload context mentally; pedagogical phrasing preserves flow. Composite questions hide decisions — the user might approve the proposition intending to validate point (a) while point (c) was also smuggled in. Single-default questions make consent explicit and auditable.
 
+### Methodology meta-principles
+
+These are meta-rules that govern how the methodology itself is maintained and evolved. They are NOT numbered as P1-P16 principles (which describe how GSE-One users work) — they describe how maintainers and contributors treat the corpus.
+
+**Meta-1 — Anti-rigidity discipline.** Before enforcing uniformity across the corpus (renaming, aligning formats, merging variants, forcing a single convention on what appears to be divergent content), verify that the observed divergence does not carry semantic information, technical necessity, or user-facing clarity. Uniformity is not a virtue in itself — it is only valuable when it eliminates drift that causes bugs or confusion. If a divergence is intentional, the correct response is to **document the convention** (in CLAUDE.md, in the file itself, or via an explanatory inline note) rather than **force alignment**. This rule saved the 2026-04-21 audit session from wrongly renaming `deploy.md` Phase/Step hierarchy, force-aligning 10 principle titles on the spec long form, and force-fitting `guardrail-enforcer` into the Reviewer archetype — each of which would have erased useful methodological information. Applies to audits, refactors, schema migrations, prose style sweeps, and any proposal that starts with "let's make X match Y".
+
+**Meta-2 — Document exceptions inline.** When a file, activity, agent, or template deliberately deviates from a corpus-wide convention (e.g., `deploy.md` uses Phase/Step hierarchy instead of flat Step numbering; P13 uses "Hooks" vernacular instead of spec main title), prefer a short inline note at the site of deviation over a silent divergence. The note should be brief (1-3 lines), explain WHY the deviation exists, and point to the canonical convention for comparison. Informal rule, not strict — use judgment. Examples in the codebase: `deploy.md` Workflow structure note on Phase/Step (v0.48.7), `compound.md` Step 2.7 explanation of summarization mechanism (v0.48.0), the "P13 noted exception" in the Principle title convention section above.
+
+**Why meta-principles live here (not in spec §2).** Spec §2 principles (P1-P16) are user-facing methodological rules that ship with the plugin. Meta-principles are maintainer rules that govern how we evolve the methodology. Keeping them separate avoids inflating the user-facing principle count and keeps maintainer discipline visible to contributors without burdening end users.
+
 ## Language
 
 The user communicates in French. Respond in French for conversation, English for code/commits.

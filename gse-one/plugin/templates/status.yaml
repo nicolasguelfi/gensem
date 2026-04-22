@@ -25,10 +25,9 @@ health:
     ai_integrity: 0                    # 0-10: unverified assertions, engagement
   last_computed: ""                    # ISO 8601 timestamp
 
-complexity:
-  budget: 10                           # from config.yaml
-  consumed: 0
-  remaining: 10
+# (Sprint complexity budget lives in plan.yaml.budget, per gse-orchestrator.md Sprint Plan
+# Maintenance. Micro mode — no plan.yaml — has no budget by design.
+# A top-level `complexity:` block was previously declared here but had no writer; retired in v0.52.0.)
 
 # P16 pushback detection — see spec P16 for increment/reset rules
 # Incremented: Gate decision accepted without modification, single-word confirmation of artefact

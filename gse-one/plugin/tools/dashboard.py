@@ -438,9 +438,12 @@ def collect_data():
     data["done_tasks"] = done_tasks
     data["progress_pct"] = round(done_tasks / total_tasks * 100) if total_tasks > 0 else 0
 
-    # Complexity budget
-    data["complexity_budget"] = status.get("complexity_budget", None)
-    data["complexity_used"] = status.get("complexity_used", None)
+    # Complexity budget — authoritative source is plan.yaml.budget (per gse-orchestrator.md
+    # Sprint Plan Maintenance protocol). status.yaml does NOT store the live sprint budget —
+    # it was a stale read path prior to v0.52.0.
+    _plan_budget = (data["plan"] or {}).get("budget") if data["plan"] else None
+    data["complexity_budget"] = _plan_budget.get("total") if _plan_budget else None
+    data["complexity_used"] = _plan_budget.get("consumed") if _plan_budget else None
 
     # Sprint directories — collect all (active + archived)
     all_sprint_dirs = []

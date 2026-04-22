@@ -1124,7 +1124,7 @@ The agent tracks a `consecutive_acceptances` counter in `.gse/status.yaml`:
    - If user says "overwhelmed": switch to more Gate decisions, reduce pace
 ```
 
-### 5.13 `/gse:assess` — Gap Analysis Skill (NEW — G-002)
+### 5.13 `/gse:assess` — Gap Analysis Skill
 
 ```markdown
 # skills/assess/SKILL.md
@@ -1170,7 +1170,7 @@ Gap Analysis — Sprint N
 Uncovered goals → candidate TASK items in backlog pool (auto-created with `origin: assess`)
 ```
 
-### 5.14 `/gse:go` — Orchestrator Decision Logic (NEW — G-007)
+### 5.14 `/gse:go` — Orchestrator Decision Logic
 
 ```markdown
 ### Orchestrator Decision Tree (added to go skill)
@@ -1183,7 +1183,15 @@ When `/gse:go` is invoked:
 |-----------|--------|
 | `.gse/` absent + project has files | Adopt mode (see 5.4) |
 | `.gse/` absent + project empty | HUG (LC00) |
-| `.gse/` exists | Read `status.yaml` → Step 2 |
+| `.gse/` exists | Read `status.yaml` → Preflight sequence (Steps 1.5 / 1.6 / 1.7) → Step 2 |
+
+**Preflight sequence (Steps 1.5 / 1.6 / 1.7):** three short checks run after project-state detection and before determining the next action. They mirror `gse-one-spec.md §14.3` numbering exactly; full semantics are in the spec, concrete shell commands are in `gse-one/src/activities/go.md`.
+
+**Step 1.5 — Recovery Check:** scan every active worktree + `main` for uncommitted changes since the last session's checkpoint. If any are found, present a Gate (*Recover and resume / Review first / Discard / Skip*). Full rules in spec §14.3 Step 1.5 — Recovery Check; concrete detection in `gse-one/src/activities/go.md` Step 2 — Recovery Check (Unsaved Work Detection).
+
+**Step 1.6 — Dependency Vulnerability Check:** when `config.yaml → testing.dependency_audit: true`, run the ecosystem-appropriate audit (`npm audit --audit-level=critical`, `pip-audit`, etc.). **Soft guardrail** on CRITICAL vulnerabilities: warn and propose remediation, continue on acknowledgment. Full rules in spec §14.3 Step 1.6 — Dependency vulnerability check; concrete tool invocation per ecosystem in `gse-one/src/activities/go.md` Step 2.5 — Dependency Vulnerability Check.
+
+**Step 1.7 — Git Baseline Verification:** when `config.yaml → git.strategy` is `worktree` or `branch-only`, verify `main` has at least one commit. If not: **Hard guardrail** — auto-fix by committing `.gitignore` (creating it if missing), gated behind the Git Identity Verification preflight (P12.6) to avoid commits with a missing or placeholder author identity. Full rules in spec §14.3 Step 1.7 — Git baseline verification; concrete commands + Git Identity Gate in `gse-one/src/activities/go.md` Step 2.7 — Git Baseline Verification.
 
 **Step 2 — Determine next action:**
 
@@ -1212,7 +1220,12 @@ Evaluate states in order — the first matching row wins.
 
 **Post-activity protocol:** after each activity completes, the orchestrator updates `.gse/plan.yaml` per the Sprint Plan Maintenance protocol (workflow transition, coherence evaluation, alerts by mode). See the orchestrator document for the full protocol.
 
-Progression is defined as any TASK status change (`planned` → `in-progress`, `in-progress` → `review`, etc.) OR any `workflow.active` transition in `plan.yaml`. A session where neither happens counts as a session without progress, incrementing `sessions_without_progress` in `status.yaml`.
+**Implementation-only preflight extensions** (present in `gse-one/src/activities/go.md` but not in `gse-one-spec.md §14.3`): the running implementation adds two non-spec steps to the preflight sequence. They are orchestration concerns, not methodology requirements.
+
+- **Step 2.6 — Dashboard Refresh** — after the preflight passes, regenerate `docs/dashboard.html` via `python3 "$(cat ~/.gse-one)/tools/dashboard.py"` so the current session starts from a fresh view. Silent unless it is the first generation (deferred pedagogy per HUG Step 5.5 — Dashboard Initialization).
+- **Step 2.8 — Coach Workflow Overview (post-recovery)** — invoke the coach sub-agent with `moment: /gse:go after recovery check` per the Coach Invocation contract (`gse-one/src/agents/coach.md`) and design §5.17 to surface axes 2-8 (workflow overview) at the start of a resumed session. May return zero proposals (silent) or one Inform note.
+
+Progression is defined as any TASK status change (`planned` → `in-progress`, `in-progress` → `review`, etc.) OR any `workflow.active` transition in `plan.yaml`. A session where neither happens counts as a session without progress, incrementing `sessions_without_progress` in `status.yaml` (writer: `/gse:go` Step 4 — Stale Sprint Detection and `/gse:resume` Step 6 — Finalize, per v0.52.0).
 
 **Step 3 — Stale sprint detection (Gate):**
 ```
@@ -1231,7 +1244,7 @@ If any activity fails:
 4. Never silently continue
 ```
 
-### 5.15 `/gse:deliver` — Deploy & Recovery Extensions (NEW — G-003, G-009)
+### 5.15 `/gse:deliver` — Deploy & Recovery Extensions
 
 ```markdown
 ### Deploy Step (added after Step 4 — Tag Release)
@@ -1267,7 +1280,7 @@ git reset --hard gse-backup/sprint-NN-pre-merge-<feat>
 Cleanup: delete backup tags older than `git.backup_retention_days` during deliver.
 ```
 
-### 5.16 State Schemas (NEW — G-004, G-005, G-006)
+### 5.16 State Schemas
 
 **status.yaml schema (spec §12.4):**
 ```yaml
@@ -1307,10 +1320,7 @@ complexity:
 
 # P16 pushback detection
 consecutive_acceptances: 2
-never_discusses: false
-terse_responses: 0
-never_modifies: false
-never_questions: false
+pushback_dismissed: 0
 
 last_activity: /gse:produce
 last_activity_timestamp: "2026-04-11T09:15:00Z"
@@ -2142,30 +2152,28 @@ git_state:
 
 Essential context: ~100-200 lines. Agent must NEVER load all at once.
 
-### 5.17 Additional Skill Extensions (G-008 to G-014, G-025 to G-028)
+### 5.17 Additional Skill Extensions
 
-**P16 pushback — full signal tracking (G-008):**
-In addition to the `consecutive_acceptances` counter, track:
-- User never selects "Discuss" → `never_discusses` boolean
-- User responds with single-word confirmations → `terse_responses` counter
-- User never modifies proposals → `never_modifies` boolean
-- User never asks "why?" → `never_questions` boolean
-All signals stored in `status.yaml`. Threshold calibrated by expertise.
+**P16 pushback — signal tracking:**
+Two counters stored at the root level of `status.yaml`:
+- `consecutive_acceptances` — primary trigger; reaches the threshold (beginner=3, intermediate=5, expert=8) to activate the pushback checkpoint.
+- `pushback_dismissed` — count of "Everything looks good" dismissals; governs the per-sprint suppression rule (suppress further pushback when `pushback_dismissed >= 2`).
+These two signals were previously accompanied by four additional booleans (`never_discusses`, `terse_responses`, `never_modifies`, `never_questions`) — retired in v0.52.0 as pure aspiration (no writer ever landed; the primary counter proved sufficient in practice).
 
-**Documentation as first-class artefact (G-010):**
+**Documentation as first-class artefact:**
 When `/gse:produce` handles a TASK with `artefact_type: doc`:
 - Auto-generate API docs from code docstrings if available
 - Generate in the worktree branch `gse/sprint-NN/docs/<name>`
 - Review alongside code artefacts
 
-**Dependency audit (G-011):**
+**Dependency audit:**
 When `/gse:tests` runs, if `testing.dependency_audit: true`:
 ```bash
 pip-audit  # or npm audit, depending on detected framework
 ```
 Report findings in health alerts as `⚠ DEPS:` items.
 
-**Framework drift detection (G-014):**
+**Framework drift detection:**
 At start of `/gse:tests --run` or `/gse:produce`:
 - Compare current framework (from package manifest) with `config.yaml → testing.framework`
 - If different → Inform: "Framework changed from X to Y. Update config?"
@@ -2338,10 +2346,10 @@ Making Policy a first-class pyramid column forces its explicit allocation during
 
 ---
 
-**Complexity budget ranges (G-025):**
+**Complexity budget ranges:**
 Use the spec §8.1 range table. Agent selects within range based on context, presents as Inform. One point captures **coupled effort + complexity for the AI + user pair** (spec P10 / §8.1) with an indicative temporal anchor of 1 pt ≈ 1 pair-session hour. For maintenance work (refactoring, tests, docs, renaming, bug-fixing), apply the **Cost Assessment Grid for Maintenance Work** from spec Appendix B: four criteria (fan-out, review burden, rework risk, coupling) → 0 pt / 1 pt / 2-5 pt per item. The pre-v0.34 "zero-cost items" blanket rule is deprecated — agents must size maintenance activities case-by-case.
 
-**Team matching algorithm (G-026):**
+**Team matching algorithm:**
 User detection in priority order:
 1. `.gse/current-user` file → use content
 2. `GSE_USER` env var → use value
@@ -2349,10 +2357,10 @@ User detection in priority order:
 4. Ask user (Inform)
 Match case-insensitive, spaces→hyphens against `.gse/profiles/`.
 
-**Minimum viable project size (G-027):**
+**Minimum viable project size:**
 In lightweight mode detection: add note that for truly one-off tasks, don't use GSE-One.
 
-**Concurrent access (G-028):**
+**Concurrent access:**
 - Each team member works in own worktree → no file conflicts during production
 - `backlog.yaml` conflicts handled by git merge; agent detects on pull, proposes resolution (Gate)
 - `decisions.md` is append-only → no conflicts

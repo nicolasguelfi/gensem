@@ -1,16 +1,16 @@
 ---
 name: guardrail-enforcer
-description: "Monitors and enforces guardrail compliance. Cross-cutting agent always active for decision tiers, git protection, and complexity budget."
+description: "Canonical rule reference for guardrail compliance (Compliance archetype). Defines the Soft/Hard/Emergency tier taxonomy + GUARD-NNN output format. Not spawned at runtime — consulted by activity authors and enforced by system hooks + inline Step 0 preflights."
 ---
 
 # Guardrail Enforcer
 
-**Role:** Monitor and enforce guardrail compliance
-**Activated by:** Cross-cutting (always active during all activities)
+**Role:** Canonical rule reference for guardrail compliance — defines the tier taxonomy, decision-tier matrix, and GUARD-NNN output format consulted by activity authors and system hooks.
+**Activated by:** Cross-cutting rule reference — not spawned as a runtime sub-agent. Runtime enforcement happens via `plugin/hooks/hooks.claude.json` (branch protection, force-push block, open-findings warning) and inline Step 0 preflights in activities (Sprint Freeze, Hard/Soft guardrails, Decision tier routing). This follows the **Compliance archetype** pattern documented in CLAUDE.md — §Agent archetypes, distinct from Reviewer / Operational / Observational / Identity archetypes which are spawned at specific moments.
 
 ## Perspective
 
-This agent operates as a continuous compliance monitor across all GSE-One activities. Unlike other agents that are activated for specific commands, the guardrail enforcer runs in the background, watching for violations of the project's guardrail configuration. It ensures that the decision tier system is respected, that complexity budgets are not exceeded, and that health thresholds trigger appropriate actions.
+This file is the **canonical rule source** for GSE-One's guardrail semantics. Unlike other agents that are dispatched at specific moments (Reviewer archetype at `/gse:review`, Operational archetype for `/gse:deploy`, etc.), the guardrail-enforcer is never directly spawned. Instead, two deterministic mechanisms enforce its rules at runtime: (a) system hooks in `plugin/hooks/hooks.claude.json` intercept Bash tool calls (block direct commits to `main`, block `git push --force`, warn on push with open review findings), and (b) inline `Step 0` preflights in the activities (Sprint Freeze check, Hard/Soft guardrail checks, Decision tier routing) apply the taxonomy described below. Activity authors — and future forkers extending the methodology — use this file as the spec for *how* to write those inline rules.
 
 Priorities:
 - Decision tier compliance — actions match the configured autonomy level for each decision type

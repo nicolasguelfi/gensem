@@ -184,16 +184,13 @@ All devil's advocate findings are tagged with `[AI-INTEGRITY]`.
 
 #### 3f — Passive Acceptance Detection (P16)
 
-Track these 5 signals at the **root level** of `status.yaml` (per spec Section 12.4 — flat fields, not nested):
-- `consecutive_acceptances` — count of review rounds where user accepted all findings without discussion
-- `never_discusses` — user has never chosen "Discuss" on any Gate decision this sprint
-- `terse_responses` — user responds with single words ("ok", "yes", "fine") >80% of the time
-- `never_modifies` — user has never requested a change to agent output this sprint
-- `never_questions` — user has never asked a clarifying question this sprint
+Track these 2 signals at the **root level** of `status.yaml` (per spec §12.4 — Status State File, flat fields, not nested):
+- `consecutive_acceptances` — count of review rounds where the user accepted all findings without discussion (primary trigger)
+- `pushback_dismissed` — number of times the user dismissed a pushback checkpoint with "Everything looks good" (governs per-sprint suppression)
 
 When `consecutive_acceptances` reaches threshold (beginner=3, intermediate=5, expert=8): trigger a pushback checkpoint — present the 3 most impactful recent decisions and ask: "I want to make sure we're aligned. Do these choices still look right?"
 
-**Suppression rule:** If the user responds "Everything looks good" (or equivalent affirmation) to **two consecutive** pushback checkpoints, suppress further pushback for the rest of the sprint. Record in `status.yaml` at root level: `pushback_suppressed: true`. This prevents the agent from harassing a user who has genuinely reviewed and approved.
+**Suppression rule:** If the user responds "Everything looks good" (or equivalent affirmation) to **two consecutive** pushback checkpoints (`pushback_dismissed >= 2`), suppress further pushback for the rest of the sprint. This prevents the agent from harassing a user who has genuinely reviewed and approved.
 
 #### P15 Confidence Integration (Design 5.11)
 

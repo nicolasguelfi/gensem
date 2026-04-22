@@ -151,4 +151,5 @@ Present the proposal and wait for user confirmation.
    - `last_activity: resume`
    - `last_activity_timestamp: {now}`
    - Remove `pause_checkpoint` field
+   - **Update `sessions_without_progress`** — compare current `backlog.yaml` TASK statuses against the snapshot in `status.yaml → activity_history[-1]`. If no TASK status has changed since the last session → increment `sessions_without_progress` by 1; if at least one has changed → reset to 0. This drives the stale-sprint Gate (see `/gse:go` Step 4 — Stale Sprint Detection) and the coach `mid_sprint_stall` axis (activates at `>= 2`).
 2. The session is now active. Proceed with the accepted action or wait for user command.

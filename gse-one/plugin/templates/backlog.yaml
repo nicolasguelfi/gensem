@@ -31,7 +31,6 @@ items: []
   #     branch_status: null              # null | planned | active | merged | deleted
   #     worktree: null                   # e.g., .worktrees/sprint-01-feat-auth
   #     worktree_status: null            # null | active | removed
-  #     commits: 0
   #     last_commit: null                # ISO 8601 timestamp
   #     uncommitted_changes: 0
   #   github_issue: null                 # GitHub issue number, null if not enabled (top-level, not nested in traces)

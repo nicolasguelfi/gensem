@@ -43,13 +43,10 @@ Adversarial review is not confrontational — it is protective. The agent challe
    | **Expert** | 8 consecutive | Brief: "Quick sanity check on recent decisions..." |
 
    **Passive acceptance signals** (tracked in `status.yaml`):
-   - User chooses the recommended option in N+ consecutive Gate decisions → `consecutive_acceptances` counter
-   - User never selects "Discuss" in any interaction → `never_discusses` boolean
-   - User responds with single-word confirmations ("ok", "yes", "1") to complex decisions → `terse_responses` counter
-   - User never modifies a plan, design, or test strategy → `never_modifies` boolean
-   - User never asks "why?" or proposes alternatives → `never_questions` boolean
+   - User chooses the recommended option in N+ consecutive Gate decisions → `consecutive_acceptances` counter (primary trigger)
+   - User suppresses pushback by selecting "Everything looks good" twice in a row → `pushback_dismissed` counter
 
-   The primary trigger is `consecutive_acceptances` reaching the threshold. The other signals are secondary — they increase concern but don't trigger alone.
+   The trigger is `consecutive_acceptances` reaching the threshold. `pushback_dismissed` governs the per-sprint suppression rule.
 
    **Suppression rule:** If the user selects "Everything looks good" twice in a row during pushback checkpoints, the agent respects this and does **not** trigger again for the rest of the sprint.
 

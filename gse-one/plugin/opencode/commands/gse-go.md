@@ -147,7 +147,16 @@ Present the proposal and wait for user confirmation before executing.
 
 Read `config.yaml → lifecycle.stale_sprint_sessions` (default: 3 sessions).
 
-Track the number of sessions (invocations of `/gse:go` or `/gse:resume`) where no TASK has progressed to a new status. A "progression" is any TASK moving from one status to the next (open→planned, planned→in-progress, in-progress→review, review→fixing, fixing→done, done→delivered, etc.).
+Track the number of sessions (invocations of `/gse:go` or `/gse:resume`) where no TASK has progressed to a new status. A "progression" is any TASK moving from one status to the next (open→planned, planned→in-progress, in-progress→review, review→reviewed, review→fixing, fixing→done, done→delivered, etc.).
+
+**Persistent counter (since v0.52.0):** the count is stored in `status.yaml → sessions_without_progress`. Update it on every `/gse:go` invocation (and mirror the logic on `/gse:resume`):
+
+1. Read `status.yaml → sessions_without_progress` (default 0 if absent) and `status.yaml → activity_history[-1]` (last session's TASK status snapshot).
+2. Compare the current `backlog.yaml` TASK statuses against the last snapshot:
+   - If **no TASK status changed** since the last session → increment `sessions_without_progress` by 1.
+   - If **at least one TASK status changed** → reset `sessions_without_progress` to 0.
+3. Persist `status.yaml → sessions_without_progress` with the new value.
+4. The coach `mid_sprint_stall` axis (per `agents/coach.md` Invocation contract + `gse-orchestrator.md` — section "Coach delegation") reads this counter and activates when `sessions_without_progress >= 2`.
 
 If the session-without-progress count reaches the configured threshold:
 

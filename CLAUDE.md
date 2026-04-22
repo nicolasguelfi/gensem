@@ -58,6 +58,21 @@ Never skip a step. Never commit without regenerating. Never push without bumping
 - Bump `VERSION` file, then run the generator — it propagates to both plugin.json manifests.
 - Commit style: `feat:`, `fix:`, `docs:` prefixes. Check recent `git log` for conventions.
 
+### Pre-release backward-compatibility — not required (temporary rule)
+
+As long as the GSE-One plugin is not yet distributed to public end users, **backward-compatibility is not a concern** for any methodology schema, state file format, or artefact structure. Concretely:
+
+- Breaking schema changes in templates (`backlog.yaml`, `plan.yaml`, `status.yaml`, `checkpoint.yaml`, `profile.yaml`, learning notes, sprint docs, etc.) may be applied directly. No migration path, no deprecation window, no compatibility shim needed.
+- Renaming or removing fields is acceptable. Existing downstream consumers (activities, tools, agents) are all in-tree and can be updated atomically with the schema change.
+- Changing enum values (e.g., `origin`, `app_type`, `project_domain`, `status`) does not require preserving old values for legacy data.
+- Restructuring principle titles, agent outputs, or activity workflows is permitted without retroactive adapters.
+
+This rule **will be removed** once the plugin hits its first public release (distribution through Claude Code marketplace, Cursor marketplace, npm, etc.). After that release, standard SemVer compatibility rules apply: breaking changes require a major version bump and a documented migration guide.
+
+**Why:** Pre-release iteration needs to be fast and unconstrained. Locking in an unripe schema creates permanent debt. Once users depend on the plugin, protection becomes mandatory. The cutoff is distribution, not an arbitrary date.
+
+**When the rule expires, update CLAUDE.md:** remove this entire section and replace with the post-release compatibility policy (SemVer discipline, deprecation windows, migration tooling requirements).
+
 ### Files to keep in sync (all via generator)
 - `src/activities/*.md` → `plugin/skills/*/SKILL.md` (Claude Code) + `plugin/commands/gse-*.md` (Cursor) + `plugin/opencode/skills/*/SKILL.md` + `plugin/opencode/commands/gse-*.md`
 - `src/agents/gse-orchestrator.md` → `plugin/agents/gse-orchestrator.md` + `plugin/rules/gse-orchestrator.mdc` + `plugin/opencode/AGENTS.md` (wrapped in `<!-- GSE-ONE START/END -->` markers)
@@ -65,6 +80,29 @@ Never skip a step. Never commit without regenerating. Never push without bumping
 - `plugin/hooks/hooks.claude.json` → `plugin/opencode/plugins/gse-guardrails.ts` (transpiled)
 - The orchestrator body, the `.mdc` rule body, and the opencode `AGENTS.md` block body are all verified identical by `--verify`.
 - Changes in spec should be reflected in design doc changelog and vice versa.
+
+### Cross-reference convention — "number + name"
+
+Cross-references to sections, steps, or numbered artefacts within the corpus (spec, design, activities, agents, principles, CLAUDE.md, CHANGELOG) MUST include both the numeric identifier AND the section/step name. Example forms:
+
+- ✅ `spec §14.3 Step 1.6 — "Dependency vulnerability check"` (number + name)
+- ✅ `see Step 8 — Cleanup Backup Tags` (step number + title)
+- ✅ `see §11.1 Generation Steps for the generator step table` (section number + heading)
+- ✅ `per §P14` (acceptable when the principle is being cited by its canonical ID — the principle ID itself is a stable name)
+- ❌ `spec §14.3 Step 2.5` (number only — breaks if sections are renumbered)
+- ❌ `see Step 10` (number only, for a step that doesn't exist — actual example of a broken ref caught by audit)
+
+**Why:** Section numbers are unstable. Inserting a new section shifts all downstream numbering, silently breaking every cross-reference to shifted sections. Section names are anchored to content and change far less often. The "number + name" form gives the reader dual resolution: if the number drifts, the name still resolves; if the name changes, the number still hints at the location.
+
+**How to apply in practice:**
+- When creating a new cross-reference, use the full "number + name" form.
+- When modifying existing prose that contains number-only references, upgrade them opportunistically to the new form (within your diff scope — do not create unbounded sweep diffs).
+- The task `P-NAMED-REFS` tracks a dedicated retroactive sweep across the whole corpus; individual propositions need not close all legacy references.
+
+**Edge cases:**
+- For principles (P1-P16), the principle ID itself is a stable name — `§P14` alone is acceptable because "P14" is the name (the principle's canonical identifier). Adding the descriptive title is still encouraged: `§P14 — Knowledge Transfer`.
+- Principle titles follow a separate convention (spec carries the full descriptive title; orchestrator and principle source file carry the short form). See task `PRINCIPLE-TITLES` for the convention details pending addition to CLAUDE.md.
+- For internal steps within a single document (e.g., "see Step 3" when the current document has a Step 3), the numeric form alone is acceptable — the local scope makes the reference unambiguous.
 
 ### Memory policy — in-repo only
 Any project convention, rule, preference, or decision that Claude must remember across sessions for this project MUST be recorded in a versioned file in this repo — typically this `CLAUDE.md`, or another markdown doc under source control. Do NOT write such information to Claude's per-machine auto-memory (`~/.claude/projects/<hash>/memory/`).

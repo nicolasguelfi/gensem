@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.49.0] - 2026-04-22
+
+Layers impacted: **CLAUDE.md only** (methodology governance rules)
+
+**Option B — Batch consolidation of durable CLAUDE.md rules.** Consolidates two rules adopted during the 2026-04-22 post-audit session into `CLAUDE.md` where they belong (per the existing "Memory policy — in-repo only" invariant that forbids Claude auto-memory for project conventions). These rules apply to all future sessions and to forkers.
+
+### Added
+- **`CLAUDE.md` — "Pre-release backward-compatibility — not required (temporary rule)"** subsection added under Critical rules (between Versioning and Files to keep in sync). Documents that while the GSE-One plugin is not yet distributed to public end users, schema changes, field renames, enum modifications, and artefact structure refactoring may be applied directly without migration paths. Rule self-dates: will be removed at first public release (Claude/Cursor marketplace, npm) with a pointer to replace it with post-release SemVer discipline. Rationale: pre-release iteration speed vs locking in unripe schema debt.
+- **`CLAUDE.md` — "Cross-reference convention — 'number + name'"** subsection added under Critical rules (between Files to keep in sync and Memory policy). Documents the rule adopted during v0.48.6 P11: cross-references to sections / steps / numbered artefacts MUST include both the numeric identifier AND the section/step name (e.g., `§14.3 Step 1.6 — "Dependency vulnerability check"` rather than `§14.3 Step 1.6`). Includes 6 example forms (✅ and ❌), the stability rationale, application guidance (new refs follow the rule, opportunistic upgrades for existing refs, bulk sweep tracked as `P-NAMED-REFS`), and 3 edge cases (principles cited by ID, intra-document refs, title conventions).
+
+### Notes
+- This commit intentionally touches only `CLAUDE.md` — no methodology source files are modified. The 2 sections added are governance rules for future work.
+- Rules already in `CLAUDE.md`'s "Communication style" section (Rule 1 pedagogical phrasing, Rule 2 single-default questions — both added in v0.48.0) remain unchanged.
+- Deferred work (to be handled separately): `PRINCIPLE-TITLES` convention (pending user decision after explanation); `META.1` numeric registry centralization (big chantier — see `_LOCAL/maintenance/2026-04-21-numeric-registry-centralization.md`); `P-NAMED-REFS` retroactive cross-reference sweep across the whole corpus.
+- 49 unit tests pass; cross-platform parity identical; `audit.py` numeric category clean (post-P14).
+
 ## [0.48.9] - 2026-04-22
 
 Layers impacted: **maintainer tooling** (`gse-one/audit.py` only)

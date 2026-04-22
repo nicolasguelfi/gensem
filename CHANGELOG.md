@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.59.5] - 2026-04-22
+
+Layers impacted: **spec** (§14 lifecycle guardrail 3 — exempt prose upgraded to three-category typology), **design** (§5.16 Sprint Freeze mechanics — `/gse:deliver` removed from MUST consult list + exempt prose upgraded to three-category typology).
+
+**Patch release — Sprint Freeze double-listing fix.** Closes Cluster 8 of the 2026-04-22 v0.57.0 audit. Design §5.16 previously listed `/gse:deliver` in both the "MUST consult `.gse/plan.yaml.status`" list AND the "exempt from preflight" list — a logical contradiction (an activity cannot simultaneously be obliged to consult a guard and exempt from it). Spec §14 lifecycle guardrail 3 was correct (deliver only in exempt); the bug was in the design doc. Fixed by retracting deliver from the MUST consult list, and clarifying the exempt prose into three explicit categories so the reader understands why deliver is exempt.
+
+### Changed
+
+- **`gse-one-implementation-design.md` §5.16 Sprint Freeze Design Mechanics — MUST consult list** — `/gse:deliver (transitions TASK reviewed or done → delivered)` entry retracted. The four remaining entries (`/gse:task`, `/gse:produce`, `/gse:review`, `/gse:fix`) are real consumers of the guard: they mutate TASK state within a sprint and must check the sprint is still active before doing so. `/gse:deliver` belongs to a distinct category (transition performer, see below).
+- **`gse-one-implementation-design.md` §5.16 — Exempt activities prose** — single-line enumeration upgraded to a three-category typology: *closed-sprint consumers* (`/gse:compound`, `/gse:integrate` — operate on a frozen sprint post-delivery), *non-mutating activities* (11 activities that do not transition TASK state), *sprint-opening* (`/gse:plan --strategic`), and the *transition performer itself* (`/gse:deliver` — Step 9.2 sets `plan.yaml.status: completed`, the freeze trigger; a preflight check would be pointless or self-blocking). The reader now understands *why* each exempt activity is exempt, not just *that* it is.
+- **`gse-one-spec.md` §14 lifecycle guardrail 3 — Exempt prose** — propagated the same three-category typology in compressed form, cross-referenced to design §5.16 for mechanics. Spec + design now carry the same conceptual structure.
+
+### Audit trail
+
+- **Cluster 8 of 10** from the 2026-04-22 v0.57.0 audit resolved per user validation of Q1–Q4: retraction from MUST consult (Q1 A1), exempt-prose upgrade to 3 categories (Q2 B1), spec §14 mirror (Q3 C1), patch bump (Q4).
+- **Conceptual contribution** — the three-category typology (closed-sprint consumer / non-mutating / transition performer) is a reusable pattern for any future lifecycle guardrail that has a transition-performer edge case. Documents *why* deliver is different rather than hiding the nuance in a flat list.
+- **Remaining audit cluster:** Cluster 9 (deploy `skip` role retraction — dead enum value). The final cluster ships as **minor v0.60.0** to close the 2026-04-22 audit remediation series.
+
 ## [0.59.4] - 2026-04-22
 
 Layers impacted: **design** (§5.15 Deploy & Recovery Extensions — Test-Specific Guardrails subsection expanded from 1 to 3 guardrails), **implementation** (activities/deliver.md Step 1.5 — new Guardrail 2 block with 4-option Gate; activities/tests.md Options — new `--run --level <level>` flag).

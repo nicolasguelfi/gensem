@@ -1384,9 +1384,13 @@ The spec-level *Sprint Freeze* guardrail materializes as follows:
 - `/gse:produce` (transitions TASK `planned` → `in-progress` → `review`)
 - `/gse:review` (transitions TASK `review` → `reviewed` if no HIGH/MEDIUM findings, else `review` → `fixing`)
 - `/gse:fix` (transitions TASK `fixing` → `done`)
-- `/gse:deliver` (transitions TASK `reviewed` or `done` → `delivered`)
 
-**Activities exempt from the Sprint Freeze preflight** (operate only on closed sprints or do not mutate TASK state within a frozen sprint): `/gse:compound`, `/gse:integrate`, `/gse:pause`, `/gse:resume`, `/gse:go`, `/gse:status`, `/gse:health`, `/gse:backlog`, `/gse:learn`, `/gse:hug`, `/gse:collect`, `/gse:assess`, `/gse:plan --strategic`, `/gse:deploy`, `/gse:deliver`.
+**Activities exempt from the Sprint Freeze preflight** (three categories — *closed-sprint consumers* operate on a sprint that is already frozen, e.g. post-delivery capitalization; *non-mutating activities* do not transition TASK state; *transition performers* are the activity that effects the freeze transition itself, and consulting a guard they are about to set would be self-defeating):
+
+- `/gse:compound`, `/gse:integrate` — closed-sprint consumers (operate after deliver in LC03).
+- `/gse:pause`, `/gse:resume`, `/gse:go`, `/gse:status`, `/gse:health`, `/gse:backlog`, `/gse:learn`, `/gse:hug`, `/gse:collect`, `/gse:assess`, `/gse:deploy` — non-mutating activities (do not transition TASK state; `/gse:deploy` writes `deploy.json` but not `backlog.yaml`).
+- `/gse:plan --strategic` — sprint-opening activity; resets `plan.yaml.status` to `active` for the successor sprint.
+- `/gse:deliver` — **transition performer**: Step 9.2 is the line that sets `plan.yaml.status: completed` (the freeze trigger itself). A preflight check at the start of deliver would be either pointless (status still `active`) or self-blocking (status already `completed`). Deliver is therefore exempt by necessity, not by scope.
 
 **Promotion sequence for option 1 of the Sprint Freeze Gate:**
 

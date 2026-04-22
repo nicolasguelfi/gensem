@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.48.3] - 2026-04-22
+
+Layers impacted: **implementation** (`principles/knowledge-transfer.md` only)
+
+**Post-audit proposition P8 — P14 preamble labels sweep (principle file).** The spec §P14 (lines 935-945) declares the 5-option learning-preamble labels as canonical — explicitly stating "Labels are canonical — implementations use this exact wording." A previous version sweep aligned spec, `learn.md`, `coach.md`, and `gse-orchestrator.md` to the canonical form. The principle source file `gse-one/src/principles/knowledge-transfer.md` was missed. P8 fixes that omission.
+
+### Fixed
+- **`knowledge-transfer.md` Example 1 (Merge strategies, lines 45-46)** — option labels `Yes, quick overview (5 min)` and `Yes, deeper session (15 min)` now match the canonical `Quick overview (5 min)` and `Deep session (15 min)` (spec §P14 lines 939-940). Descriptions after the em-dash are preserved (they are context-adapted per axis — the label before the em-dash is what must be canonical).
+- **`knowledge-transfer.md` Example 2 (Acceptance criteria, lines 159-160)** — same two label corrections.
+
+### Notes
+- Options 3 (`Not now`), 4 (`Not interested`), 5 (`Discuss`) were already canonical in both examples; no change.
+- Descriptions after the em-dash remain context-adapted ("key concepts + examples from your REQs" etc.) — this is the documented pattern: the label identifies the option canonically, the description is tailored to the pedagogy topic.
+- No spec/design/template/tool changes — the canonical source of truth (spec §P14) was already correct; the work is fully inside the principle source file whose prose had drifted.
+- 4 lines changed in 1 source file; plugin/ regens propagate to `plugin/skills/*`, `plugin/commands/*`, `plugin/opencode/*` where applicable.
+
 ## [0.48.2] - 2026-04-22
 
 Layers impacted: **implementation** (`pause.md` only)

@@ -42,8 +42,8 @@ Knowledge transfer is cumulative and tracked. The agent maintains learning notes
      squash vs merge vs rebase will help you control project history.
 
      **Options:**
-     1. Yes, quick overview (5 min) — key concepts + how they apply to your project
-     2. Yes, deeper session (15 min) — concepts + examples + practice exercise
+     1. Quick overview (5 min) — key concepts + how they apply to your project
+     2. Deep session (15 min) — concepts + examples + practice exercise
      3. Not now — remind me next sprint
      4. Not interested — don't propose this topic again
      5. Discuss — tell me more before I decide
@@ -156,8 +156,8 @@ yet. These are testable conditions that define when a requirement is "done" —
 they directly feed your test strategy.
 
 **Options:**
-1. Yes, quick overview (5 min) — key concepts + examples from your REQs
-2. Yes, deeper session (15 min) — concepts + rewrite your REQ-007 together
+1. Quick overview (5 min) — key concepts + examples from your REQs
+2. Deep session (15 min) — concepts + rewrite your REQ-007 together
 3. Not now — remind me next sprint
 4. Not interested — don't propose this topic again
 5. Discuss — tell me more before I decide

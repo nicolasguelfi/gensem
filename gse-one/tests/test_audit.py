@@ -182,14 +182,18 @@ class TestAuditFileScanExclusions(unittest.TestCase):
 
 
 class TestAuditCategoriesPresent(unittest.TestCase):
-    """Smoke test: audit.py declares the expected 12 deterministic categories.
-    Guards against accidental removal of a category."""
+    """Smoke test: audit.py declares the expected 17 deterministic categories
+    (12 cohesion + 5 distribution hygiene). Guards against accidental removal."""
 
     def test_categories_list_is_complete(self):
         expected = {
+            # Cohesion categories (A-E intersection with deterministic checks)
             "version", "file_integrity", "plugin_parity", "cross_refs",
             "numeric", "links", "git", "python", "templates", "todos",
             "test_coverage", "freshness",
+            # Category F — Distribution hygiene (plugin-as-product invariants)
+            "plugin_language", "plugin_secrets", "plugin_personal",
+            "plugin_debug", "plugin_runtime_paths",
         }
         actual = set(audit.CATEGORIES)
         self.assertEqual(expected, actual)

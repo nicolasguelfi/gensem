@@ -78,6 +78,12 @@ CATEGORIES = [
     "todos",
     "test_coverage",
     "freshness",
+    # Category F — Distribution hygiene (plugin-as-product invariants)
+    "plugin_language",
+    "plugin_secrets",
+    "plugin_personal",
+    "plugin_debug",
+    "plugin_runtime_paths",
 ]
 
 
@@ -977,6 +983,380 @@ def audit_freshness() -> list:
 
 
 # ---------------------------------------------------------------------------
+# Categories 13-17 — Distribution hygiene (plugin as distributed product)
+# These checks treat gse-one/plugin/ as a finished product with stricter
+# invariants than the source tree (no French residuals, no secrets, no
+# maintainer leaks, no debug residue, intact runtime-path references).
+# ---------------------------------------------------------------------------
+
+
+_PLUGIN_TEXT_EXTS = (".md", ".mdc", ".py", ".ts", ".json", ".yaml", ".yml")
+
+
+def _iter_plugin_files(exts: tuple = _PLUGIN_TEXT_EXTS):
+    for f in PLUGIN.rglob("*"):
+        if not f.is_file() or f.suffix not in exts:
+            continue
+        if "__pycache__" in f.parts or ".venv" in f.parts:
+            continue
+        yield f
+
+
+def audit_plugin_language() -> list:
+    """Detect residual non-English prose in the distributed plugin.
+
+    Rule: all content under gse-one/plugin/ must be English, except zones
+    explicitly marked with `<!-- multilingual by design: <reason> -->`
+    and language-selection UI labels (Français, Español, 日本語, etc.).
+
+    Exclusion-zone semantics:
+      - Opened by  `<!-- multilingual by design: <reason> -->`
+      - Closed by  `<!-- /multilingual by design -->`  (explicit)
+                   OR by the next markdown header (`### `, `## `, `# ` …)
+                   (implicit; useful when the zone is an entire subsection).
+    """
+    findings: list = []
+    accent_re = re.compile(r"[àâäçéèêëîïôöùûüÿœæÀÂÄÇÉÈÊËÎÏÔÖÙÛÜŸŒÆ]")
+    marker_start_re = re.compile(
+        r"<!--\s*multilingual by design", re.IGNORECASE
+    )
+    marker_end_re = re.compile(
+        r"<!--\s*/\s*multilingual by design", re.IGNORECASE
+    )
+    header_re = re.compile(r"^#{1,6}\s")
+    label_re = re.compile(
+        r'label:\s*"(Français|Español|日本語|Deutsch|English)"'
+    )
+    prompt_re = re.compile(
+        r"(Quelle langue|¿Qué idioma|どの言語|Welche Sprache)"
+    )
+    hits: list = []
+    for f in _iter_plugin_files():
+        text = _read_text(f)
+        in_exclusion = False
+        for i, line in enumerate(text.split("\n"), start=1):
+            # Start has priority over end: a start-marker line may contain a
+            # textual mention of the end-marker (documentation of the protocol).
+            if marker_start_re.search(line):
+                in_exclusion = True
+                continue
+            if marker_end_re.search(line):
+                in_exclusion = False
+                continue
+            if header_re.match(line) and in_exclusion:
+                in_exclusion = False
+                # fall through — the header line itself is still audited
+            if label_re.search(line) or prompt_re.search(line):
+                continue
+            if in_exclusion:
+                continue
+            if accent_re.search(line):
+                hits.append(
+                    f"{f.relative_to(REPO_ROOT)}:{i}: {line.strip()[:100]}"
+                )
+
+    if hits:
+        findings.append(
+            Finding(
+                "plugin_language",
+                "error",
+                f"{len(hits)} residual non-English character(s) in distributed plugin",
+                "\n".join(hits[:15]) + ("\n..." if len(hits) > 15 else ""),
+                "Translate to English or protect the block with "
+                "`<!-- multilingual by design: <reason> -->`",
+            )
+        )
+    else:
+        findings.append(
+            Finding(
+                "plugin_language",
+                "info",
+                "plugin/ is English-monolingual (excluded zones respected)",
+            )
+        )
+    return findings
+
+
+def audit_plugin_secrets() -> list:
+    """Scan plugin/ for patterns that look like leaked secrets or credentials.
+
+    Allow-lists:
+      - Explicit placeholders: placeholder, example, dummy, fake, YOUR_, <tag>
+      - Example strings: abc<digits>, test<digits>, live-abc<...>, sample-,
+        changeme, xyz<digits>
+      - Path-level: plugin/agents/security-auditor.md and its opencode
+        mirror document secret detection patterns by role — their
+        example strings are content, not leaks.
+    """
+    findings: list = []
+    patterns = [
+        (
+            r"-----BEGIN\s+(RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----",
+            "PEM private key",
+        ),
+        (r"\bsk-[a-zA-Z0-9]{20,}", "OpenAI-style API key"),
+        (r"\bghp_[a-zA-Z0-9]{36}\b", "GitHub personal access token"),
+        (r"\bxox[baprs]-[0-9]{10,}-", "Slack token"),
+        (r"\bAKIA[0-9A-Z]{16}\b", "AWS access key ID"),
+        (r"\bAIza[0-9A-Za-z\-_]{35}\b", "Google API key"),
+        (r"\bBearer\s+[A-Za-z0-9._\-]{30,}", "Bearer token"),
+        (
+            r'(?i)\b(api_key|apikey|secret_key|auth_token|password)\s*[:=]\s*["\']([^"\']{16,})["\']',
+            "assigned secret",
+        ),
+    ]
+    placeholder_re = re.compile(
+        r"(?i)(placeholder|example|dummy|fake|your[-_]|YOUR_|<[a-z]+>|"
+        r"\babc[0-9a-z]+\b|\btest[0-9a-z]+\b|\bxyz[0-9a-z]*\b|"
+        r"\blive[-_]abc|\bsample[-_]|changeme)"
+    )
+    path_allowlist = {
+        "gse-one/plugin/agents/security-auditor.md",
+        "gse-one/plugin/opencode/agents/security-auditor.md",
+    }
+    hits: list = []
+    for f in _iter_plugin_files():
+        rel = str(f.relative_to(REPO_ROOT))
+        if rel in path_allowlist:
+            continue
+        text = _read_text(f)
+        for i, line in enumerate(text.split("\n"), start=1):
+            if placeholder_re.search(line):
+                continue
+            for pat, label in patterns:
+                if re.search(pat, line):
+                    hits.append(
+                        f"{rel}:{i}: [{label}] {line.strip()[:80]}"
+                    )
+                    break
+
+    for ext in (".env", ".pem", ".key", ".pfx", ".p12"):
+        for f in PLUGIN.rglob(f"*{ext}"):
+            hits.append(
+                f"{f.relative_to(REPO_ROOT)}: forbidden file extension '{ext}'"
+            )
+
+    if hits:
+        findings.append(
+            Finding(
+                "plugin_secrets",
+                "error",
+                f"{len(hits)} potential secret/credential leak(s) in plugin/",
+                "\n".join(hits[:10]) + ("\n..." if len(hits) > 10 else ""),
+                "Remove the secret or replace with an explicit placeholder "
+                "(e.g., 'your-api-key-here')",
+            )
+        )
+    else:
+        findings.append(
+            Finding(
+                "plugin_secrets",
+                "info",
+                "no secret/credential patterns detected in plugin/",
+            )
+        )
+    return findings
+
+
+def audit_plugin_personal() -> list:
+    """Scan plugin/ for maintainer-specific personal information leaks.
+
+    Allow-list: standard Linux service-user home paths (deploy, root,
+    ubuntu, admin, www-data, app, user, ec2-user, debian, pi, git,
+    docker, jenkins, postgres, mysql) do NOT count as personal leaks —
+    they are generic infrastructure conventions.
+    """
+    findings: list = []
+    service_users = (
+        "deploy|root|ubuntu|admin|www-data|app|user|ec2-user|debian|"
+        "pi|git|docker|jenkins|postgres|mysql|redis|nginx|apache"
+    )
+    patterns = [
+        (r"/Users/[a-z][a-z0-9._\-]*", "macOS personal path"),
+        (
+            rf"/home/(?!({service_users})\b)[a-z][a-z0-9._\-]*",
+            "Linux personal path (non-service user)",
+        ),
+        (r"/Volumes/[A-Z][A-Za-z0-9_\-]*", "macOS volume path"),
+        (r"\bnicolas\.guelfi\b", "maintainer email local-part"),
+        (r"\bmessir\s+Dropbox\b", "Dropbox workspace hint"),
+        (r"\bDropbox-[a-z0-9._\-]+\b", "Dropbox-account path"),
+        (
+            r"\b[a-zA-Z0-9._%+\-]+@(laposte\.net|uni\.lu)\b",
+            "maintainer personal email",
+        ),
+    ]
+    hits: list = []
+    for f in _iter_plugin_files():
+        text = _read_text(f)
+        for i, line in enumerate(text.split("\n"), start=1):
+            for pat, label in patterns:
+                if re.search(pat, line):
+                    hits.append(
+                        f"{f.relative_to(REPO_ROOT)}:{i}: [{label}] "
+                        f"{line.strip()[:80]}"
+                    )
+                    break
+
+    if hits:
+        findings.append(
+            Finding(
+                "plugin_personal",
+                "error",
+                f"{len(hits)} maintainer-identity leak(s) in plugin/",
+                "\n".join(hits[:10]) + ("\n..." if len(hits) > 10 else ""),
+                "Replace with generic placeholders: <user>, <project>, "
+                "/path/to/...",
+            )
+        )
+    else:
+        findings.append(
+            Finding(
+                "plugin_personal",
+                "info",
+                "no maintainer-personal paths/identities in plugin/",
+            )
+        )
+    return findings
+
+
+def audit_plugin_debug() -> list:
+    """Scan plugin/ for debug residue (prints, dead branches, commented-out code)."""
+    findings: list = []
+    cli_tools = {"dashboard.py", "deploy.py", "project-audit.py"}
+    hits: list = []
+
+    for f in PLUGIN.rglob("*.py"):
+        if "__pycache__" in f.parts:
+            continue
+        is_cli_tool = f.name in cli_tools and f.parent.name == "tools"
+        text = _read_text(f)
+        for i, line in enumerate(text.split("\n"), start=1):
+            stripped = line.strip()
+            if not is_cli_tool and re.match(r"(print|pprint)\s*\(", stripped):
+                hits.append(
+                    f"{f.relative_to(REPO_ROOT)}:{i}: debug print — "
+                    f"{stripped[:80]}"
+                )
+            if re.match(
+                r'if\s+(False|0|__name__\s*==\s*["\']debug["\'])\s*:', stripped
+            ):
+                hits.append(
+                    f"{f.relative_to(REPO_ROOT)}:{i}: dead branch — "
+                    f"{stripped[:80]}"
+                )
+
+    for f in PLUGIN.rglob("*.ts"):
+        text = _read_text(f)
+        for i, line in enumerate(text.split("\n"), start=1):
+            if re.search(r"\bconsole\.(log|debug|info)\s*\(", line):
+                hits.append(
+                    f"{f.relative_to(REPO_ROOT)}:{i}: console.log — "
+                    f"{line.strip()[:80]}"
+                )
+
+    code_comment_re = re.compile(r"^\s*(#|//)\s+.*[=(){};]")
+    for f in list(PLUGIN.rglob("*.py")) + list(PLUGIN.rglob("*.ts")):
+        if "__pycache__" in f.parts:
+            continue
+        text = _read_text(f)
+        lines = text.split("\n")
+        run = 0
+        start = 0
+        for i, line in enumerate(lines, start=1):
+            if code_comment_re.match(line):
+                if run == 0:
+                    start = i
+                run += 1
+            else:
+                if run >= 4:
+                    hits.append(
+                        f"{f.relative_to(REPO_ROOT)}:{start}: "
+                        f"commented-out code block ({run} lines)"
+                    )
+                run = 0
+        if run >= 4:
+            hits.append(
+                f"{f.relative_to(REPO_ROOT)}:{start}: "
+                f"commented-out code block ({run} lines)"
+            )
+
+    if hits:
+        findings.append(
+            Finding(
+                "plugin_debug",
+                "warning",
+                f"{len(hits)} debug residue occurrence(s) in plugin/",
+                "\n".join(hits[:15]) + ("\n..." if len(hits) > 15 else ""),
+                "Remove debug prints / dead branches / commented-out code. "
+                "CLI tools (dashboard.py, deploy.py, project-audit.py) are "
+                "allow-listed for print().",
+            )
+        )
+    else:
+        findings.append(
+            Finding("plugin_debug", "info", "no debug residue in plugin/")
+        )
+    return findings
+
+
+def audit_plugin_runtime_paths() -> list:
+    """Verify that every `$(cat ~/.gse-one)/<subpath>` in plugin/ points to a
+    subpath distributed by install.py in at least one install mode.
+    """
+    findings: list = []
+    allowed_subpaths = {
+        "tools",
+        "templates",
+        "references",
+        "VERSION",
+        "skills",
+        "commands",
+        "agents",
+        "rules",
+        "hooks",
+        "opencode",
+    }
+    ref_re = re.compile(r"\$\(cat\s+~/\.gse-one\)/([A-Za-z0-9_\-]+)")
+    hits_unknown: list = []
+    seen_paths: dict = {}
+    for f in _iter_plugin_files((".md", ".mdc", ".py", ".ts")):
+        text = _read_text(f)
+        for i, line in enumerate(text.split("\n"), start=1):
+            for m in ref_re.finditer(line):
+                top = m.group(1)
+                seen_paths[top] = seen_paths.get(top, 0) + 1
+                if top not in allowed_subpaths:
+                    hits_unknown.append(
+                        f"{f.relative_to(REPO_ROOT)}:{i}: "
+                        f"unknown subpath '{top}' — {line.strip()[:80]}"
+                    )
+
+    if hits_unknown:
+        findings.append(
+            Finding(
+                "plugin_runtime_paths",
+                "error",
+                f"{len(hits_unknown)} runtime path reference(s) to unknown subpath(s)",
+                "\n".join(hits_unknown[:10])
+                + ("\n..." if len(hits_unknown) > 10 else ""),
+                f"Either add the subpath to install.py distribution or fix "
+                f"the reference. Allowed roots: {sorted(allowed_subpaths)}",
+            )
+        )
+    else:
+        findings.append(
+            Finding(
+                "plugin_runtime_paths",
+                "info",
+                f"all $(cat ~/.gse-one)/X references valid "
+                f"({len(seen_paths)} distinct roots used)",
+            )
+        )
+    return findings
+
+
+# ---------------------------------------------------------------------------
 # Aggregator
 # ---------------------------------------------------------------------------
 
@@ -994,6 +1374,11 @@ _CATEGORY_FUNCS = {
     "todos": audit_todos,
     "test_coverage": audit_test_coverage,
     "freshness": audit_freshness,
+    "plugin_language": audit_plugin_language,
+    "plugin_secrets": audit_plugin_secrets,
+    "plugin_personal": audit_plugin_personal,
+    "plugin_debug": audit_plugin_debug,
+    "plugin_runtime_paths": audit_plugin_runtime_paths,
 }
 
 

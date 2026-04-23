@@ -149,6 +149,17 @@ verdict_rationale: "<short explanation — especially critical for FALSE_POSITIV
 
 When the auditor is spawned in initial-audit mode (the default `/gse-audit` flow), the `verdict` field is omitted.
 
+### 11. Product-vs-source dualism (Category F)
+
+The GSE-One methodology has two outputs: the *source* (under `gse-one/src/` and the governance docs `gse-one-spec.md`, `gse-one-implementation-design.md`) and the *distributed plugin* (under `gse-one/plugin/`). They have different quality invariants.
+
+- **Source** prizes cohesion with spec/design, completeness of rationale, traceability of decisions. The Principles 1–7 above target this layer.
+- **Distributed plugin** prizes production-readiness: English-only prose (except explicitly marked multilingual zones), no secret/credential leaks, no maintainer-personal paths or identities, no debug residue in code, intact runtime paths. These invariants are encoded as Category F jobs (`plugin-language-hygiene`, `plugin-secret-leak-hygiene`, `plugin-personal-leak-hygiene`, `plugin-debug-residue-hygiene`, `plugin-runtime-path-integrity`).
+
+When auditing, apply source-oriented principles (P1–P10) to `src/` and governance docs; apply distribution-oriented principles (Category F jobs) to `plugin/`. A finding in `plugin/` that would not be problematic in `src/` is still a finding — the distribution bar is higher. For example, a `TODO` in `src/activities/reqs.md` is Info (tracked in CHANGELOG or backlog), but a `TODO` in `plugin/skills/reqs/SKILL.md` is a warning (distributed to end users without tracking context).
+
+Category F jobs are deterministic (run via `audit.py`, not an LLM sub-agent). The auditor agent is rarely spawned for a Category F job directly — the Python engine handles the verdict. The auditor intervenes in Category F only during a **verification pass** (Principle 10), where an LLM re-inspection confirms whether a Category F finding is a true leak or a false positive (e.g., an example pattern in `security-auditor.md` detected by the secret regex).
+
 ## Audit dimensions
 
 The auditor operates across **6 dimensions**, each with ~4 canonical checks. This catalog is a reference; concrete prompts may combine or extend.

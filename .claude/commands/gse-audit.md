@@ -1,5 +1,5 @@
 ---
-description: "Audit the GSE-One methodology repository for coherence (Categories A-D) and strategic quality (Category E). Orchestrates the Python deterministic engine (audit.py) + 21 parallel LLM sub-agents defined in .claude/audit-jobs.json. Invoked from the root of gensem or a fork."
+description: "Audit the GSE-One methodology repository for coherence (Categories A-D), strategic quality (Category E), and distribution hygiene (Category F). Orchestrates the Python deterministic engine (audit.py) + 26 parallel LLM sub-agents defined in .claude/audit-jobs.json. Invoked from the root of gensem or a fork."
 ---
 
 # /gse-audit — Methodology audit (coherence + strategic critique)
@@ -10,7 +10,7 @@ Arguments: $ARGUMENTS
 
 This command audits a **GSE-One methodology repository** (upstream or a fork). It is **not** for auditing user projects — for that, use `/gse:status`, `/gse:health`, `/gse:review`, `/gse:assess`, `/gse:compound`, `/gse:collect`.
 
-The audit covers **21 jobs** in 5 categories, listed in `.claude/audit-jobs.json`. All jobs run in parallel.
+The audit covers **26 jobs** in 6 categories, listed in `.claude/audit-jobs.json`. All jobs run in parallel.
 
 | Category | Purpose | # jobs | Non-directional | Directional |
 |:-:|---|:-:|:-:|:-:|
@@ -19,17 +19,21 @@ The audit covers **21 jobs** in 5 categories, listed in `.claude/audit-jobs.json
 | C | Layer pair (spec ↔ design) | 1 | — | ✓ |
 | D | Horizontal cluster (impl + design + spec) | 9 | — | ✓ |
 | E | Qualitative critique (strategic) | 4 | — | ✓ |
+| F | Distribution hygiene (plugin-as-product invariants) | 5 | ✓ | — |
+
+**Category F — Distribution hygiene** treats `gse-one/plugin/` as a finished product shipped to end users. It applies stricter invariants than the source tree: English-monolingual (except marked multilingual zones), no secret/credential leaks, no maintainer-personal paths/identities, no debug residue in Python/TypeScript code, and all runtime path references (`$(cat ~/.gse-one)/X`) must resolve against subpaths distributed by `install.py`. All 5 F-jobs run deterministically via `audit.py` (no LLM sub-agent needed) and are fast enough (<5s total) for CI use.
 
 ## Options
 
 | Flag | Description |
 |------|-------------|
-| (no args) | Full audit: all 21 jobs in parallel + Python deterministic engine |
-| `--deterministic-only` | Skip LLM jobs, run Python engine only. Fast. |
-| `--job <id>` | Run only a specific job by id (e.g. `deploy-cluster`) |
-| `--category <A\|B\|C\|D\|E>` | Run only jobs in a specific category |
-| `--coherence-only` | Skip Category E (no strategic recommendations) |
+| (no args) | Full audit: all 26 jobs in parallel + Python deterministic engine |
+| `--deterministic-only` | Skip LLM jobs, run Python engine only. Fast (also covers all 5 Category F jobs, which are deterministic). |
+| `--job <id>` | Run only a specific job by id (e.g. `deploy-cluster`, `plugin-language-hygiene`) |
+| `--category <A\|B\|C\|D\|E\|F>` | Run only jobs in a specific category |
+| `--coherence-only` | Skip Category E (no strategic recommendations) — keeps A, B, C, D, F |
 | `--strategic-only` | Run only Category E (4 qualitative critique jobs) |
+| `--distribution-only` | Run only Category F (5 distribution-hygiene jobs via `audit.py`) |
 | `--format <json\|md>` | Output format (default: md) |
 | `--fail-on <error\|warning>` | Exit non-zero if findings at this severity or higher |
 | `--no-save` | Do not save the report to `_LOCAL/audits/` |

@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.62.0] - 2026-04-23
+
+Layers impacted: **maintainer tooling** (`gse-one/audit.py` +5 deterministic categories, `.claude/audit-jobs.json` +5 jobs, `.claude/commands/gse-audit.md` category F documentation, `.claude/agents/methodology-auditor.md` Principle 11), **methodology** (`src/activities/hug.md` multilingual marker relocation).
+
+**Minor release — audit category F (Distribution hygiene).** Introduces a sixth audit category treating the distributed plugin (`gse-one/plugin/`) as a finished product with stricter invariants than the source tree. Five deterministic checks run via `audit.py` (no LLM sub-agent), fast enough for CI. Complements the existing A-E categories which target internal cohesion and strategic critique — category F targets production-readiness of the distributed artefact.
+
+**Rationale.** The existing 21 LLM jobs + 12 Python deterministic categories focused on internal coherence (spec ↔ design ↔ impl) and uniformity within source layers. Nothing treated the plugin as a distribution target whose quality bar is higher than the source. The targeted French-language audit (v0.61.1) revealed this structural gap: residual non-English content persisted in the distributed plugin for months without any automated detection. Category F fills the gap by encoding 5 distribution invariants (language, secrets, personal info, debug residue, runtime path integrity) as deterministic Python checks, turning one-off manual sweeps into continuous automated guardrails.
+
+### Added
+
+- **`gse-one/audit.py` — 5 new deterministic audit functions** in Category F (Distribution hygiene):
+  - `audit_plugin_language()` — scans `plugin/**/*.{md,mdc,py,ts,json,yaml,yml}` for accented Latin characters outside marked multilingual zones. Zone semantics: opened by `<!-- multilingual by design: <reason> -->`, closed by explicit `<!-- /multilingual by design -->` OR by the next markdown header (implicit). Language-selection UI labels (Français/Español/日本語/Deutsch/English) and the four Step 0 multilingual fallback prompts are allow-listed unconditionally.
+  - `audit_plugin_secrets()` — scans for leaked credentials: PEM private keys, OpenAI/GitHub/Slack/AWS/Google API keys, Bearer tokens, assigned secrets (`api_key = "..."`). Placeholder allow-list: `placeholder`, `example`, `YOUR_`, `<tag>`, `abc<digits>`, `test<digits>`, `xyz`, `live-abc`, `sample-`, `changeme`. Path-level allow-list: `security-auditor.md` (Claude + opencode) — these agents document detection patterns by role.
+  - `audit_plugin_personal()` — scans for maintainer-identity leaks: `/Users/<name>`, `/Volumes/<label>`, `nicolas.guelfi`, `@laposte.net`, `@uni.lu`, Dropbox workspace hints. Linux service users allow-listed (deploy, root, ubuntu, admin, www-data, app, user, ec2-user, debian, pi, git, docker, jenkins, postgres, mysql, redis, nginx, apache) — these are generic infrastructure conventions, not personal paths.
+  - `audit_plugin_debug()` — scans Python/TypeScript code for debug residue: `print()` / `pprint()` outside CLI tools (dashboard.py, deploy.py, project-audit.py), `console.log/debug/info`, dead branches (`if False:`, `if 0:`, `if __name__ == "debug":`), commented-out code blocks of 4+ consecutive lines matching a code heuristic (starts with `# `/`// ` AND contains `=()/{};`).
+  - `audit_plugin_runtime_paths()` — scans markdown/code for `$(cat ~/.gse-one)/<subpath>` references and validates each top-level subpath against the install.py distribution allow-list (tools, templates, references, VERSION, skills, commands, agents, rules, hooks, opencode).
+- **`.claude/audit-jobs.json` — 5 new Category F job entries** mirroring the Python checks for LLM verification passes (Principle 10 structured verdict): `plugin-language-hygiene`, `plugin-secret-leak-hygiene`, `plugin-personal-leak-hygiene`, `plugin-debug-residue-hygiene`, `plugin-runtime-path-integrity`.
+- **`.claude/agents/methodology-auditor.md` — Principle 11 (Product-vs-source dualism).** Documents the distinction between source-oriented audit (Principles 1-10) and distribution-oriented audit (Category F), with guidance for verification passes on Category F findings.
+- **`.claude/commands/gse-audit.md` — Category F row in the scope table** + `--distribution-only` flag documentation + intro paragraph on F semantics and CI-friendliness.
+- **`src/activities/hug.md` Step 0 subsection marker relocation** — the `<!-- multilingual by design -->` marker moved from Step 0 substep 3 to the Step 0 header, so the new exclusion-zone semantic (extends until the next markdown header) now covers the entire Step 0 subsection including the English/Français/Español/Deutsch list in substep 2 and the French text fallback label at line 64.
+
+### Changed
+
+- **Audit engine CATEGORIES list** extended from 12 to 17 deterministic categories (adds: plugin_language, plugin_secrets, plugin_personal, plugin_debug, plugin_runtime_paths).
+- **`/gse-audit` catalog** extended from 21 to 26 jobs across 6 categories (was 5).
+- **`gse-audit.md` description** updated: "Orchestrates the Python deterministic engine (audit.py) + 26 parallel LLM sub-agents" (was: 21).
+
+### Verification
+
+Smoke test (`python3 gse-one/audit.py --category plugin_language --category plugin_secrets --category plugin_personal --category plugin_debug --category plugin_runtime_paths`) on the v0.61.1 baseline returns 5/5 INFO findings:
+- `plugin_language` → plugin/ is English-monolingual (excluded zones respected)
+- `plugin_secrets` → no secret/credential patterns detected
+- `plugin_personal` → no maintainer-personal paths/identities
+- `plugin_debug` → no debug residue
+- `plugin_runtime_paths` → all `$(cat ~/.gse-one)/X` references valid (7 distinct roots used)
+
+### Methodology notes
+
+- Category F is the first non-directional category orthogonal to the source/spec/design axis — it audits the distribution artefact as a product, not as a projection of a higher layer. This matches a legitimate third dimension of quality absent from the original A-E taxonomy.
+- All 5 checks are deterministic (Python, no LLM). Total runtime <5s. Suitable for CI gating via `--fail-on error`.
+- The secret-detection allow-list uses heuristic patterns (abc123, test123, etc.) rather than a path allow-list to keep future edits of `security-auditor.md` detectable if real secrets ever slip in. Path allow-list applies only to `security-auditor.md` itself (and opencode mirror) because its role is to document detection patterns by design.
+- Principle 11 makes explicit that a finding tolerable in `src/` may be an error in `plugin/` — the distribution bar is higher.
+
 ## [0.61.1] - 2026-04-23
 
 Layers impacted: **documentation** (`src/activities/{hug,compound,review}.md`, `src/agents/gse-orchestrator.md`), **implementation** (`gse_generate.py` comments, `plugin/tools/dashboard.py` comment).

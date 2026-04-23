@@ -505,6 +505,100 @@
         "Human-in-the-loop: Where can the human intervene? Where must they? Is the balance right?",
         "Graceful degradation: If a specialized agent fails, does the system continue?"
       ]
+    },
+    {
+      "id": "plugin-language-hygiene",
+      "category": "F",
+      "type": "file_quality",
+      "refinement": "none",
+      "files": [
+        "gse-one/plugin/**/*.md",
+        "gse-one/plugin/**/*.mdc",
+        "gse-one/plugin/**/*.py",
+        "gse-one/plugin/**/*.ts",
+        "gse-one/plugin/**/*.json",
+        "gse-one/plugin/**/*.yaml",
+        "gse-one/plugin/**/*.yml"
+      ],
+      "scope": "All distributed plugin files must be English-only. Exception zones MUST be explicitly marked with '<!-- multilingual by design: <reason> -->' opening markers and optionally closed by '<!-- /multilingual by design -->'. Implicit closure occurs at the next markdown header. Language-selection UI labels (Français, Español, 日本語, Deutsch, English) and the four Step 0 multilingual prompt translations are allow-listed unconditionally.",
+      "checks": [
+        "No accented Latin characters outside marked exclusion zones",
+        "Exclusion-zone marker protocol: opener '<!-- multilingual by design: <reason> -->', explicit closer '<!-- /multilingual by design -->', implicit closer = next markdown header",
+        "Language-selection labels inside AskUser([...]) blocks pass automatically",
+        "The four Step 0 fallback prompts (Quelle langue / ¿Qué idioma / どの言語 / Welche Sprache) pass automatically"
+      ]
+    },
+    {
+      "id": "plugin-secret-leak-hygiene",
+      "category": "F",
+      "type": "file_quality",
+      "refinement": "none",
+      "files": [
+        "gse-one/plugin/**/*"
+      ],
+      "scope": "Distributed plugin must not contain any secret, API key, token, private key, or credential.",
+      "checks": [
+        "No PEM private key blocks",
+        "No OpenAI/GitHub/Slack/AWS/Google API keys",
+        "No Bearer tokens with >30 character payloads",
+        "No assignments: api_key/apikey/secret_key/auth_token/password = '<value>'",
+        "No files with extensions: .env, .pem, .key, .pfx, .p12",
+        "Explicit placeholders (placeholder, example, YOUR_, <tag>, abc<digits>, test<digits>, xyz, live-abc, sample-, changeme) are allow-listed",
+        "Path-level allow-list: plugin/agents/security-auditor.md and plugin/opencode/agents/security-auditor.md (documentation of detection patterns is their role)"
+      ]
+    },
+    {
+      "id": "plugin-personal-leak-hygiene",
+      "category": "F",
+      "type": "file_quality",
+      "refinement": "none",
+      "files": [
+        "gse-one/plugin/**/*"
+      ],
+      "scope": "Distributed plugin must not leak maintainer-specific personal information (paths, emails, workspace hints).",
+      "checks": [
+        "No absolute paths /Users/<name>",
+        "No /Volumes/<label> (macOS volume labels are machine-specific)",
+        "No /home/<user> except standard service users (deploy, root, ubuntu, admin, www-data, app, user, ec2-user, debian, pi, git, docker, jenkins, postgres, mysql, redis, nginx, apache)",
+        "No maintainer email or local-part (nicolas.guelfi, *@laposte.net, *@uni.lu)",
+        "No Dropbox workspace hints (messir Dropbox, Dropbox-<account>)",
+        "Generic placeholders <user>, <project>, <name>, /path/to/... are allowed"
+      ]
+    },
+    {
+      "id": "plugin-debug-residue-hygiene",
+      "category": "F",
+      "type": "file_quality",
+      "refinement": "none",
+      "files": [
+        "gse-one/plugin/**/*.py",
+        "gse-one/plugin/**/*.ts"
+      ],
+      "scope": "Distributed plugin code must be production-ready: no debug prints, no dead branches, no large commented-out code blocks.",
+      "checks": [
+        "No print()/pprint() in Python files outside the CLI-tools allow-list (dashboard.py, deploy.py, project-audit.py)",
+        "No console.log/debug/info in TypeScript files",
+        "No dead branches: if False:, if 0:, if __name__ == 'debug':",
+        "No commented-out code blocks of 4+ consecutive lines looking like code (heuristic: starts with '# '/'// ' AND contains =()/{};)"
+      ]
+    },
+    {
+      "id": "plugin-runtime-path-integrity",
+      "category": "F",
+      "type": "file_quality",
+      "refinement": "none",
+      "files": [
+        "gse-one/plugin/**/*.md",
+        "gse-one/plugin/**/*.mdc",
+        "gse-one/plugin/**/*.py",
+        "gse-one/plugin/**/*.ts"
+      ],
+      "scope": "Every $(cat ~/.gse-one)/<subpath> reference in distributed skills/commands/agents must resolve against the subpaths distributed by install.py (per CLAUDE.md Tool architecture / Per-mode registry target table).",
+      "checks": [
+        "Each unique top-level <subpath> in $(cat ~/.gse-one)/<subpath>/... is in the allow-list",
+        "Allow-list: tools, templates, references, VERSION, skills, commands, agents, rules, hooks, opencode",
+        "Any reference to a subpath outside this set is an error — either add it to install.py or fix the reference"
+      ]
     }
   ]
 }

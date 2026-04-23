@@ -29,13 +29,15 @@ Before executing, read:
 
 ### Step 0 — Language Detection (always first, always alone)
 
+<!-- multilingual by design: pre-language-selection UI covers the entire Step 0 subsection until the next `###` header. The audit engine's `plugin_language` check extends the exclusion zone to the next markdown header when no explicit `<!-- /multilingual by design -->` end marker is present. -->
+
 **Condition:** No language is set in `.gse/profile.yaml` or `.gse/config.yaml`.
 
 If a language is already configured, skip to Step 1.
 
 1. **Detect system locale** — Read `$LANG` or `$LC_ALL` to identify the system language (e.g., `fr_FR.UTF-8` → French).
 2. **Build the option list** — Start with the detected locale language (marked "Recommended"), then add the standard list: English, Français, Español, Deutsch. **Deduplicate:** if the detected locale matches one of the four, move it to first position instead of duplicating.
-3. **Ask in all listed languages** — The question itself is displayed in each language so the user can understand it regardless of their language. <!-- multilingual by design: pre-language-selection UI -->
+3. **Ask in all listed languages** — The question itself is displayed in each language so the user can understand it regardless of their language:
 
    Example (interactive — detected locale = Japanese). Use your runtime's native interactive question tool (see orchestrator P4 — `AskUser` maps to `AskUserQuestion` on Claude Code, `AskQuestion` on Cursor ≥2.4, `question` on opencode). Apply the template literally:
    ```

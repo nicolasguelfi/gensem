@@ -1,0 +1,41 @@
+backlog:
+  tasks:
+    - id: TASK-0001
+      title: "Select GSE mode + create sprint plan"
+      status: delivered
+      artefact_type: doc
+    - id: TASK-0002
+      title: "Define repeatable Python dev environment (packaging/deps)"
+      status: delivered
+      artefact_type: config
+      git:
+        branch: gse/sprint-00/config/dev-env
+    - id: TASK-0003
+      title: "Add minimal automated tests for generator/dashboard"
+      status: delivered
+      artefact_type: test
+      git:
+        branch: gse/sprint-00/test/smoke
+      test_evidence:
+        status: pass
+        report: docs/sprints/sprint-00/test-reports/smoke-2026-04-17.md
+    - id: TASK-0004
+      title: "Add CI workflow to run tests/verification"
+      status: delivered
+      artefact_type: config
+      git:
+        branch: gse/sprint-00/config/ci
+
+    - id: TASK-0005
+      title: "Docs: add troubleshooting section for Windows Python/pip/venv"
+      status: open
+      artefact_type: doc
+    - id: TASK-0006
+      title: "Stabilize dev dependencies (constraints/lock for CI)"
+      status: open
+      artefact_type: config
+    - id: TASK-0007
+      title: "Optional: add macOS to CI matrix when macOS is required"
+      status: open
+      artefact_type: config
+

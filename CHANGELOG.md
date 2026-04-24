@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.62.3] - 2026-04-24
+
+### Added
+- `docs/deploy/learner-private-repo-setup.md` — trainer + learner guide for deploying a private GitHub repo via a Coolify GitHub App source; learner email template in prompt-oriented form (user prompts the orchestrator, no direct shell commands).
+- `docs/deploy/coolify-cli-cheatsheet.md` — eight `curl` + `jq` recipes for Coolify REST API operations (list projects, list apps, dedup by name, delete, force redeploy, inspect server, app status, full duplicate-cleanup pattern).
+
+### Changed
+- `src/agents/deploy-operator.md` — Error handling section gained a "Known error" branch for Coolify 422 on private repo; Anti-patterns gained "never instruct a user to make their private repo public to bypass a 422".
+- `src/activities/deploy.md` Phase 6 Step 4 — added 422-private-repo error branch (routes to trainer-configured GitHub App flow) and Concurrency note (serialize `deploy-app` calls to avoid `ensure_project` race duplicates).
+
 ## [0.62.2] - 2026-04-24
 
 ### Added

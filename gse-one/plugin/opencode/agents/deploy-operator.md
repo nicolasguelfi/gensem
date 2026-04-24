@@ -73,6 +73,8 @@ When an error occurs:
 4. Inform the user they can re-run the command to retry
 5. **NEVER** attempt to brute-force past errors (no infinite retry loops)
 
+**Known error — Coolify 422 on private GitHub repo.** If `deploy-app` fails with HTTP 422 from the Coolify `/applications/public` endpoint and the user's repo is private (visibility check via `gh repo view <owner>/<repo> --json isPrivate` or equivalent), do NOT suggest making the repo public. Surface the trainer-configured GitHub App path instead: ask the user to contact their trainer for (a) the App install link and (b) the Coolify Source UUID, install the App on their GitHub account with repo-scoped access, set `COOLIFY_GITHUB_APP_UUID` via `deploy.py env-set`, then retry. Full trainer/learner flow in `docs/deploy/learner-private-repo-setup.md`. This scenario is expected in training contexts where learners keep their code private.
+
 ### 6. Credential management
 
 - Credentials are stored in `.env` at the **project root** (next to `.gse/`)
@@ -140,6 +142,7 @@ Each phase depends on the previous ones. Phases 1–5 are **server-level** and t
 - **NEVER** run `docker system prune -a` without explicitly warning the user first
 - **NEVER** force-push, amend commits, or use Coolify's `/restart` endpoint to deploy code changes — use the canonical redeploy webhook `GET /api/v1/deploy?uuid=...&force=true` (rebuild, same or new commit; exposed as `CoolifyClient.trigger_deploy(uuid, force=True)`)
 - **NEVER** generate a Dockerfile without `ARG SOURCE_COMMIT=unknown` (Docker cache-bust)
+- **NEVER** instruct a user to make their private repo public to bypass a Coolify `422`. The correct route is the trainer-configured GitHub App source (see `docs/deploy/learner-private-repo-setup.md`) — switching a repo visibility exposes the user's code and is not a fix, it is a privacy regression.
 - **ALWAYS** purge Docker build cache (`docker builder prune -af`) if builds produce stale versions despite new commits
 
 ## Output Format

@@ -536,6 +536,8 @@ The detection logic (which variables map to which starting phase) is documented 
 
    This step consolidates what were previously five sub-steps (create project, create app, trigger build, health check, update state). The tool does all of it in one call:
 
+   **Concurrency note — run `deploy-app` calls sequentially, never in parallel.** When a user deploys multiple apps under the same `DEPLOY_USER` (e.g., a WEB and an API app for the same learner), each call invokes `ensure_project` on the shared Coolify project `gse-{DEPLOY_USER}`. The Coolify API exposes no atomic get-or-create for projects, so two concurrent `deploy-app` invocations can both observe "project does not exist" and both issue a `POST /projects` — producing two identically-named duplicate projects, both empty if subsequent app creation fails (e.g., the 422-private-repo branch documented below). Always instruct the user to wait for the first `deploy-app` to return (health check resolved, URL announced) before launching the next. If duplicates already exist, point the user to `docs/deploy/coolify-cli-cheatsheet.md` for the curl-based cleanup recipe.
+
    ```
    python3 "$(cat ~/.gse-one)/tools/deploy.py" deploy-app \
      --name "<label-from-subdomain-step>" \
@@ -556,6 +558,13 @@ The detection logic (which variables map to which starting phase) is documented 
    - Records the application entry in `.gse/deploy.json → applications[]` with all fields (identification, source, runtime, Coolify UUIDs, resources, timestamps, status).
 
    **Return JSON:** `{"status": "healthy|unhealthy|timeout|error", "url": "...", "app_uuid": "...", "created": true|false, "http_code": N}`.
+
+   **Error branch — Coolify 422 on private GitHub repo.** If the tool returns `{"status": "error", "http_status": 422, ...}` and the user's repo is private (check via `gh repo view <user/repo> --json isPrivate` or ask the user), Coolify cannot clone via its public-repo endpoint. Do NOT suggest making the repo public — that is a privacy regression, not a fix. Instead, display this guidance verbatim (adapt tone to the detected `user_role`):
+   > *"Your repo is private, so Coolify needs an authenticated source to clone it. In a training context, your trainer has typically pre-configured a Coolify 'GitHub App' source for this. Ask your trainer for two values: (a) the **GitHub App install link** (of the form `https://github.com/apps/<app-slug>/installations/new`) and (b) the **Coolify Source UUID** (a short alphanumeric string). Once you have both: (1) click the install link and install the App on your GitHub account, selecting only the repo you want to deploy; (2) run `deploy.py env-set COOLIFY_GITHUB_APP_UUID <uuid>`; (3) re-run this `deploy-app` command. Full procedure: `docs/deploy/learner-private-repo-setup.md`."*
+   >
+   > *Solo users (no trainer) can create their own Coolify GitHub App source via Coolify UI → Sources → GitHub App, then follow the same install + env-set flow. See the trainer-side section of `docs/deploy/learner-private-repo-setup.md`.*
+
+   **Note — as of v0.62.3, `deploy.py` does not yet auto-route to the Coolify `/applications/private-github-app` endpoint when `COOLIFY_GITHUB_APP_UUID` is set.** The variable is documented and the troubleshooting path is guided, but full end-to-end automation for private repos is scheduled for a follow-up release. Until then, after setting the variable the user may still need the trainer to create the Coolify application manually via the Coolify UI — warn the user accordingly if the retry still fails.
 
 5. **Report**
    - If `status == "healthy"`: *"Your project is live at: https://{subdomain}"*

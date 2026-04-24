@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.63.0] - 2026-04-24
+
+### Added
+- `install.sh` POSIX-sh bootstrap at repo root: zero-prompt `curl | sh` one-liner with `install` / `uninstall` / `upgrade` subcommands. Auto-detects platforms via PATH (claude, cursor, opencode — installs on all). Default mode is `no-plugin` with `project-dir = $PWD` — the one-liner never installs globally by default. Env-var overrides: `GSE_PLATFORM`, `GSE_MODE`, `GSE_SCOPE`, `GSE_VERSION`, `GSE_PROJECT_DIR`, `GSE_OWNER_REPO`, `GSE_LOCAL_TARBALL`.
+- `.github/workflows/release.yml`: on `v*` tag push, runs `gse_generate.py --verify` then packages `gse-one.tar.gz` (gse-one/plugin + install.py + VERSION + CHANGELOG.md + README.md + install.sh) and publishes as a GitHub release asset via `gh release create`.
+- `scripts/test-install.sh` maintainer smoke test: shellchecks `install.sh` and runs a sandboxed end-to-end install/uninstall cycle via `GSE_LOCAL_TARBALL`.
+- README: "Quick install (curl | sh)", "Environment variables", and "Troubleshooting" sections promoting the one-liner as primary install path; existing `git clone + python3 install.py` path relocated under "Manual install (maintainers, forks, Windows without WSL)".
+- CLAUDE.md cross-references to the release workflow, `install.sh` entry point, and `GSE_*` env-var overrides.
+- `docs/specs/curl-plugin-based-install.md` full specification.
+
+### Changed
+- `install.py confirm()` auto-accepts when `sys.stdin.isatty()` is false (`curl | sh` pipes stdin), preserving install.sh's zero-prompt contract. Interactive TTY behavior unchanged.
+
 ## [0.62.2] - 2026-04-24
 
 ### Added

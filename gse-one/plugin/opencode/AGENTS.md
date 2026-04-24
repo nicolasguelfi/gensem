@@ -1,5 +1,5 @@
 <!-- GSE-ONE START -->
-<!-- gse-one-version: 0.62.2 -->
+<!-- gse-one-version: 0.63.0 -->
 # GSE-One Methodology (opencode edition)
 
 This section is managed by GSE-One. Edit `gse-one/src/` and regenerate — do not hand-edit between the START/END markers.

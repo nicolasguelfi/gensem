@@ -44,6 +44,8 @@ Every commit to main MUST follow this full pipeline:
 
 Never skip a step. Never commit without regenerating. Never push without bumping. Never release a version without a matching CHANGELOG entry.
 
+**Distribution (since v0.63.0):** In addition to the 6-step pipeline above, distribution to end users now happens through `.github/workflows/release.yml`. On every `v*` tag push to `origin`, that workflow runs `gse_generate.py --verify` as a safety net, packages `gse-one/plugin/`, `install.py`, `VERSION`, `CHANGELOG.md`, `README.md`, and `install.sh` into a `gse-one.tar.gz` release asset, and publishes it via `gh release create`. The asset is the tarball consumed by the curl-based `install.sh` bootstrap. Pushing the tag is therefore the release act — it does not replace any step of the 6-step pipeline, but it does add an implicit post-condition: after `git push origin main`, maintainers should push the matching `vX.Y.Z` tag so the release asset is produced.
+
 - Never edit files in `gse-one/plugin/` directly except `plugin/tools/` — the generator overwrites everything else from `src/`.
 - Changes to activities go in `src/activities/`, changes to agents go in `src/agents/`.
 - The orchestrator and .mdc rule are generated from the same source — body parity is verified automatically.
@@ -99,6 +101,8 @@ GSE-One skills shell out to Python tools (`dashboard.py`, `deploy.py`, `project-
 - Agents must never read+rewrite tool content — Python tools are maintained by hand in `plugin/tools/` per the build pipeline rule.
 
 **Tool header convention:** each Python tool carries a `# @gse-tool <name> <version>` header on line 2.
+
+**Curl-based entry point (since v0.63.0):** end users install via a POSIX-sh bootstrap `install.sh` at the repo root, served at `https://raw.githubusercontent.com/nicolasguelfi/gensem/main/install.sh`. The bootstrap auto-detects platform and mode, resolves the release tarball, and delegates to `install.py` — it does not duplicate install logic. Shell-level env-var overrides (`GSE_PLATFORM`, `GSE_MODE`, `GSE_SCOPE`, `GSE_VERSION`, `GSE_PROJECT_DIR`) let advanced users bypass auto-detection; they are documented for end users in README's "Environment variables" section. The registry invariant (`~/.gse-one` contents) and the 6 install modes table above remain authoritative for all resolution; `install.sh` simply auto-selects one of those 6 modes at run time. Maintainers adding a new install mode update the table and `install.py` — `install.sh` inherits the change automatically through the delegation.
 
 ### Versioning
 - Bump `VERSION` file, then run the generator — it propagates to both plugin.json manifests.

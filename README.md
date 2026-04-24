@@ -12,14 +12,17 @@ GSE-One is an AI engineering companion that brings structured software developme
 ## Table of Contents
 
 1. [Key Features](#key-features)
-2. [Quick Start](#quick-start)
-3. [Mono-plugin Architecture](#mono-plugin-architecture)
-4. [Develop and Generate](#develop-and-generate)
-5. [Publish the Plugin](#publish-the-plugin)
-6. [Command Reference](#command-reference)
-7. [Deployment](#deployment)
-8. [Auditing the plugin](#auditing-the-plugin)
-9. [Versioning](#versioning)
+2. [Quick install (curl | sh)](#quick-install-curl--sh)
+3. [Environment variables](#environment-variables)
+4. [Troubleshooting](#troubleshooting)
+5. [Manual install (maintainers, forks, Windows without WSL)](#manual-install-maintainers-forks-windows-without-wsl)
+6. [Mono-plugin Architecture](#mono-plugin-architecture)
+7. [Develop and Generate](#develop-and-generate)
+8. [Publish the Plugin](#publish-the-plugin)
+9. [Command Reference](#command-reference)
+10. [Deployment](#deployment)
+11. [Auditing the plugin](#auditing-the-plugin)
+12. [Versioning](#versioning)
 
 ---
 
@@ -35,7 +38,92 @@ GSE-One is an AI engineering companion that brings structured software developme
 
 ---
 
-## Quick Start
+## Quick install (curl | sh)
+
+One command installs GSE-One on every coding agent it detects (Claude Code, Cursor, opencode) — no clone, no `cd`, no prompts.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nicolasguelfi/gensem/main/install.sh | sh
+```
+
+Uninstall and upgrade use the same URL:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nicolasguelfi/gensem/main/install.sh | sh -s -- uninstall
+curl -fsSL https://raw.githubusercontent.com/nicolasguelfi/gensem/main/install.sh | sh -s -- upgrade
+```
+
+The script auto-detects which of Claude Code, Cursor, and opencode are on your PATH and installs on all of them **inside the current directory** (no-plugin mode). It creates a `.claude/`, `.cursor/`, or `.opencode/` subfolder per detected platform and writes a registry marker `~/.gse-one` pointing at the chosen platform dir — nothing is installed globally by default. To install as a user-scope plugin instead, set `GSE_MODE=plugin` explicitly. Once finished, open your coding agent and type `/go` (no-plugin mode) or `/gse:go` (plugin mode).
+
+**Requirements:** `curl`, `tar`, and `python3 ≥ 3.8` on PATH. macOS and Linux are supported out of the box; Windows users should use WSL or the [Manual install](#manual-install-maintainers-forks-windows-without-wsl) path.
+
+---
+
+## Environment variables
+
+The curl installer reads five environment variables that override auto-detection. Set them inline before the `sh` to force a specific install shape.
+
+| Variable | Values | Description |
+|---|---|---|
+| `GSE_PLATFORM` | `claude` \| `cursor` \| `opencode` \| `all` | Restrict install to one platform (default: every platform detected on PATH) |
+| `GSE_MODE` | `plugin` \| `no-plugin` | Install as a platform plugin or copy artifacts into a project's `.claude/` / `.cursor/` / `.opencode/` |
+| `GSE_SCOPE` | `project` \| `local` \| `user` | Claude Code plugin scope only (default: `user`); ignored by Cursor and opencode |
+| `GSE_VERSION` | `latest` \| `vX.Y.Z` | Release tag to install; `latest` resolves via the GitHub API (default: `latest`) |
+| `GSE_PROJECT_DIR` | path | Target directory for `no-plugin` mode (default: current working directory) |
+
+Example — pin to an explicit version and install only for Cursor:
+
+```bash
+GSE_PLATFORM=cursor GSE_VERSION=v0.62.1 \
+  curl -fsSL https://raw.githubusercontent.com/nicolasguelfi/gensem/main/install.sh | sh
+```
+
+Example — force no-plugin mode into a specific project directory:
+
+```bash
+GSE_MODE=no-plugin GSE_PROJECT_DIR=/path/to/myproject \
+  curl -fsSL https://raw.githubusercontent.com/nicolasguelfi/gensem/main/install.sh | sh
+```
+
+---
+
+## Troubleshooting
+
+### `python3` not found (or version < 3.8)
+
+GSE-One requires Python 3.8 or newer at runtime. Install it with your OS package manager, then re-run the curl one-liner.
+
+```bash
+# macOS (Homebrew)
+brew install python3
+
+# Debian / Ubuntu
+sudo apt install python3
+
+# RHEL / Fedora
+sudo dnf install python3
+```
+
+Windows users without WSL should follow the [Manual install](#manual-install-maintainers-forks-windows-without-wsl) path, which calls `python install.py` directly.
+
+### `curl` or `tar` missing
+
+Both are required by the installer to fetch and extract the release tarball. They ship by default on macOS and on most Linux distributions; on a minimal container or stripped-down image, install them via `apt install curl tar`, `dnf install curl tar`, or the equivalent for your distro.
+
+### GitHub API rate limit reached
+
+When `GSE_VERSION` is `latest` (the default), the installer calls `https://api.github.com/repos/nicolasguelfi/gensem/releases/latest` to resolve the current tag. Unauthenticated GitHub API requests are capped at roughly 60 per hour per IP, so CI runners, shared networks, or tight install loops can hit the limit. Work around it by pinning an explicit version so the API call is skipped:
+
+```bash
+GSE_VERSION=v0.62.1 \
+  curl -fsSL https://raw.githubusercontent.com/nicolasguelfi/gensem/main/install.sh | sh
+```
+
+---
+
+## Manual install (maintainers, forks, Windows without WSL)
+
+Clone the repo and run `install.py` directly when you are contributing to GSE-One, working on a fork, or running native Windows without WSL. This path exposes the full CLI surface and does not require the curl bootstrap.
 
 ### Option A — Cursor
 

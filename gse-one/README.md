@@ -87,7 +87,7 @@ Run `python3 install.py --help` for all options.
 
 ### Verify
 
-Type `/gse:go` in Claude Code, `/gse-go` in Cursor or opencode. The agent should respond and detect your project state.
+Type `/gse:go` in Claude Code (plugin mode) or `/gse-go` in Cursor, opencode, or Claude Code (no-plugin mode). The agent should respond and detect your project state.
 
 ### Marketplace (when available)
 

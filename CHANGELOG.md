@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.62.5] - 2026-04-28
+
+### Fixed
+- `README.md` — corrected slash-command examples in quickstart: Cursor and Claude Code no-plugin both expose `/gse-<name>` (dash prefix); the colon form `/gse:go` is plugin-mode-only on Claude Code.
+- `gse-one/README.md` Verify section — disambiguated `/gse:go` (Claude plugin) vs `/gse-go` (Cursor + opencode + Claude no-plugin).
+
 ## [0.62.4] - 2026-04-28
 
 ### Fixed

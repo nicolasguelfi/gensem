@@ -11,7 +11,7 @@
     }
   },
   "gse": {
-    "version": "0.62.4",
+    "version": "0.62.5",
     "repository": "https://github.com/nicolasguelfi/gensem"
   }
 }

@@ -54,7 +54,7 @@ cd ../my-project && git init
 cursor .
 ```
 
-In Cursor, type: `/go`
+In Cursor, type: `/gse-go`
 
 ### Option B — Claude Code
 
@@ -73,11 +73,11 @@ cd ../my-project && git init
 claude
 ```
 
-In Claude Code, type: `/go`
+In Claude Code, type: `/gse-go`
 
 > **Note:** The `no-plugin` mode copies all GSE-One artifacts into your project's `.cursor/` or `.claude/` directory — nothing is installed globally. The only file created outside the project is `~/.gse-one` (1 line containing the plugin path, removed by `python3 install.py --uninstall`).
 >
-> In `no-plugin` mode, commands are unprefixed: `/go`, `/plan`, `/reqs`... instead of `/gse:go`, `/gse:plan`, `/gse:reqs`.
+> In `no-plugin` mode, commands are exposed with the `gse-` dash prefix: `/gse-go`, `/gse-plan`, `/gse-reqs`… (on both Cursor and Claude Code). The colon form `/gse:go` only exists in **plugin mode** on Claude Code, where the plugin namespace handles separation.
 
 ### Option C — opencode
 

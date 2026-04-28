@@ -282,6 +282,44 @@ def _remove_common_assets(target):
         vf.unlink()
 
 
+def _rewrite_skill_frontmatter_name(skill_md_path, new_name):
+    """Rewrite the `name:` field of a SKILL.md YAML frontmatter to new_name.
+
+    Required by claude no-plugin install: directories are renamed to
+    `gse-<name>/` to namespace skills inside .claude/skills, but Claude Code 2.x
+    indexes skills by the frontmatter `name:` field — not the directory name.
+    Without this rewrite, the slash command exposed in the TUI is `/<name>`
+    (the original frontmatter value) instead of the intended `/gse-<name>`,
+    which (a) breaks the documented no-plugin UX and (b) pollutes the global
+    skill namespace, colliding with any project skill of the same short name.
+
+    Returns True if the file was modified, False if no change applied (file
+    missing, no frontmatter, or no `name:` line found within frontmatter).
+    """
+    skill_md_path = Path(skill_md_path)
+    if not skill_md_path.is_file():
+        return False
+    text = skill_md_path.read_text(encoding="utf-8")
+    lines = text.split("\n")
+    if not lines or lines[0].strip() != "---":
+        return False
+    end = None
+    for i in range(1, len(lines)):
+        if lines[i].strip() == "---":
+            end = i
+            break
+    if end is None:
+        return False
+    for j in range(1, end):
+        stripped = lines[j].lstrip()
+        if stripped.startswith("name:"):
+            indent = lines[j][: len(lines[j]) - len(stripped)]
+            lines[j] = f"{indent}name: {new_name}"
+            skill_md_path.write_text("\n".join(lines), encoding="utf-8")
+            return True
+    return False
+
+
 # ---------------------------------------------------------------------------
 # Duplicate installation detection
 # ---------------------------------------------------------------------------
@@ -667,7 +705,13 @@ def install_claude_no_plugin(project_dir):
     count = 0
     for skill_dir in sorted(skills_src.iterdir()):
         if skill_dir.is_dir():
-            copy_tree(skill_dir, skills_dst / f"gse-{skill_dir.name}")
+            prefixed_name = f"gse-{skill_dir.name}"
+            dst = skills_dst / prefixed_name
+            copy_tree(skill_dir, dst)
+            # Claude Code 2.x indexes skills by SKILL.md frontmatter `name:`,
+            # not by directory name. Rewrite the field so the slash command
+            # actually exposed matches the prefixed directory.
+            _rewrite_skill_frontmatter_name(dst / "SKILL.md", prefixed_name)
             count += 1
     ok(f"Copied {count} skills to {skills_dst} (prefixed as gse-<name>)")
     info("Commands available as /gse-<name> (e.g., /gse-go, /gse-plan)")

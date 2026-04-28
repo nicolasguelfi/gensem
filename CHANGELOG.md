@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.62.4] - 2026-04-28
+
+### Fixed
+- `install.py` claude no-plugin install — SKILL.md frontmatter `name:` now rewritten from `<name>` to `gse-<name>` after directory rename, so the slash command actually exposed matches the documented `/gse-<name>` UX.
+
 ## [0.62.3] - 2026-04-24
 
 ### Added

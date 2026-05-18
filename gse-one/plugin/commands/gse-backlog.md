@@ -133,7 +133,34 @@ Add to `.gse/backlog.yaml`:
   github_issue: null  # top-level, aligned with backlog.yaml template
 ```
 
-#### Step 4 — GitHub Issue (If Enabled)
+#### Step 4 — Sprint-In-Progress Pedagogy (Inform-tier, non-blocking)
+
+Read `.gse/plan.yaml` (if it exists). If `plan.yaml.status: active` (a sprint is currently in flight, not yet delivered):
+
+Display a short pedagogical note **after** the item is created, **before** the GitHub Issue step:
+
+```
+ℹ  Sprint S{NN} is currently active. TASK-{NNN} was added to the pool (unassigned),
+   not to the active sprint — the active sprint scope was already fixed at PLAN time.
+
+   What this means for you:
+   • If TASK-{NNN} can wait until next sprint: nothing to do (it stays in pool).
+   • If TASK-{NNN} should be tackled now: run `/gse:plan --tactical` to pull it
+     into Sprint S{NN}. This re-evaluates the complexity budget.
+   • If TASK-{NNN} is a bug found in the just-delivered work: see /gse:plan
+     --strategic to open a successor "live-validation" sprint instead.
+```
+
+For beginners (P9), simplify: *"This new item is parked for later. The current sprint is still running with its original plan. Tell me if you want to add it to the current work instead."*
+
+This note appears **once per add** — never repeat it for the same TASK creation. Skip the note entirely when:
+- `plan.yaml` does not exist (Micro mode, or pre-PLAN state)
+- `plan.yaml.status` ∈ {completed, paused} — no active sprint to be confused with
+- The user invoked `/gse:backlog add` from inside another activity (e.g., REVIEW promoting a finding to a TASK) — that flow already has its own routing logic
+
+Rationale: in observed sessions, users repeatedly added items mid-sprint without realising they were not picked up by the current sprint plan (the silent fall-through to the pool was correct methodologically but confusing pragmatically). This single sentence closes the gap pedagogically without adding a Gate.
+
+#### Step 5 — GitHub Issue (If Enabled)
 
 If `.gse/config.yaml → github.enabled: true` AND `github.sync_mode ∈ {on-activity, real-time}`:
 - Create a GitHub Issue with matching title and description

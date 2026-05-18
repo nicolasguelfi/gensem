@@ -108,6 +108,15 @@ Based on user's decision involvement preference:
 - **Collaborative**: Agent proposes a selection, user adjusts
 - **Supervised**: User selects items, agent validates feasibility
 
+**Shared-file hint (Inform-tier, non-blocking).** When the selection is firmed up, scan the selected TASKs for shared primary files — sources include each TASK's `description`, `traces.implements` REQ summaries, and (if present) `primary_files` field. If two or more TASKs target the same primary file, surface a brief note before Step 4:
+
+```
+ℹ  TASK-{A} and TASK-{B} both touch `{file}`. Plan to integrate them sequentially
+   (or merge their scope) to avoid conflicts at REVIEW / DELIVER time.
+```
+
+The note carries no PLN-NNN ID, blocks nothing, and does not force a reordering decision. It is purely an early-warning signal: integrate-time conflicts on shared files are predictable at PLAN-time, but only when the reader is prompted to look. The user remains free to ignore. If the scan returns no overlap, the step is silent.
+
 #### Step 4 — Complexity Budget Check (Hard Guardrail)
 
 Read `config.yaml` → `complexity.budget_per_sprint` (default: 10 points).

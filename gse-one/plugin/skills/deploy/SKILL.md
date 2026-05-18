@@ -574,6 +574,31 @@ The detection logic (which variables map to which starting phase) is documented 
    - Solo mode: append *"Server: {IP} ({server-type}), monthly cost: ~8.49 EUR"*.
    - Training mode: append *"Deployed on shared training server."*
 
+6. **Verify deployed version matches repo HEAD (Inform-tier, pedagogical)**
+
+   Healthy ≠ correct version. A successful Coolify deploy can still serve a stale build (caching, rollback after failed redeploy, partial deploy). Compare what is **live** against what the local repo declared:
+
+   1. Read the local source of truth: `git rev-parse --short HEAD` and, if a release tag was emitted by `/gse:deliver`, the latest `v*` tag on `main`.
+   2. Probe the live app for its version. Try in order:
+      - `curl -fsS https://{subdomain}/version` (if the project exposes a `/version` endpoint)
+      - `curl -fsS https://{subdomain}/_stcore/health` and inspect any embedded version string
+      - Fetch the HTML root and grep for a version marker (footer, meta tag, JS bundle hash)
+   3. Display the result:
+
+      ```
+      DEPLOYED VERSION CHECK
+        Repo HEAD: {short_sha} (tag: {v*-or-untagged})
+        Live app:  {detected_string-or-"unknown"}
+        Match:     {OK | MISMATCH | UNKNOWN}
+      ```
+
+   4. Interpretation guidance:
+      - **OK** → deployment confirmed end-to-end. Proceed.
+      - **MISMATCH** → suggest one of: (a) `/gse:deploy --redeploy` to force a fresh build, (b) inspect Coolify deployment logs for a silent rollback (e.g., healthcheck failure → previous container restored — observed in real sessions), (c) hard-refresh in browser (cache).
+      - **UNKNOWN** → no version surface in the app. Suggest adding a minimal `/version` endpoint or a footer string as a future improvement. Do not block — many projects do not expose this, and the check then carries no signal.
+
+   This step is **purely Inform** — it does not modify state, does not call other activities, and does not block on a MISMATCH. Rationale: in observed sessions, users assumed a healthy deploy meant the new code was live, only to discover at runtime that the previous version was still being served. A 30-second cross-check at the end of `/gse:deploy` closes that gap without adding methodological weight.
+
 ---
 
 ### --status Option

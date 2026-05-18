@@ -160,6 +160,42 @@ DECISIONS (last 10)
   {timestamp} | {activity} | {gate_type} | {choice} | {rationale}
 ```
 
+### Step 6.5 — Open Items (pedagogical visibility)
+
+Synthesize the project's **unresolved state** from sources that are already present. The goal is to answer two recurring user questions in one place: *"what's still open?"* and *"did I fix that issue?"* — observed verbatim in cross-session feedback. Display only the sections that contain at least one entry.
+
+```
+OPEN ITEMS
+  Review findings unresolved
+    docs/sprints/sprint-{NN}/review.md
+      • RVW-{NNN} [HIGH]   {short title}   age: {N} day(s)
+      • RVW-{NNN} [MEDIUM] {short title}   age: {N} day(s)
+
+  TASKs not at a terminal status (in-progress / review / fixing / planned)
+      • TASK-{NNN}  {status}    {short title}    sprint: S{NN}
+
+  Open Questions awaiting resolution
+    docs/intent.md and docs/sprints/sprint-{NN}/*.md
+      • OQ-{NNN}  resolves_in: {PLAN|REQS|DESIGN}  {short text}
+
+  Worktrees not aligned with current git state
+      • {path}    {OK | CHANGED | DIRTY | MISSING | LOST}
+
+  Hotfixes / patches applied since last DELIVER
+    git log --since={last_deliver_timestamp} --grep='^fix:' --oneline
+```
+
+Sourcing rules (read-only, deterministic — no inference):
+- **Findings**: parse `docs/sprints/sprint-{NN}/review.md` for RVW-NNN entries with `status` not in `{fixed, accepted-as-is, deferred}`.
+- **TASKs**: filter `backlog.yaml` items where `status ∈ {planned, in-progress, review, fixing}` AND `sprint == current_sprint`.
+- **Open Questions**: scan `## Open Questions` blocks in `docs/intent.md` and the current sprint's artefacts; report entries with `status: pending`.
+- **Worktrees**: cross-reference `git worktree list` with `backlog.yaml` TASK branches (same logic as `--worktrees` flag, but summarised to one line per worktree).
+- **Hotfixes since deliver**: list commit subjects from `main` since the last `v*` tag matching `gse(deliver):*`.
+
+When all five sections are empty, display: `OPEN ITEMS — none. State is consistent.` This positive confirmation is itself pedagogically valuable: it tells the user there is nothing hidden in the corners.
+
+This step is **purely a read of existing files** — it does not modify state, does not call other activities, and adds no Gate. It is the most reliable answer to *"where do I stand?"* and replaces ad-hoc "where are we?" exchanges with a single deterministic snapshot.
+
 ### Step 7 — Recommendations
 
 Based on current state, suggest next actions:

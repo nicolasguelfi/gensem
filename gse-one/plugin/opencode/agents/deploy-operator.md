@@ -131,6 +131,24 @@ Phase 6: deploy            — Create Coolify project/environment/app, build, he
 
 Each phase depends on the previous ones. Phases 1–5 are **server-level** and tracked in `deploy.json → phases_completed` (one timestamp per phase). Phase 6 is **per-application** and tracked via `deploy.json → applications[].status` + the presence of `coolify.app_uuid` (idempotence handled per-app, not per-server) — `phases_completed` has only 5 keys.
 
+## Known Coolify / build quirks (diagnosis catalog)
+
+These are the failure modes most frequently observed in real deploy sessions. When `deploy-app` returns a non-OK status, consult this catalog **before** rolling fixes by hand — most can be diagnosed in seconds from logs.
+
+| Symptom | Likely cause | Recommended action |
+|---|---|---|
+| **HTTP 422 on `POST /api/v1/applications/public`**, body mentions `server_uuid` | Coolify newer versions require an explicit server UUID at app-creation time. | The deploy tool auto-resolves the UUID via `GET /api/v1/servers` and retries. If the retry still fails, surface the body to the user and ask them to check the Coolify server-list view manually. |
+| **HTTP 422 on `POST /api/v1/applications/public`** for a **private GitHub repo** | Coolify's public-source endpoint cannot clone a private repo. | Do NOT suggest making the repo public (privacy regression — see Anti-patterns). Direct the user to `docs/deploy/learner-private-repo-setup.md` for the GitHub App route. |
+| **Build OK, container `exited:unhealthy`**, healthcheck command uses `curl` | The `python:3.13-slim` (and `python:3.X-slim`) base images do NOT include `curl`. | Replace the Dockerfile `HEALTHCHECK CMD curl ...` with a stdlib equivalent: `HEALTHCHECK CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:{PORT}{HEALTH_PATH}').status==200 else 1)"`. The generated `Dockerfile.python` and `Dockerfile.streamlit` templates use the stdlib form by default. |
+| **Build fails immediately**, error mentions missing `pyproject.toml` | Default Dockerfile template assumed `pyproject.toml` but the project only ships `requirements.txt`. | Use the `Dockerfile.python` template's requirements-aware branch (detected automatically by the preflight tool's project type detection). If the user has a hand-rolled Dockerfile, propose switching to `pip install -r requirements.txt`. |
+| **Coolify reports `running:healthy` but the live app serves an old version** | Healthcheck passed against the previous container (Coolify rolled back after a failed build), OR a CDN/browser cache is serving stale assets. | Run the post-deploy version verification (deploy.md Phase 6 Step 6). If MISMATCH: check Coolify's deployment history for the most recent rollout — a failed rollout will be visible — and force a fresh redeploy via `/gse:deploy --redeploy`. |
+| **App URL serves through Traefik but only on port 8080** | Coolify's FQDN is stored without `:8080` but the local routing requires it (Traefik subdomain config). | Document the FQDN form expected by the project's Traefik routing. The `/gse:deploy` tool now exposes `--port` to the user; do not silently rewrite the FQDN in the URL field. |
+| **`git push` fails with `Could not resolve hostname github.com`**, but deploy is mid-flight | Local DNS or network outage. Coolify deploys remote HEAD; an unpushed local commit will NOT be in the deployed build. | Pause the deploy. Tell the user to retry `git push` once connectivity is restored, then resume `/gse:deploy --redeploy`. Never silently proceed with stale remote HEAD — the user's intent is to deploy the local changes. |
+| **`Permission denied (publickey)` from Coolify when cloning via SSH** | Coolify server has no SSH access to the repo. | Switch the Coolify app source to HTTPS (public repo) OR connect a GitHub App source (private repo). Do not paste local SSH keys to Coolify. |
+| **PowerShell users see commit/heredoc failures** | PowerShell does not parse bash `$(cat <<EOF ... EOF)`. | Suggest a PowerShell-safe equivalent: `git commit -m "Subject" -m "Body line 1`n`nBody line 2"` or write the message to a temp file and use `-F`. |
+
+These quirks have all been observed in real sessions (April 2026 cohort). Document any new one inline here when it surfaces — the catalog is incremental.
+
 ## Anti-patterns
 
 - **NEVER** skip security hardening (Phase 3)

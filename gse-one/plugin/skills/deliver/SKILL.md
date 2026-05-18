@@ -26,6 +26,32 @@ Before executing, read:
 
 ## Workflow
 
+### Step 0.0 — Delivery Map (pedagogical preview)
+
+Before any check or Gate, display once a short map of what `/gse:deliver` will do, with each step's **default behaviour** drawn from `config.yaml`. Goal: the user knows what to expect, sees the defaults, and recognises each subsequent Gate as a documented step rather than an unexpected interruption.
+
+```
+DELIVERY MAP
+  Step 1 — Pre-flight (review status, conflicts, uncommitted, REQ→TST coverage)
+  Step 1.5 — Test evidence per TASK + declared test levels (spec §9.3.1)
+  Step 2 — Merge features into integration branch — default: {merge_strategy_default}
+  Step 3 — Merge integration into main — default: merge --no-ff
+  Step 4 — Tag release — default: {tag_on_deliver}
+  Step 5 — Cleanup feature branches and worktrees — default: {cleanup_on_deliver}
+  Step 6 — Release notes
+  Step 7 — Post-tag hook — {post_tag_hook or "none configured"}
+  Step 8 — Cleanup backup tags older than {backup_retention_days}d
+  Step 9 — Finalize (snapshot plan, refresh health, regenerate dashboard)
+
+  Gates you may see: pre-flight blockers (uncommitted, missing tests),
+  merge-strategy confirmations, conflict resolution. Each Gate has a
+  default — pressing the recommended option moves forward.
+```
+
+For beginners (P9), substitute jargon with plain language: *"Delivery has 9 steps. I'll combine your work into the main branch, tag a version, and clean up. I'll ask you to confirm choices for merging and tagging — the suggested option is usually the right one."*
+
+This map is **purely informational** — it asks nothing of the user, blocks nothing, and does not duplicate any later Gate. Skip the map only when `--dry-run` is set (the dry-run output is itself a delivery map). Rationale: in observed sessions, users perceived the 5-7 sequential Gates as chattiness because they had no upfront framing; this single block reframes the same Gates as steps in a known process.
+
 ### Step 0 — Safety: Backup Tags
 
 Before any destructive operation, create **two classes of backup tags** per feature branch, aligned with spec §10.6 and design §5.15:

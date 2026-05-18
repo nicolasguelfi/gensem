@@ -270,6 +270,36 @@ When the review fires, spawn the `test-strategist` sub-agent (see `plugin/agents
 
 When none of the triggers fire, skip this pass to keep sprints with few or low-risk tests agile. The user can always force it later with `--review-specs`.
 
+#### TST implementation tracking (deterministic, runs on every `--run`, `--evidence`, and as part of the specs review when fired)
+
+Independent of the LLM-driven specs review above, a **deterministic cross-check** verifies that every TST-NNN declared in the strategy is actually backed by at least one test in the repo. The check is intentionally simple: declaration without implementation is a silent failure mode observed in real sessions (a TST-NNN appeared in `test-strategy.md` but no corresponding test was ever written, and no Gate caught it).
+
+Algorithm:
+
+1. **Enumerate declared TSTs.** Parse `docs/sprints/sprint-{NN}/test-strategy.md` for `### TST-NNN` headings and any TST-NNN with its own frontmatter file under `docs/sprints/sprint-{NN}/tests/` or `tests/`.
+2. **Enumerate implemented TST references.** Grep the project's test tree (`tests/`, plus language-specific dirs like `src/**/__tests__/`, `cypress/`, `e2e/`) for the literal string `TST-NNN` in test code (test names, docstrings, comments, tags).
+3. **Compute the difference.** Any declared TST-NNN with **zero** matches in step 2 is reported as unimplemented.
+4. **Emit findings.**
+   - **All declared TSTs implemented** → silent.
+   - **Some declared TSTs not implemented** → emit one finding per missing TST, tagged `[TST-COVERAGE]`, severity **MEDIUM**, written to `docs/sprints/sprint-{NN}/review.md`. Non-blocking on `/gse:produce`. Becomes a Hard guardrail at `/gse:deliver` Step 1.5 Guardrail 2 only if the missing TST is at a declared level whose `TCP-` coverage is also absent (the existing level-coverage check then surfaces both layers of the gap).
+
+Finding format:
+
+```
+RVW-NNN [MEDIUM] TST-NNN declared in test-strategy.md but not found in tests/
+  Source: docs/sprints/sprint-{NN}/test-strategy.md§TST-NNN
+  Searched: tests/, src/**/__tests__/, cypress/, e2e/
+  Recommendation: implement the test in {suggested path based on level} or
+    explicitly mark the TST as deferred in test-strategy.md (add an Inform note).
+  perspective: test-strategist
+```
+
+For beginners (P9): *"You said you would test {X}, but I cannot find the actual test in the code. Either I write it now, or we explicitly decide to skip it for this sprint."*
+
+Detection convention — the literal string `TST-NNN` must appear somewhere in the test file. Acceptable forms: test name (`def test_TST_005_...`), docstring (`"""TST-005: ..."""`), inline comment (`# TST-005`), or framework tag (`@pytest.mark.tst("TST-005")`). The convention is intentionally lenient — the goal is to detect orphans, not to police naming style. False positives (a TST-NNN appears in a non-test file) are tolerated: if the test exists somewhere and the user can point to it, the check passes.
+
+Rationale: this is a pure read-only deterministic check, no LLM cost, runs in < 1 second on any project. It closes a real gap observed in user sessions without adding any Gate or new activity surface.
+
 ### Step 4 — Execute (`--run`)
 
 TESTS invokes the **canonical test run** defined in spec §6.3. Argument handling determines the scope:

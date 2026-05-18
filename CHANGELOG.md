@@ -5,7 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.62.5] - 2026-04-28
+## [0.62.6] - 2026-05-18
+
+*DAY06 cohort feedback synthesis: 5 pedagogical inserts and 2 contract clarifications addressing observed user friction, no new activity or Gate.*
+
+### Added
+- `backlog.md` Add Mode Step 4 — sprint-in-progress pedagogy: when `plan.yaml.status: active`, explain once that the new item defaults to pool and how `/gse:plan --tactical` pulls it in.
+- `plan.md` Strategic Step 3 — shared-file hint: Inform-tier prose flagging TASKs that touch the same primary file, suggesting sequential integration.
+- `status.md` Step 6.5 — Open Items: deterministic synthesis of unresolved findings, in-flight TASKs, pending OQs, orphan worktrees, post-deliver hotfixes.
+- `deliver.md` Step 0.0 — Delivery Map: pedagogical preview listing all 9 steps with their config-driven defaults, reframing the existing Gates.
+- `deploy.md` Phase 6 Step 6 — Verify deployed version: compare repo HEAD against the live app's version surface (`/version`, footer, healthcheck) to catch silent rollbacks.
+- `tests.md` — TST implementation tracking: deterministic grep cross-check producing `[TST-COVERAGE]` MEDIUM findings for declared but unimplemented TSTs.
+- `deploy-operator.md` — Known Coolify / build quirks catalog: 9 diagnostic rows for server_uuid 422, curl-on-slim, requirements.txt vs pyproject, healthy-but-stale, Traefik :8080, DNS outage, SSH publickey, PowerShell heredoc.
+- `gse-orchestrator.md` — Post-deliver bug clarification: canonical path is a successor sprint titled "Live Validation Fixes" via `/gse:plan --strategic`, no new activity.
+- `gse-orchestrator.md` Sprint Plan Maintenance Step 5 — Coach invocation contract: mandatory evaluation table (6 moment rows × axes) and 4 operational invariants; `skip` is itself a recorded observation.
 
 ### Fixed
 - `README.md` — corrected slash-command examples in quickstart: Cursor and Claude Code no-plugin both expose `/gse-<name>` (dash prefix); the colon form `/gse:go` is plugin-mode-only on Claude Code.

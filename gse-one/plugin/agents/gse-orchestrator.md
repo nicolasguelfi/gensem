@@ -433,6 +433,16 @@ Evaluate states **in order** — the first matching row wins.
 
 **Fallback (no `plan.yaml`):** If `plan.yaml` is absent, the orchestrator checks file existence: `reqs.md`, `design.md`, `test-strategy.md`, etc., in the sprint directory, applying the same progression.
 
+**Post-deliver bug report — pedagogical clarification (no new activity).** When the user reports a bug or asks for a fix while `last_activity == deliver` AND `plan.yaml.status == completed` (the sprint has just closed but COMPOUND/INTEGRATE may or may not have run), the orchestrator MUST NOT silently apply the fix on `main`. Sprint Freeze (P12, spec §10.1) prohibits writing to the closed sprint. The canonical path — already supported by existing activities, no new branching needed — is to open a successor sprint dedicated to validation fixes:
+
+1. **Acknowledge the bug pedagogically** (P9, P14). For beginners: *"The sprint we just delivered is closed and cannot be edited anymore (this is a methodology rule that protects the work that was already shipped). Bugs found after delivery belong in a new short sprint — typically a 1-3 task sprint called 'Live Validation Fixes'."* For experts: *"Sprint Freeze on PLN-{NN}. Opening successor PLN-{NN+1} for the fixes."*
+2. **Propose `/gse:plan --strategic`** with a pre-populated goal *"Sprint {NN+1} — Live Validation Fixes"* and the bug captured as a new TASK in the pool. Gate: confirm / adjust scope / discuss.
+3. On confirmation, the standard sprint cycle resumes (REQS may be light: the bug report itself often suffices as an acceptance criterion; DESIGN may be skipped). DELIVER closes the successor sprint, tag a patch version (v0.X.Y → v0.X.Y+1).
+
+This is **not a new activity** — it is a documented use of the existing PLAN + REQS + PRODUCE + DELIVER cycle. The pedagogical insert exists because, in observed sessions, users facing a post-delivery bug defaulted to direct commits on `main` (bypassing review) or felt the methodology had no answer for them. Both are now framed: the answer is "open a tiny successor sprint", and the orchestrator says so the first time the situation arises.
+
+Edge case — if the bug is **trivial** (one-line typo, missing import, doc fix) and the user explicitly invokes `/gse:task --quick` or equivalent, the existing ad-hoc TASK channel applies (spec §1130 `/gse:task` Sprint Freeze guardrail still requires opening a successor sprint or rejecting the operation; the methodology does NOT offer a hidden "patch main directly" escape hatch). The pedagogy above remains the canonical path.
+
 ### Lifecycle guardrails (Hard)
 
 These guardrails **block** progression and cannot be overridden silently:
@@ -518,6 +528,31 @@ Update `plan.yaml.coherence.last_evaluated` after each evaluation.
 | Coherence alerts | — | ✓ | plan.yaml |
 
 Both files are written atomically at each transition — complementary, never duplicative.
+
+### Step 5 — Coach invocation (mandatory when `coach.enabled: true`)
+
+The Sub-agent delegation protocol (see "Coach delegation" above) describes **which** axes the coach evaluates and **when**. This step makes the operational obligation explicit so the contract is impossible to silently skip — a failure mode observed in real sessions where `coach.enabled: true` produced zero `workflow_observations` for an entire sprint.
+
+After Step 4 (status.yaml update) and **before** announcing the next activity to the user, the orchestrator MUST evaluate the following decision table:
+
+| Moment (computed from Step 1-4) | Coach call required? | Axes activated |
+|---|:-:|---|
+| Activity closure where `last_activity ∈ {collect, assess, plan, reqs, design, preview, tests, produce, review, fix, deliver, compound, integrate, task, deploy}` | YES — pedagogy axis | `pedagogy` (1) + opportunistic relevant workflow axes |
+| `current_phase` transition (LC0X → LC0Y) | YES — workflow axes | `workflow_health` (4), `process_deviation` (7) |
+| Sprint close (`plan.yaml.status: completed`) | YES — sprint-close batch | `sprint_velocity` (3), `quality_trends` (5), `sustainability` (8) |
+| Mid-sprint with `sessions_without_progress ≥ 2` | YES — stall detection | `sprint_velocity` (3), `workflow_health` (4) |
+| Gate sequence end with `consecutive_acceptances` near threshold OR `pushback_dismissed` recorded | YES — engagement check | `engagement_pattern` (6) |
+| Profile drift suspected (declared vs observed mismatch on ≥ 2 dimensions) | YES — profile check | `profile_calibration` (2) |
+
+The coach is invoked with the moment tag and the relevant state slice. Its return is **always** one of: `skip` (no output produced — recorded as `axis: <name>, decision: skip` in `status.yaml.workflow_observations[]`), `propose` (P14 Gate emitted), or `advise` (Inform-tier line emitted). **`skip` is itself an observation** — the empty case must leave a trace, otherwise the methodology cannot distinguish "coach ran and had nothing to say" from "coach never ran". This trace is what makes `/gse:audit` able to detect coach silence as a methodology failure.
+
+Operational invariants:
+1. **Never close an activity without evaluating the table above.** If the moment matches multiple rows, evaluate each and record one observation per axis.
+2. **Never write `status.yaml` after an activity transition without `workflow_observations[]` carrying at least one entry whose `closed_at` matches the current `last_activity_timestamp`.** A status update lacking a paired observation is a contract violation.
+3. **When `coach.enabled: false`, this step is a no-op** — no observations recorded, no Gates surfaced. The deterministic `/gse:audit` check for coach activity is suppressed in that case (config-coherent).
+4. **When an axis is disabled** via `config.yaml → coach.axes.<axis>: false`, that axis still emits a `skip` observation with `decision: disabled` — preserving the audit trail.
+
+Rationale: invariant 2 is the operational fix for the silent coach drift observed in real user sessions. By tying the obligation to the same atomic write that closes the activity, the methodology removes the ambiguity ("was the coach supposed to run?") and gives `/gse:audit` a single check that surfaces drift deterministically.
 
 ## Modes
 

@@ -44,7 +44,17 @@ GSE-One orchestrates the full lifecycle: `COLLECT > ASSESS > PLAN > REQS > DESIG
 
 ## Installation
 
-### Quick Start (recommended)
+### Quick install (curl | sh) — recommended for end users
+
+One command installs GSE-One on every coding agent it detects (Claude Code, Cursor, opencode):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nicolasguelfi/gensem/main/install.sh | sh
+```
+
+The script auto-detects which platforms are on your `PATH` and installs on all of them inside the current directory (no-plugin mode). To install as a user-scope plugin instead, set `GSE_MODE=plugin`. Uninstall and upgrade use the same URL with `sh -s -- uninstall` and `sh -s -- upgrade`. Full details (environment variables, troubleshooting) are in the [root README](../README.md#quick-install-curl--sh).
+
+### Manual install (clone + install.py) — for maintainers, forks, Windows without WSL
 
 Clone the repository and run the interactive installer:
 

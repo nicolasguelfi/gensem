@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.62.8] - 2026-05-18
+
+*Secondary docs alignment with the v0.62.7 curl install path + retroactive CHANGELOG entry for v0.62.5 (omitted at the time).*
+
+### Added
+- `gse-one/README.md` Installation — new "Quick install (curl | sh)" subsection pointing to the root README for env-var/troubleshooting details; existing `python3 install.py` flow renamed to "Manual install (clone + install.py)".
+- `INSTALL-OPENCODE.md` §2 — new "Quick install (curl | sh)" subsection (opencode-specific framing); existing Mode A / Mode B kept under "Manual install (clone + install.py)".
+
+### Fixed
+- `CHANGELOG.md` — retroactive `[0.62.5]` entry added (commit `195af70` had bumped VERSION + `docs:` commit but no matching CHANGELOG block).
+
 ## [0.62.7] - 2026-05-18
 
 *Supplementary curl-based installer (rebased from PR #8 by Tiago Sousa). `install.py` remains authoritative; `install.sh` is a POSIX-sh bootstrap that resolves a release tarball and delegates.*
@@ -37,6 +48,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `README.md` — corrected slash-command examples in quickstart: Cursor and Claude Code no-plugin both expose `/gse-<name>` (dash prefix); the colon form `/gse:go` is plugin-mode-only on Claude Code.
+- `gse-one/README.md` Verify section — disambiguated `/gse:go` (Claude plugin) vs `/gse-go` (Cursor + opencode + Claude no-plugin).
+
+## [0.62.5] - 2026-04-28
+
+*Retroactive entry — VERSION was bumped at the time (commit `195af70 docs: v0.62.5 ...`) but no CHANGELOG block was added then. Recorded retroactively in v0.62.8 for traceability.*
+
+### Fixed
+- `README.md` quickstart slash-command examples — aligned with the v0.62.4 fix. Cursor and Claude Code no-plugin both expose `/gse-<name>` (dash prefix); the colon form `/gse:go` is plugin-mode-only on Claude Code.
 - `gse-one/README.md` Verify section — disambiguated `/gse:go` (Claude plugin) vs `/gse-go` (Cursor + opencode + Claude no-plugin).
 
 ## [0.62.4] - 2026-04-28

@@ -16,7 +16,19 @@ No Node.js, npm, or Bun install required — opencode runs the TS guardrails plu
 
 ## 2. Install
 
-Pick one mode. **Mode A** is simplest for a single project; **Mode B** gives every project access to GSE-One.
+### Quick install (curl | sh) — recommended
+
+For most users, the curl one-liner sets up GSE-One for opencode (and any other coding agent on `PATH`) in one command, no clone needed:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nicolasguelfi/gensem/main/install.sh | sh
+```
+
+By default this is no-plugin mode into the current directory (Mode A below). To use the global plugin mode (Mode B below), set `GSE_MODE=plugin` before piping into `sh`. To restrict to opencode only, set `GSE_PLATFORM=opencode`. Full env-var reference: [root README](README.md#environment-variables).
+
+### Manual install (clone + install.py)
+
+For maintainers, forks, or environments without `curl`/`tar`/`python3 ≥ 3.8` on PATH, pick one mode below. **Mode A** is simplest for a single project; **Mode B** gives every project access to GSE-One.
 
 ### Mode A — Non-plugin (per-project)
 

@@ -1,0 +1,42 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Verify generator parity
+        run: |
+          cd gse-one
+          python3 gse_generate.py --verify
+
+      - name: Package release tarball
+        run: |
+          tar -czf gse-one.tar.gz \
+            gse-one/plugin \
+            install.py \
+            VERSION \
+            CHANGELOG.md \
+            README.md \
+            install.sh
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --title "${{ github.ref_name }}" \
+            --generate-notes \
+            gse-one.tar.gz

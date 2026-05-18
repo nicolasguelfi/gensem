@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.62.7] - 2026-05-18
+
+*Supplementary curl-based installer (rebased from PR #8 by Tiago Sousa). `install.py` remains authoritative; `install.sh` is a POSIX-sh bootstrap that resolves a release tarball and delegates.*
+
+### Added
+- `install.sh` (256 lines, POSIX sh, shellcheck-clean) — `curl | sh` bootstrap with platform auto-detection, env-var overrides (`GSE_PLATFORM`, `GSE_MODE`, `GSE_SCOPE`, `GSE_VERSION`, `GSE_PROJECT_DIR`), and `uninstall` / `upgrade` subcommands.
+- `.github/workflows/release.yml` — on `v*` tag push, verifies via `gse_generate.py --verify`, packages `gse-one.tar.gz`, publishes via `gh release create`.
+- `scripts/test-install.sh` — maintainer sandboxed smoke test (shellcheck + end-to-end install/uninstall via `GSE_LOCAL_TARBALL`).
+- `docs/specs/curl-plugin-based-install.md` — design spec for the curl bootstrap (loader pattern, version resolution, env-var contract).
+- `README.md` — new sections "Quick install (curl | sh)", "Environment variables", "Troubleshooting"; existing flow preserved under "Manual install".
+
+### Changed
+- `install.py` `confirm()` — auto-accepts when `stdin` is not a TTY (preserves zero-prompt contract under `curl | sh`); interactive behavior unchanged.
+- `CLAUDE.md` — Distribution note (release.yml as the release act on `v*` tag push) and Curl-based entry point note (install.sh as a loader for install.py, not a duplicate).
+
 ## [0.62.6] - 2026-05-18
 
 *DAY06 cohort feedback synthesis: 5 pedagogical inserts and 2 contract clarifications addressing observed user friction, no new activity or Gate.*

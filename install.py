@@ -179,9 +179,16 @@ def ask(prompt, choices):
 
 
 def confirm(prompt):
-    """Ask yes/no. Returns True for yes."""
+    """Ask yes/no. Returns True for yes. Auto-accepts when stdin is not a TTY
+    (e.g. under `curl | sh`), preserving install.sh's zero-prompt contract."""
+    if not sys.stdin.isatty():
+        info(f"  {prompt} [auto-yes: non-interactive stdin]")
+        return True
     while True:
-        raw = input(f"  {prompt} [{green('y')}/{red('n')}]: ").strip().lower()
+        try:
+            raw = input(f"  {prompt} [{green('y')}/{red('n')}]: ").strip().lower()
+        except EOFError:
+            return True
         if raw in ("y", "yes"):
             return True
         if raw in ("n", "no"):

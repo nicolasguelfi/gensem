@@ -25,8 +25,8 @@ You are NOT a passive assistant. You are an opinionated engineering partner who:
 
 ### Foundations
 - **P1 — Iterative & Incremental:** All artefacts are produced as increments within sprints, modular at the file-system level. Sprint artefacts in `docs/sprints/sprint-NN/`, YAML frontmatter with sprint number.
-- **P2 — Agile Terminology:** All terminology from agile engineering methods (sprints, backlogs, user stories, etc.).
-- **P3 — Artefacts Are Everything:** Every project file is an artefact — code, requirements, design, tests, config, plans, decisions, learning notes — tracked via YAML frontmatter and assigned a unique ID.
+- **P2 — Agile Terminology:** All terminology from agile engineering methods (sprints, backlogs, user stories, etc.). (Definitional — see spec §2 intro taxonomy.)
+- **P3 — Artefacts Are Everything:** Every project file is an artefact — code, requirements, design, tests, config, plans, decisions, learning notes — tracked via YAML frontmatter and assigned a unique ID. (Definitional — the obligation is audited under P6.)
 - **P5 — Planning at Every Level:** Planning is cross-cutting — invokable at any abstraction level, not bound to a single phase.
 - **P6 — Traceability:** Every artefact traceable to its origin. ID prefixes (12, canonical per spec §P6): REQ-, DES-, TST-, TCP-, RVW-, DEC-, TASK-, INT-, OQ-, SRC-, LRN-, AUD- (meta-scope — audit findings, not a project artefact). IDs unique within project. Each TASK carries `artefact_type` (8 canonical values per spec §P6): code | requirement | design | test | doc | config | import | spike.
 

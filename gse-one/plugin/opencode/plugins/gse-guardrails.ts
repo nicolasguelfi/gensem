@@ -10,18 +10,31 @@ export const GseGuardrails: Plugin = async () => {
       if (input?.tool !== "bash") return
       const cmd = String(output?.args?.command ?? "")
 
-      if (cmd.startsWith("git push --force")) {
-        throw new Error(
-          "EMERGENCY GUARDRAIL: Force push detected. This can cause permanent data loss. Aborting."
-        )
+      // Project-local config toggles (.gse/config.yaml -> hooks section)
+      let cfg = ""
+      try { cfg = await Bun.file(".gse/config.yaml").text() } catch { /* no config */ }
+
+      if (/\bgit\s[^|;&]*\bpush\b[^|;&]*(\s-f\b|--force\b)/.test(cmd)) {
+        if (!/^\s*block_force_push:\s*false/m.test(cfg)) {
+          throw new Error(
+            "EMERGENCY GUARDRAIL: Force push detected (-f / --force / --force-with-lease). This can cause permanent data loss. Aborting."
+          )
+        }
       }
 
-      if (cmd.startsWith("git commit")) {
-        const branch = (await $`git branch --show-current`.text()).trim()
-        if (branch === "main") {
-          throw new Error(
-            "GUARDRAIL: Direct commit to main detected. Use a feature branch."
-          )
+      if (/(?:^|[;&|]\s*)git\s+(-C\s+\S+\s+)?commit\b/.test(cmd)) {
+        const off = /^\s*protect_main:\s*false/m.test(cfg) || /^\s*strategy:\s*none/m.test(cfg)
+        if (!off) {
+          const branch = (await $`git branch --show-current`.text()).trim()
+          if (branch === "main") {
+            // Repository-initialization exception: no HEAD yet (foundational commit)
+            const head = await $`git rev-parse --verify HEAD`.nothrow().quiet()
+            if (head.exitCode === 0) {
+              throw new Error(
+                "GUARDRAIL: Direct commit to main detected. Use a feature branch. (Sanctioned exceptions: hooks.protect_main: false or git.strategy: none in .gse/config.yaml; repository-initialization commit.)"
+              )
+            }
+          }
         }
       }
     },
@@ -30,8 +43,11 @@ export const GseGuardrails: Plugin = async () => {
       // Bash / git push — open review findings warning
       if (input?.tool === "bash") {
         const cmd = String(input?.args?.command ?? "")
-        if (cmd.startsWith("git push")) {
+        if (/\bgit\s[^|;&]*\bpush\b/.test(cmd)) {
           try {
+            let cfgAfter = ""
+            try { cfgAfter = await Bun.file(".gse/config.yaml").text() } catch { /* no config */ }
+            if (/^\s*review_findings_on_push:\s*false/m.test(cfgAfter)) return
             const status = await Bun.file(".gse/status.yaml").text()
             const m = status.match(/review_findings_open:\s*(\d+)/)
             const open = m ? parseInt(m[1], 10) : 0

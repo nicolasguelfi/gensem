@@ -341,35 +341,61 @@ def generate(clean: bool = False) -> None:
 
 def generate_hooks() -> None:
     """Generate platform-specific hooks with cross-platform Python commands."""
-    # Shared hook logic (Python — works on macOS, Linux, and Windows)
+    # Shared hook logic (Python — works on macOS, Linux, and Windows).
+    # Transport: Claude Code / Cursor deliver the tool input as JSON on stdin
+    # ({"tool_input": {"command": ...}}) — there is NO CLAUDE_TOOL_INPUT env
+    # var (the pre-v0.63 hooks read one and therefore never fired).
+    # Config: each guard honors its project-local .gse/config.yaml -> hooks
+    # toggle (regex read — stdlib only, no PyYAML in a one-liner).
+    _read_cmd = (
+        "raw=sys.stdin.read(); "
+        "d=json.loads(raw) if raw.lstrip().startswith('{') else {}; "
+        "t=str((d.get('tool_input') or {}).get('command') or ''); "
+    )
     pre_bash_commit = (
         "python3 -c \""
-        "import os,subprocess,sys; "
-        "t=os.environ.get('CLAUDE_TOOL_INPUT',''); "
-        "c=t.startswith('git commit'); "
+        "import sys,json,os,re,subprocess; "
+        + _read_cmd +
+        "c=bool(re.search(r'(?:^|[;&|]\\s*)git\\s+(-C\\s+\\S+\\s+)?commit\\b',t)); "
+        "p=os.path.join('.gse','config.yaml'); "
+        "cfg=open(p).read() if c and os.path.isfile(p) else ''; "
+        "off=bool(re.search(r'^\\s*protect_main:\\s*false',cfg,re.M)) "
+        "or bool(re.search(r'^\\s*strategy:\\s*none',cfg,re.M)); "
         "b=subprocess.run(['git','branch','--show-current'],"
-        "capture_output=True,text=True).stdout.strip() if c else ''; "
-        "(c and b=='main') and (print("
-        "'GUARDRAIL: Direct commit to main detected. Use a feature branch.'"
+        "capture_output=True,text=True).stdout.strip() if c and not off else ''; "
+        "init=bool(b=='main' and subprocess.run(['git','rev-parse','--verify','HEAD'],"
+        "capture_output=True).returncode!=0); "
+        "(c and not off and not init and b=='main') and (print("
+        "'GUARDRAIL: Direct commit to main detected. Use a feature branch. '"
+        "'(Sanctioned exceptions: hooks.protect_main: false or git.strategy: none "
+        "in .gse/config.yaml; repository-initialization commit.)'"
         ",file=sys.stderr),sys.exit(2))"
         "\""
     )
     pre_bash_force = (
         "python3 -c \""
-        "import os,sys; "
-        "t=os.environ.get('CLAUDE_TOOL_INPUT',''); "
-        "t.startswith('git push --force') and (print("
-        "'EMERGENCY GUARDRAIL: Force push detected. "
+        "import sys,json,os,re; "
+        + _read_cmd +
+        "bad=bool(re.search(r'\\bgit\\s[^|;&]*\\bpush\\b[^|;&]*(\\s-f\\b|--force\\b)',t)); "
+        "p=os.path.join('.gse','config.yaml'); "
+        "cfg=open(p).read() if bad and os.path.isfile(p) else ''; "
+        "off=bool(re.search(r'^\\s*block_force_push:\\s*false',cfg,re.M)); "
+        "(bad and not off) and (print("
+        "'EMERGENCY GUARDRAIL: Force push detected (-f / --force / --force-with-lease). "
         "This can cause permanent data loss. Aborting.'"
         ",file=sys.stderr),sys.exit(2))"
         "\""
     )
     post_bash_review = (
         "python3 -c \""
-        "import os,re; "
-        "t=os.environ.get('CLAUDE_TOOL_INPUT',''); "
+        "import sys,json,os,re; "
+        + _read_cmd +
+        "p=os.path.join('.gse','config.yaml'); "
+        "cfg=open(p).read() if os.path.isfile(p) else ''; "
+        "off=bool(re.search(r'^\\s*review_findings_on_push:\\s*false',cfg,re.M)); "
         "f=os.path.join('.gse','status.yaml'); "
-        "c=open(f).read() if t.startswith('git push') and os.path.isfile(f) else ''; "
+        "c=open(f).read() if (not off) and re.search(r'\\bgit\\s[^|;&]*\\bpush\\b',t) "
+        "and os.path.isfile(f) else ''; "
         "m=re.search(r'review_findings_open:\\s*(\\d+)',c); "
         "o=int(m.group(1)) if m else 0; "
         "(o>0) and print('WARNING: '+str(o)+' open review findings')"
@@ -586,18 +612,31 @@ export const GseGuardrails: Plugin = async () => {{
       if (input?.tool !== "bash") return
       const cmd = String(output?.args?.command ?? "")
 
-      if (cmd.startsWith("git push --force")) {{
-        throw new Error(
-          "EMERGENCY GUARDRAIL: Force push detected. This can cause permanent data loss. Aborting."
-        )
+      // Project-local config toggles (.gse/config.yaml -> hooks section)
+      let cfg = ""
+      try {{ cfg = await Bun.file(".gse/config.yaml").text() }} catch {{ /* no config */ }}
+
+      if (/\\bgit\\s[^|;&]*\\bpush\\b[^|;&]*(\\s-f\\b|--force\\b)/.test(cmd)) {{
+        if (!/^\\s*block_force_push:\\s*false/m.test(cfg)) {{
+          throw new Error(
+            "EMERGENCY GUARDRAIL: Force push detected (-f / --force / --force-with-lease). This can cause permanent data loss. Aborting."
+          )
+        }}
       }}
 
-      if (cmd.startsWith("git commit")) {{
-        const branch = (await $`git branch --show-current`.text()).trim()
-        if (branch === "main") {{
-          throw new Error(
-            "GUARDRAIL: Direct commit to main detected. Use a feature branch."
-          )
+      if (/(?:^|[;&|]\\s*)git\\s+(-C\\s+\\S+\\s+)?commit\\b/.test(cmd)) {{
+        const off = /^\\s*protect_main:\\s*false/m.test(cfg) || /^\\s*strategy:\\s*none/m.test(cfg)
+        if (!off) {{
+          const branch = (await $`git branch --show-current`.text()).trim()
+          if (branch === "main") {{
+            // Repository-initialization exception: no HEAD yet (foundational commit)
+            const head = await $`git rev-parse --verify HEAD`.nothrow().quiet()
+            if (head.exitCode === 0) {{
+              throw new Error(
+                "GUARDRAIL: Direct commit to main detected. Use a feature branch. (Sanctioned exceptions: hooks.protect_main: false or git.strategy: none in .gse/config.yaml; repository-initialization commit.)"
+              )
+            }}
+          }}
         }}
       }}
     }},
@@ -606,8 +645,11 @@ export const GseGuardrails: Plugin = async () => {{
       // Bash / git push — open review findings warning
       if (input?.tool === "bash") {{
         const cmd = String(input?.args?.command ?? "")
-        if (cmd.startsWith("git push")) {{
+        if (/\\bgit\\s[^|;&]*\\bpush\\b/.test(cmd)) {{
           try {{
+            let cfgAfter = ""
+            try {{ cfgAfter = await Bun.file(".gse/config.yaml").text() }} catch {{ /* no config */ }}
+            if (/^\\s*review_findings_on_push:\\s*false/m.test(cfgAfter)) return
             const status = await Bun.file(".gse/status.yaml").text()
             const m = status.match(/review_findings_open:\\s*(\\d+)/)
             const open = m ? parseInt(m[1], 10) : 0
@@ -890,7 +932,8 @@ def verify() -> None:
     ts = oc / "plugins" / "gse-guardrails.ts"
     if ts.exists():
         ts_text = ts.read_text(encoding="utf-8")
-        for needle in ("git commit", "git push --force", "review_findings_open"):
+        for needle in ("commit\\b", "--force\\b", "review_findings_open",
+                       "protect_main", "block_force_push", "rev-parse --verify HEAD"):
             if needle not in ts_text:
                 errors.append(f"opencode: gse-guardrails.ts missing pattern '{needle}'")
 

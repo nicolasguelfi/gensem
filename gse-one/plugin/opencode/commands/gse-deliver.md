@@ -55,7 +55,7 @@ This map is **purely informational** — it asks nothing of the user, blocks not
 
 ### Step 0 — Safety: Backup Tags
 
-Before any destructive operation, create **two classes of backup tags** per feature branch, aligned with spec §10.6 and design §5.15:
+Before any destructive operation, create **three classes of backup tags**, aligned with spec §10.6 and design §5.15:
 
 **Tag class 1 — merge reversal** (created BEFORE the merge into the integration branch):
 
@@ -79,7 +79,18 @@ This tags the **feature branch ref** at its last commit. To recreate an accident
 git checkout -b gse/sprint-{NN}/{type}/{name} gse-backup/sprint-{NN}-{type}-{name}-deleted
 ```
 
-Both tag classes are retained for 30 days by default (configurable via `config.yaml → git.backup_retention_days`). Cleanup happens at the next `/gse:deliver` (see Step 8 — Cleanup Backup Tags).
+**Tag class 3 — main-merge reversal** (created at the start of Step 3 — Merge Sprint into Main, BEFORE the merge into `main`):
+
+```bash
+git tag gse-backup/sprint-{NN}-pre-main-merge $(git rev-parse main)
+```
+
+This tags **`main`** at its state before the sprint delivery merge — the highest-stakes operation of the cycle. To undo the delivery merge:
+```bash
+git checkout main && git reset --hard gse-backup/sprint-{NN}-pre-main-merge
+```
+
+All three tag classes are retained for 30 days by default (configurable via `config.yaml → git.backup_retention_days`). Cleanup happens at the next `/gse:deliver` (see Step 8 — Cleanup Backup Tags).
 
 This ensures rollback is always possible.
 
@@ -165,9 +176,10 @@ For each feature branch (in dependency order):
    - **defer** — Keep sprint branch, do not merge yet
    - **discuss** — Explore options
 
-2. Execute the chosen strategy:
+2. Execute the chosen strategy (the class-3 backup tag from Step 0 is created first):
    ```
    git checkout main
+   git tag gse-backup/sprint-{NN}-pre-main-merge $(git rev-parse main)
    git merge --no-ff gse/sprint-{NN}/integration -m "gse(deliver): sprint S{NN} delivery"
    ```
 
@@ -258,7 +270,7 @@ If `config.yaml` field `post_tag_hook` is configured:
 2. If hook **succeeds**: report success
 3. If hook **fails**: present Gate:
    - **Retry** — Re-execute the hook
-   - **Rollback** — Remove tag, undo merge (use backup tags)
+   - **Rollback** — Remove tag, undo merge (class-3 backup tag: `git checkout main && git reset --hard gse-backup/sprint-{NN}-pre-main-merge`)
    - **Investigate** — Examine hook output and diagnose
    - **Discuss** — Explore alternatives
 

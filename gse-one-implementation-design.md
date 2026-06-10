@@ -2826,7 +2826,7 @@ The `marketplace.json` install path is `"plugin"` (not `"dist/claude"`), reflect
 
 **Reset** — At the start of the next sprint, `/gse:plan --strategic` overwrites `.gse/plan.yaml` with a fresh plan for the new sprint. The prior sprint's `plan-summary.md` remains in its sprint directory as the durable archive.
 
-**Resilience** — `.gse/plan.yaml` is validated on write (YAML parseable). On corruption, the orchestrator restores from the latest checkpoint in `.gse/checkpoints/` and reports the error.
+**Resilience** — `.gse/plan.yaml` is validated on write (YAML parseable). On corruption, the orchestrator applies the spec §12.7 — Resilience recovery ladder (git-committed version → checkpoint-covered fields → template + session context) and reports the path used. Note: checkpoints carry no plan.yaml fields (§12.5 — Checkpoint Format) — for plan.yaml the ladder skips straight from git to template + context.
 
 **.gitignore additions** (applied by `/gse:hug` on first run):
 

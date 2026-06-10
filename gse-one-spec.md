@@ -787,9 +787,9 @@ System hooks are reserved for actions where deterministic enforcement is critica
 
 | Hook | Trigger | Action | Level | Principle Enforced |
 |------|---------|--------|-------|--------------------|
-| **Protect main** | `git commit` on `main` branch | Block the commit, send feedback to agent | Hard (exit 2) | P12 (version control) |
-| **Block force-push** | `git push --force` | Block the push, send feedback to agent | Emergency (exit 2) | P12 (version control) |
-| **Review findings on push** | `git push` | Warn if `review_findings_open > 0` in `status.yaml` | Informational (exit 0) | P11 (guardrails), P6 (traceability) |
+| **Protect main** | `git commit` on `main` branch (any form, incl. chained `&& git commit` and `git -C . commit`) | Block the commit, send feedback to agent. Sanctioned exceptions (hook allows): `hooks.protect_main: false`, `git.strategy: none` (Micro mode), and the repository-initialization commit (no HEAD yet — covers the HUG foundational commit and §14.3 Step 1.7 — Git baseline verification auto-fix) | Hard (exit 2) | P12 (version control) |
+| **Block force-push** | any force push: `-f` / `--force` / `--force-with-lease`, flag in any position | Block the push, send feedback to agent | Emergency (exit 2) | P12 (version control) |
+| **Review findings on push** | `git push` (any form) | Warn if `review_findings_open > 0` in `status.yaml` | Informational (exit 0) | P11 (guardrails), P6 (traceability) |
 
 **Hook failure handling:** If a hook command fails (e.g., `status.yaml` not found), the failure is non-blocking — the user's work is not interrupted.
 
@@ -2091,7 +2091,7 @@ Safety tags are prefixed `gse-backup/` and retained for 30 days (configurable vi
 **Recovery procedures:**
 - **Branch recovery:** `git checkout -b gse/sprint-03/feat/auth gse-backup/sprint-03-feat-auth-deleted`
 - **Merge reversal:** `git checkout gse/sprint-03/integration && git reset --hard gse-backup/sprint-03-pre-merge-feat-auth`
-- **State file recovery:** `.gse/` files are git-tracked — `git checkout HEAD~1 -- .gse/backlog.yaml` restores the previous version
+- **State file recovery:** `.gse/` files are committed at the foundational commit (and whenever the user commits them) — `git checkout -- .gse/backlog.yaml` restores the last committed version, which may lag the live state; for uncommitted drift, apply the recovery ladder of §12.7 — Resilience
 
 **Cleanup:** Old backup tags are cleaned up during `/gse:deliver` (delete tags older than `backup_retention_days`).
 
@@ -2500,7 +2500,7 @@ When resuming a session, the agent loads state in priority order to stay within 
 
 GSE-One state files are human-readable YAML and Markdown by design. This enables resilience against agent failures:
 
-1. **YAML validation** — After writing any `.gse/*.yaml` file, the agent verifies that the YAML is parseable. If the file is corrupt (invalid YAML), the agent restores from the latest checkpoint in `.gse/checkpoints/` and reports the error. A corrupt state file must never be left in place.
+1. **YAML validation** — After writing any `.gse/*.yaml` file, the agent verifies that the YAML is parseable. If the file is corrupt (invalid YAML), the agent applies the **recovery ladder**, in order: (1) restore the last committed version from git when one exists (`git checkout -- .gse/<file>`); (2) otherwise restore the fields covered by the latest checkpoint in `.gse/checkpoints/` — checkpoints are partial snapshots (status core fields + per-task status), not full file copies, per §12.5 — Checkpoint Format, and none exists before the first `/gse:pause`; (3) otherwise recreate the file from its template and re-populate it from session context. In all cases, report the error and the recovery path used. A corrupt state file must never be left in place.
 
 2. **Context overflow prevention** — When `backlog.yaml` exceeds ~200 lines (typically around sprint 5), the agent compacts it by moving TASKs with `status: delivered` to `backlog-archive.yaml`. When sprint artefact directories accumulate past 5 sprints, the agent proposes archiving completed sprints: `docs/sprints/sprint-{NN}/` → `docs/archive/sprint-{NN}/`. This keeps the active state within context window limits.
 

@@ -1248,7 +1248,7 @@ Evaluate states in order — the first matching row wins.
 - **Step 2.6 — Dashboard Refresh** — after the preflight passes, regenerate `docs/dashboard.html` via `python3 "$(cat ~/.gse-one)/tools/dashboard.py"` so the current session starts from a fresh view. Silent unless it is the first generation (deferred pedagogy per HUG Step 5.5 — Dashboard Initialization).
 - **Step 2.8 — Coach Workflow Overview (post-recovery)** — invoke the coach sub-agent with `moment: /gse:go after recovery check` per the Coach Invocation contract (`gse-one/src/agents/coach.md`) and design §5.17 to surface axes 2-8 (workflow overview) at the start of a resumed session. May return zero proposals (silent) or one Inform note.
 
-Progression is defined as any TASK status change (`planned` → `in-progress`, `in-progress` → `review`, etc.) OR any `workflow.active` transition in `plan.yaml`. A session where neither happens counts as a session without progress, incrementing `sessions_without_progress` in `status.yaml` (writer: `/gse:go` Step 4 — Stale Sprint Detection and `/gse:resume` Step 6 — Finalize, per v0.52.0).
+Progression is defined as any TASK status change (`planned` → `in-progress`, `in-progress` → `review`, etc.) OR any `workflow.active` transition in `plan.yaml`. A session where neither happens counts as a session without progress, incrementing `sessions_without_progress` in `status.yaml` (writer: `/gse:go` Step 4 — Stale Sprint Detection and `/gse:resume` Step 6 — Finalize, per v0.52.0). The comparison source is `status.yaml → task_status_snapshot` (map TASK-id → status), refreshed by the same two writers at the end of their detection step.
 
 **Step 3 — Stale sprint detection (Gate):**
 ```
@@ -1355,6 +1355,7 @@ last_activity_timestamp: "2026-04-11T09:15:00Z"
 
 # Stale sprint detection (complexity/session-based, not calendar-based)
 sessions_without_progress: 0
+task_status_snapshot: {}
 
 # Review findings counter (used by hooks)
 review_findings_open: 0

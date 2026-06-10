@@ -2393,6 +2393,7 @@ activity_history:
 
 # Stale sprint detection (complexity/session-based, not calendar-based)
 sessions_without_progress: 0           # incremented each /gse:go or /gse:resume with no TASK status change
+task_status_snapshot: {}               # map TASK-id → status at last session end — comparison source for sessions_without_progress
 
 # Review findings counter (used by hooks)
 review_findings_open: 0
@@ -2427,6 +2428,7 @@ The following fields are **mandatory** — tools and the dashboard depend on the
 | `current_sprint` | integer ≥ 0 | Current sprint number |
 | `current_phase` | `LC00` \| `LC01` \| `LC02` \| `LC03` | Current lifecycle phase — used by dashboard |
 | `activity_history` | list of `{ activity, completed_at, sprint, notes }` | Per-activity completion log for the current sprint — authoritative source for `plan.yaml.workflow.completed` timestamps |
+| `task_status_snapshot` | map TASK-id → status | Last session's TASK status snapshot — written by `/gse:go` Step 4 — Stale Sprint Detection and `/gse:resume` Step 6 — Finalize; drives `sessions_without_progress` |
 | `consecutive_acceptances` | integer ≥ 0 | P16 pushback counter |
 | `fix_attempts_on_current_symptom` | integer ≥ 0 | P16 root-cause discipline counter — triggers devil-advocate escalation at threshold |
 

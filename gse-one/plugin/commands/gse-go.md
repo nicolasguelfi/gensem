@@ -151,11 +151,11 @@ Track the number of sessions (invocations of `/gse:go` or `/gse:resume`) where n
 
 **Persistent counter (since v0.52.0):** the count is stored in `status.yaml → sessions_without_progress`. Update it on every `/gse:go` invocation (and mirror the logic on `/gse:resume`):
 
-1. Read `status.yaml → sessions_without_progress` (default 0 if absent) and `status.yaml → activity_history[-1]` (last session's TASK status snapshot).
-2. Compare the current `backlog.yaml` TASK statuses against the last snapshot:
+1. Read `status.yaml → sessions_without_progress` (default 0 if absent) and `status.yaml → task_status_snapshot` (last session's map of TASK-id → status; treat an absent or empty snapshot as "first session" → reset the counter to 0).
+2. Compare the current `backlog.yaml` TASK statuses against that snapshot:
    - If **no TASK status changed** since the last session → increment `sessions_without_progress` by 1.
    - If **at least one TASK status changed** → reset `sessions_without_progress` to 0.
-3. Persist `status.yaml → sessions_without_progress` with the new value.
+3. Persist `status.yaml → sessions_without_progress` with the new value, then refresh the snapshot: write the current map of `{TASK-id: status}` to `status.yaml → task_status_snapshot`.
 4. The coach `mid_sprint_stall` axis (per `plugin/agents/coach.md` Invocation contract + `plugin/agents/gse-orchestrator.md` — section "Coach delegation") reads this counter and activates when `sessions_without_progress >= 2`.
 
 If the session-without-progress count reaches the configured threshold:

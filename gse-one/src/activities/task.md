@@ -72,7 +72,7 @@ Before any other work, verify the current sprint is writeable. This preflight im
 
 ### Step 2 — Budget Check
 
-1. Read current sprint complexity budget from `status.yaml`
+1. Read the sprint complexity budget from `.gse/plan.yaml → budget` (total / consumed / remaining). In Micro mode (no plan.yaml — already detected in Step 0), skip this step with an Inform note: complexity budget does not apply.
 2. Check if the task fits within remaining budget
 3. If budget would be exceeded:
    - Report: "This task (complexity {N}) would exceed the sprint budget (remaining: {M})."
@@ -186,7 +186,7 @@ For ad-hoc tasks, the "plan" is the task's own description in `backlog.yaml` (th
 1. Update TASK in `backlog.yaml`:
    - `status: done`
    - `completed_at: {timestamp}`
-2. Consume complexity budget: subtract task complexity from sprint remaining
+2. Consume complexity budget: add the task complexity to `.gse/plan.yaml → budget.consumed` and recompute `budget.remaining` (skip in Micro mode — no plan.yaml)
 3. **Cursor fields** (`last_activity`, `last_activity_timestamp`) are maintained centrally by the orchestrator after the activity closes — see `plugin/agents/gse-orchestrator.md` — section "Sprint Plan Maintenance", and `gse-one-implementation-design.md` §10.1 — Sprint Plan Lifecycle. No direct status.yaml write from this activity.
 4. Review scheduling:
    - If `requires_review: true`: task will be included in next `/gse:review`

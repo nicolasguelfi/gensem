@@ -84,6 +84,7 @@ activity_history: []                   # list of { activity, completed_at, sprin
 
 # Stale sprint detection (complexity/session-based, not calendar-based)
 sessions_without_progress: 0           # incremented each /gse:go or /gse:resume with no TASK status change
+task_status_snapshot: {}               # map TASK-id → status at the end of the last /gse:go or /gse:resume — comparison source for sessions_without_progress
 
 # Review findings counter (used by hooks)
 review_findings_open: 0

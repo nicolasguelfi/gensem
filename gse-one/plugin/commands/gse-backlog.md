@@ -155,7 +155,7 @@ For beginners (P9), simplify: *"This new item is parked for later. The current s
 
 This note appears **once per add** — never repeat it for the same TASK creation. Skip the note entirely when:
 - `plan.yaml` does not exist (Micro mode, or pre-PLAN state)
-- `plan.yaml.status` ∈ {completed, paused} — no active sprint to be confused with
+- `plan.yaml.status` ∈ {completed, abandoned} — no active sprint to be confused with
 - The user invoked `/gse:backlog add` from inside another activity (e.g., REVIEW promoting a finding to a TASK) — that flow already has its own routing logic
 
 Rationale: in observed sessions, users repeatedly added items mid-sprint without realising they were not picked up by the current sprint plan (the silent fall-through to the pool was correct methodologically but confusing pragmatically). This single sentence closes the gap pedagogically without adding a Gate.

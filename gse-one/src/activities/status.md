@@ -36,7 +36,7 @@ PROJECT: {project_name}
 Sprint:  S{NN} ({current_phase})
 Phase:   {current phase description}
 Last:    {last_activity} on {last_activity_timestamp}
-Health:  {overall_score}/10
+Health:  {health.score}/10
 ```
 
 ### Step 2 — Sprint State
@@ -52,11 +52,16 @@ Budget: {used}/{total} complexity points ({remaining} remaining)
 | TASK-{ID}  | {type}   | {status}    | {N}        | {branch or —}    |
 ```
 
-Status symbols:
-- `planned` — not started
+Status symbols (full 9-value lifecycle, per `backlog.yaml` — the authoritative schema):
+- `open` — in the backlog pool, not part of a sprint
+- `planned` — in the sprint, not started
 - `in-progress` — actively being worked on
-- `done` — completed, pending review
-- `delivered` — merged and released
+- `review` — produced, awaiting `/gse:review`
+- `reviewed` — reviewed clean (no HIGH/MEDIUM findings) — ready to merge
+- `fixing` — FIX in progress on review findings
+- `done` — reviewed + fixed (FIX applied) — ready to merge
+- `delivered` — merged by `/gse:deliver`
+- `deferred` — pushed to a later sprint
 
 ### Step 3 — Artefact Inventory
 
@@ -200,7 +205,7 @@ This step is **purely a read of existing files** — it does not modify state, d
 Based on current state, suggest next actions:
 
 - If tasks are in-progress: "Continue with `/gse:produce`"
-- If all tasks done: "Ready for `/gse:review`"
-- If reviews complete: "Ready for `/gse:deliver`"
+- If tasks are in `review`: "Ready for `/gse:review`"
+- If all tasks `done` or `reviewed`: "Ready for `/gse:deliver`"
 - If stale sprint detected ({N} sessions without progress > `lifecycle.stale_sprint_sessions`): "Sprint has had {N} sessions without progress — consider `/gse:go`"
 - If health score below 5/10: "Health is low — consider addressing {worst dimension}"

@@ -133,3 +133,24 @@ files_under_suspicion:
 **Output format:** standard `[AI-INTEGRITY]` findings (see Output Format above). Additionally, if no code-level finding is identified, the devil-advocate MUST produce at least one **external-cause suggestion** (e.g., *"The code appears correct. Suggest the user check the browser console for CORS errors and confirm the app is served over HTTP, not file://"*), tagged `[AI-INTEGRITY] [INFO] — External cause suspected`.
 
 **Post-escalation contract:** the orchestrator / `/gse:fix` MUST address at least one finding (fix, dismiss with a DEC-, or request user input) before any further patch on the same symptom is authorized. This breaks the trial-and-error loop.
+
+## Mode: delivery-integrity (Lightweight DELIVER minimal pass)
+
+Activated by `/gse:deliver` Step 1.6 — Minimal Integrity Pass, **lightweight mode only** (Full mode gets the complete pass at `/gse:review`; Micro is excluded by design). This is the only P16 net in the Lightweight workflow — and it is deliberately NOT a review: the checklist is restricted and the output is capped.
+
+**Input format:**
+
+```yaml
+mode: delivery-integrity
+sprint_diff: "<git diff main...HEAD summary + changed file list>"
+artefacts:
+  - "<path>"          # sprint artefacts (reqs.md, test docs, ...)
+```
+
+**Restricted checklist (nothing else):**
+
+- [ ] **Library/API existence** — every library, package, API, CLI flag referenced by the produced code actually exists (`pip show <lib>` / `npm list <lib>` / official docs URL).
+- [ ] **Version verification** — versions used are real and mutually compatible.
+- [ ] **Unverified critical assertions (P15)** — claims tagged Verified without recorded evidence, or untagged critical claims (security, data integrity, cost).
+
+**Output cap:** at most **5 findings**, most critical first, standard `[AI-INTEGRITY]` format. Routing is owned by deliver Step 1.6: HIGH → Gate before merge; MEDIUM/LOW → Inform in release notes.

@@ -2719,7 +2719,7 @@ Upgrading from Micro → Lightweight → Full is possible at any time via `/gse:
 | DESIGN / PREVIEW | Yes (conditional) | No | No |
 | REVIEW / COMPOUND | Yes | No | No |
 
-> **Caveat — P16 integrity coverage:** because REVIEW is absent from the Lightweight and Micro workflows, the devil's advocate pass (P16 — hallucination hunt, assumption challenge) runs in **Full mode only**. AI failure modes do not scale down with project size — a Lightweight user relies on the P15 confidence discipline and the TESTS Soft guardrail alone. A minimal integrity pass at Lightweight DELIVER is a tracked future enhancement.
+> **P16 integrity coverage:** because REVIEW is absent from the Lightweight and Micro workflows, the **complete** devil's advocate pass runs in Full mode only. AI failure modes do not scale down with project size, so since v0.70.0 Lightweight DELIVER runs a **minimal integrity pass** (devil-advocate `delivery-integrity` mode — library/API existence, version verification, unverified critical assertions; ≤ 5 findings; HIGH findings Gate the merge) at Step 1.6, before any merge. Micro remains uncovered by design (Gate-only tier for throwaway experiments) — a Micro user relies on the P15 confidence discipline alone.
 
 ### 13.3 Team Usage
 

@@ -19,8 +19,9 @@ directory is gitignored, so saved reports never leak into git. Use
 
 For reasoning-based checks (LLM), use the `/gse-audit` slash command in
 Claude Code — it invokes this script for deterministic checks, then
-performs semantic reasoning via the methodology-auditor agent across 20
-audit jobs defined in .claude/audit-jobs.json. The slash command saves
+performs semantic reasoning via the methodology-auditor agent across the
+LLM audit jobs (Categories A-E) defined in .claude/audit-jobs.json — the
+Category F jobs are covered here, deterministically. The slash command saves
 its augmented report (deterministic + LLM findings) to the same
 `_LOCAL/audits/` directory.
 
@@ -1583,39 +1584,36 @@ def _filter_by_cluster(report: Report, job_id: str) -> Report:
     Findings without a file attribution (global checks like 'version',
     'plugin_parity', 'git') are retained as context; only file-scoped
     findings are filtered.
+
+    Contract: --cluster is an explicit user request — if the catalog cannot
+    be loaded or the job id is unknown, abort with exit code 2 rather than
+    silently returning the unfiltered report (which would masquerade as a
+    successful filtered run).
     """
     # Import locally to avoid hard dependency at module load
     try:
         from audit_catalog import load_catalog, files_in_cluster, CatalogError
     except ImportError:
-        # audit_catalog.py not importable — return report unchanged
-        return report
+        print(
+            "error: --cluster requested but audit_catalog module is not "
+            "importable (expected alongside audit.py)",
+            file=sys.stderr,
+        )
+        raise SystemExit(2)
     try:
         jobs = load_catalog(REPO_ROOT)
     except CatalogError as e:
-        report.findings.append(
-            Finding(
-                "catalog",
-                "warning",
-                "Cluster filter requested but catalog load failed",
-                str(e),
-                "Check .claude/audit-jobs.json exists and is valid",
-            )
-        )
-        return report
+        print(f"error: --cluster requested but catalog load failed: {e}", file=sys.stderr)
+        raise SystemExit(2)
 
     target = next((j for j in jobs if j.id == job_id), None)
     if not target:
-        report.findings.append(
-            Finding(
-                "catalog",
-                "error",
-                f"Cluster '{job_id}' not found in catalog",
-                "Available: " + ", ".join(j.id for j in jobs),
-                "Check the catalog or use --list-clusters",
-            )
+        print(
+            f"error: cluster '{job_id}' not found in catalog. Available: "
+            + ", ".join(j.id for j in jobs),
+            file=sys.stderr,
         )
-        return report
+        raise SystemExit(2)
 
     cluster_files = files_in_cluster(target, REPO_ROOT)
     kept = []

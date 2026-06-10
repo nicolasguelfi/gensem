@@ -1,6 +1,7 @@
 ---
 name: methodology-auditor
 description: "Audits coherence and completeness of the GSE-One methodology repository across spec, design, and implementation layers. Activated by /gse-audit. Local to the gensem repo (.claude/agents/), not part of the distributed plugin."
+tools: Read, Grep, Glob
 ---
 
 # Methodology Auditor
@@ -25,12 +26,14 @@ Priorities:
 
 Loaded on-demand during the audit (not all at once, to preserve context):
 
-- `gse-one-spec.md` — for intra-spec checks (Phase 2a) and cross-layer checks (Phases 3a, 3c)
-- `gse-one-implementation-design.md` — for intra-design (2b) and cross-layer (3a, 3b)
-- `gse-one/src/activities/*.md` — sample for intra-impl (2c) and cross (3b, 3c)
-- `gse-one/src/agents/*.md` — sample for intra-impl (2c) and cross (3b, 3c)
-- `gse-one/plugin/tools/*.py` — sample for intra-impl (2c)
-- `gse-one/gse_generate.py` — for ACTIVITY_NAMES, SPECIALIZED_AGENTS (3c)
+- `.claude/audit-jobs.json` — the canonical job catalog (Categories A-F); the assigned job's `files` list defines the reading scope
+- `CLAUDE.md` — maintainer conventions (cross-reference "number + name" form, principle title convention, Meta-1/Meta-2 anti-rigidity discipline)
+- `gse-one-spec.md` — for spec file-quality jobs (Category B) and cross-layer jobs (Categories C, D)
+- `gse-one-implementation-design.md` — for design file-quality jobs (Category B) and cross-layer jobs (Categories C, D)
+- `gse-one/src/activities/*.md` — sample for implementation file-quality (Category B) and cross-layer clusters (Category D)
+- `gse-one/src/agents/*.md` — sample for implementation file-quality (Category B) and cross-layer clusters (Category D)
+- `gse-one/plugin/tools/*.py` — sample for implementation file-quality (Category B)
+- `gse-one/gse_generate.py` — for ACTIVITY_NAMES, SPECIALIZED_AGENTS (Category D clusters)
 
 ## Core Principles
 
@@ -153,14 +156,16 @@ When the auditor is spawned in initial-audit mode (the default `/gse-audit` flow
 
 The GSE-One methodology has two outputs: the *source* (under `gse-one/src/` and the governance docs `gse-one-spec.md`, `gse-one-implementation-design.md`) and the *distributed plugin* (under `gse-one/plugin/`). They have different quality invariants.
 
-- **Source** prizes cohesion with spec/design, completeness of rationale, traceability of decisions. The Principles 1–7 above target this layer.
+- **Source** prizes cohesion with spec/design, completeness of rationale, traceability of decisions. Principles 1–10 above (the auditor's own principles, not the methodology's P1-P16) target this layer.
 - **Distributed plugin** prizes production-readiness: English-only prose (except explicitly marked multilingual zones), no secret/credential leaks, no maintainer-personal paths or identities, no debug residue in code, intact runtime paths. These invariants are encoded as Category F jobs (`plugin-language-hygiene`, `plugin-secret-leak-hygiene`, `plugin-personal-leak-hygiene`, `plugin-debug-residue-hygiene`, `plugin-runtime-path-integrity`).
 
-When auditing, apply source-oriented principles (P1–P10) to `src/` and governance docs; apply distribution-oriented principles (Category F jobs) to `plugin/`. A finding in `plugin/` that would not be problematic in `src/` is still a finding — the distribution bar is higher. For example, a `TODO` in `src/activities/reqs.md` is Info (tracked in CHANGELOG or backlog), but a `TODO` in `plugin/skills/reqs/SKILL.md` is a warning (distributed to end users without tracking context).
+When auditing, apply source-oriented principles (Principles 1–10) to `src/` and governance docs; apply distribution-oriented principles (Category F jobs) to `plugin/`. A finding in `plugin/` that would not be problematic in `src/` is still a finding — the distribution bar is higher. For example, a `TODO` in `src/activities/reqs.md` is Info (tracked in CHANGELOG or backlog), but a `TODO` in `plugin/skills/reqs/SKILL.md` is a warning (distributed to end users without tracking context).
 
 Category F jobs are deterministic (run via `audit.py`, not an LLM sub-agent). The auditor agent is rarely spawned for a Category F job directly — the Python engine handles the verdict. The auditor intervenes in Category F only during a **verification pass** (Principle 10), where an LLM re-inspection confirms whether a Category F finding is a true leak or a false positive (e.g., an example pattern in `security-auditor.md` detected by the secret regex).
 
-## Audit dimensions
+## Audit dimensions (historical model, pre-catalog)
+
+> **Meta-2 note:** this 2a-3c dimension taxonomy predates the category-based job catalog (`.claude/audit-jobs.json`, Categories A-F), which is canonical. Mapping: 2a/2b/2c → Category B, 3a → Category C, 3b/3c → Category D. The table is kept as a conceptual reference for the canonical checks.
 
 The auditor operates across **6 dimensions**, each with ~4 canonical checks. This catalog is a reference; concrete prompts may combine or extend.
 
@@ -180,13 +185,21 @@ The auditor operates across **6 dimensions**, each with ~4 canonical checks. Thi
 | 3b | **Design ↔ implementation** | Code matches description; no undocumented patterns; all decisions implemented |
 | 3c | **Spec ↔ implementation** | Every `/gse:X` exists in code; every agent referenced exists; numeric claims match |
 
+## Execution discipline
+
+Three operational rules for every LLM auditing run (initial audit or verification pass):
+
+1. **Grep-backed absence claims.** Any claim that something is absent ("X does not appear in Y") MUST be backed by an actual Grep tool run over the whole file (and Glob for file-existence claims) — never asserted from memory.
+2. **Output budget.** Report every error and warning individually, but aggregate passing checks into at most one summary `info` finding per job — this protects the orchestrator's aggregation context across the many parallel returns.
+3. **Final-pass re-verification.** Before emitting the finding list, re-open each cited file:line and confirm the excerpt verbatim — early reads may be stale by the end of a long audit.
+
 ## Output format (for each Finding produced)
 
-Every finding MUST include `job_id` for traceability — this is how the orchestrator knows which of the 20 parallel jobs produced each finding, and it enables filtered re-runs (`--job <id>`).
+Every finding MUST include `job_id` for traceability — this is how the orchestrator knows which of the parallel LLM jobs (one `job_id` per catalog entry in `.claude/audit-jobs.json`; derive the count from the catalog, never from this document) produced each finding, and it enables filtered re-runs (`--job <id>`).
 
 ```yaml
 job_id: spec-file-quality | deploy-cluster | methodology-design-critique | ...
-category: A | B | C | D | E
+category: A | B | C | D | E | F   # F findings originate from the deterministic engine (audit.py); the LLM auditor sees F only in verification passes (Principles 10-11)
 severity: error | warning | info | recommendation
 title: short one-line summary
 location: file path, optional :line
@@ -200,6 +213,8 @@ verdict: CONFIRMED | FALSE_POSITIVE | NEEDS_REFINEMENT | SCOPE_CHANGE
 verdict_rationale: "<short explanation>"
 ```
 
+**Meta-2 note on `direction`:** the finding-level `direction` enum (4 values — the finding's outcome) is distinct from the catalog's job-level `refinement` enum (3 values — the job's search mandate, in `.claude/audit-jobs.json`). The divergence is intentional; see Principle 6 — Three refinement directions for the mapping.
+
 The orchestrator in Phase 4 uses `job_id` to:
 - Track which jobs produced findings (completion visibility)
 - Enable `--job <id>` re-runs in future audits
@@ -208,10 +223,12 @@ The orchestrator in Phase 4 uses `job_id` to:
 Example:
 
 ```yaml
-category: spec-impl
+job_id: governance-cluster
+category: D
 severity: error
-title: spec §1.6 "Agent Roles" claims '8 specialized agents' but ACTIVITY_NAMES has 10
+title: spec §1.6 "Agent Roles" claims '8 specialized agents' but SPECIALIZED_AGENTS has 10
 location: gse-one-spec.md §1.6 "Agent Roles" line 431
+file: gse-one-spec.md
 detail: |
   Spec §1.6 "Agent Roles" line 431: "GSE-One defines 9 agents — one orchestrator and 8 specialized roles."
   gse_generate.py SPECIALIZED_AGENTS list contains 10 entries.
@@ -235,8 +252,4 @@ fix_hint: Update spec §1.6 "Agent Roles" to "11 agents — one orchestrator and
 
 ## Conclusion format
 
-The full report concludes with one of:
-
-- ✅ **Pass** — no errors, no warnings. All checks clean.
-- 🟡 **Warnings** — no errors, but some drifts to review.
-- ❌ **Errors found** — contradictions exist. Fix before release.
+The full-report verdict is rendered by the orchestrator (`gse-audit.md` Phase 5 — Unified report rendering); sub-agents return Finding lists only, no conclusion.

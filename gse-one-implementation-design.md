@@ -177,7 +177,7 @@ When any of these canonical formats changes, `dashboard.py` must be updated in t
 
 **Added to the plan skill workflow** (writes branch assignments to `.gse/plan.yaml` and `.gse/backlog.yaml`):
 
-```markdown
+````markdown
 ### Git Step (Step 6 — Git Integration, between Step 5 "Promote to Sprint" and Step 7 "Persist Plan")
 
 Read `.gse/config.yaml` → `git.strategy`.
@@ -215,13 +215,13 @@ Read `.gse/config.yaml` → `git.strategy`.
 4. Update each TASK entry in `.gse/backlog.yaml` with `git.branch` (planned, not yet created) and `git.branch_status: planned`.
 
 **If strategy is `none`:** Skip all git operations.
-```
+````
 
 ### 4.2 `/gse:produce` — Git Integration
 
 **Added to the produce skill workflow** (reads branch name from `.gse/plan.yaml` tasks or `.gse/backlog.yaml` git state):
 
-```markdown
+````markdown
 ### Git Step (before production begins)
 
 Read `.gse/config.yaml` → `git.strategy`.
@@ -282,13 +282,13 @@ Commit at logical checkpoints:
 - After each file is complete
 - After each test passes
 - Before switching to a different sub-task
-```
+````
 
 ### 4.3 `/gse:review` — Git Integration
 
 **Added to the review skill workflow:**
 
-```markdown
+````markdown
 ### Git Step (at review start)
 
 Read `.gse/config.yaml` → `git.strategy`.
@@ -321,13 +321,13 @@ Read `.gse/config.yaml` → `git.strategy`.
    ```
 
 **If strategy is `none`:** Review files in-place as before.
-```
+````
 
 ### 4.4 `/gse:fix` — Git Integration
 
 **Added to the fix skill workflow:**
 
-```markdown
+````markdown
 ### Git Step (before applying fixes)
 
 Read `.gse/config.yaml` → `git.strategy`.
@@ -356,13 +356,13 @@ Read `.gse/config.yaml` → `git.strategy`.
 1. Create fix branch, switch to it, apply fixes, merge back.
 
 **If strategy is `none`:** Apply fixes in-place.
-```
+````
 
 ### 4.5 `/gse:deliver` — Git Integration
 
 **This is the most git-heavy skill. Full workflow:**
 
-```markdown
+````markdown
 ### Delivery Workflow
 
 Read `.gse/config.yaml` → `git.strategy`.
@@ -481,11 +481,11 @@ Delivered: Sprint <N> — v<version>
   Tag: v<version> (commit <hash>)
   Health at delivery: Z/10
 ```
-```
+````
 
 ### 4.6 `/gse:pause` — Git Integration
 
-```markdown
+````markdown
 ### Git Step (before checkpoint save)
 
 Read `.gse/config.yaml` → `git.auto_commit_on_pause`.
@@ -516,11 +516,11 @@ If true:
        sprint-03-feat-user-auth: <commit-hash>
        sprint-03-feat-dashboard: <commit-hash>
    ```
-```
+````
 
 ### 4.7 `/gse:resume` — Git Integration
 
-```markdown
+````markdown
 ### Git Step (after checkpoint load)
 
 1. Verify all worktrees from the checkpoint still exist:
@@ -549,11 +549,11 @@ If true:
    ```
 
 4. Propose next action based on where work stopped.
-```
+````
 
 ### 4.8 `/gse:status` — Git Extension
 
-```markdown
+````markdown
 ### Git Status Section
 
 Add to status output:
@@ -579,11 +579,11 @@ Flags:
   --branches    Show all gse/* branches
   --decisions   Show auto-decision log
   --worktrees   Show detailed worktree info
-```
+````
 
 ### 4.9 `/gse:health` — Git Hygiene Sub-Score
 
-```markdown
+````markdown
 ### Git Hygiene Computation
 
 Score 0–10 based on:
@@ -609,7 +609,7 @@ Git-specific alerts:
   ✓ GIT: No merge conflicts detected
   ✓ GIT: main is clean and tagged (v0.2.1)
 ```
-```
+````
 
 ---
 
@@ -617,7 +617,7 @@ Git-specific alerts:
 
 ### 5.1 `/gse:learn` — Knowledge Transfer Skill
 
-```markdown
+````markdown
 # skills/learn/SKILL.md
 ---
 description: "Start or continue a learning session. Triggered when the user asks to learn, understand, or be taught a concept. Also triggered proactively by the agent at natural workflow transition points when a competency gap is detected. Covers: /gse:learn <topic>, /gse:learn --notes, /gse:learn --roadmap."
@@ -693,11 +693,11 @@ Not part of the learn skill itself, but embedded in the `settings.json` agent ke
    - If not, and the concept is relevant: insert 2-3 sentence explanation
    - Mark concept as `mentioned` in competency_map
 2. Aggregate contextual tips into a learning note at sprint end (during /gse:compound)
-```
+````
 
 ### 5.2 `/gse:backlog` — Unified Work Item Management (NEW)
 
-```markdown
+````markdown
 # skills/backlog/SKILL.md
 ---
 description: "View and manage the project backlog — the unified list of all work items (TASK). Filter by sprint, pool, or artefact type. Add items manually. Sync with GitHub Issues. Triggered when user asks about tasks, backlog, work items, what's left to do, or issue management."
@@ -770,11 +770,11 @@ The backlog skill is also called internally by:
 - DELIVER: closes TASK (status: delivered), auto-closes GitHub Issues
 
 These internal calls don't show the backlog display — they just modify backlog.yaml.
-```
+````
 
 ### 5.3 `/gse:collect` — External Source Mode Extension
 
-```markdown
+````markdown
 ### External Source Workflow (added to collect skill)
 
 Triggered when $ARGUMENTS contains paths or URLs.
@@ -806,7 +806,7 @@ gse:
   source_origin: ~/other-project/src/auth.py
   adaptation: "Replaced Flask with FastAPI"
 ```
-```
+````
 
 ### 5.4 `/gse:go` — Adopt Mode
 
@@ -940,7 +940,7 @@ Default enabled:
 
 ### 5.9 `/gse:tests` — Testing Strategy Skill (Extended)
 
-```markdown
+````markdown
 # skills/tests/SKILL.md
 ---
 description: "Define test strategy, set up test environment, write tests, execute campaigns, and produce evidence. Triggered when the user asks about testing, wants to add tests, or when /gse:produce needs to run tests after code production. Covers unit, integration, E2E, visual, and acceptance tests."
@@ -1026,11 +1026,11 @@ Part of the canonical run when visual testing is enabled (see spec §6.3 "Screen
 
 Only invoked by `--evidence`. Aggregates all per-run TCPs of the current sprint into a single sprint-level campaign (also TCP-prefixed), with `traces.derives_from` pointing at the rolled-up TCPs. No test execution is performed.
 
-```
+````
 
 ### 5.10 `/gse:produce` — Test Execution After Production
 
-```markdown
+````markdown
 ### Test Execution (added to produce skill, after code is written)
 
 PRODUCE invokes the **canonical test run** (spec §6.3) as its test execution phase. This section documents only the PRODUCE-specific pre/post-conditions:
@@ -1052,11 +1052,11 @@ The canonical run produces TCP-NNN campaign, `test_evidence` update on the TASK,
     code_coverage: 78
     summary: "24 tests, 22 passed, 2 failed"
 ```
-```
+````
 
 ### 5.11 `/gse:review` — Devil's Advocate Agent (P16)
 
-```markdown
+````markdown
 ### Devil's Advocate — [IMPL] review tier (added to review skill)
 
 After the standard quality review (the `[IMPL]` tier per spec §6.5), activate the devil-advocate agent:
@@ -1109,7 +1109,7 @@ After the standard quality review (the `[IMPL]` tier per spec §6.5), activate t
 4. **Integration with P15 confidence:**
    - Findings where confidence was "Moderate" or "Low" are flagged with higher severity
    - Findings where confidence was "Verified" but verification was wrong → CRITICAL
-```
+````
 
 ### 5.12 User Pushback Detection (Cross-cutting, in settings.json)
 
@@ -1141,7 +1141,7 @@ The agent tracks a `consecutive_acceptances` counter in `.gse/status.yaml`:
 
 ### 5.13 `/gse:assess` — Gap Analysis Skill
 
-```markdown
+````markdown
 # skills/assess/SKILL.md
 ---
 description: "Evaluate project artefact status against goals. Identifies covered, partial, and uncovered goals. Triggered when user asks to assess, evaluate progress, or check readiness."
@@ -1183,11 +1183,11 @@ Gap Analysis — Sprint N
 
 ### Step 5 — Feed PLAN
 Uncovered goals → candidate TASK items in backlog pool (auto-created with `origin: assess`)
-```
+````
 
 ### 5.14 `/gse:go` — Orchestrator Decision Logic
 
-```markdown
+````markdown
 ### Orchestrator Decision Tree (added to go skill)
 
 When `/gse:go` is invoked:
@@ -1266,11 +1266,11 @@ If any activity fails:
 2. Report error with agent's assessment
 3. Gate: retry / skip (if skippable) / pause / discuss
 4. Never silently continue
-```
+````
 
 ### 5.15 `/gse:deliver` — Deploy & Recovery Extensions
 
-```markdown
+````markdown
 ### Deploy Step (added after Step 4 — Tag Release)
 
 If `git.post_tag_hook` is configured:
@@ -1310,7 +1310,7 @@ git checkout main && git reset --hard gse-backup/sprint-NN-pre-main-merge
 ```
 
 Cleanup: delete backup tags older than `git.backup_retention_days` during deliver.
-```
+````
 
 **Test-Specific Guardrails (spec §9.3.1).** `/gse:deliver` Step 1.5 enforces three guardrails before any merge:
 

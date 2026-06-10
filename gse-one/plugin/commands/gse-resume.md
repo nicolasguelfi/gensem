@@ -81,7 +81,7 @@ Three coherence cases:
    - Otherwise (Step 0 case 2 "Use latest" or case 3 "Force resume from latest"), find the latest checkpoint in `.gse/checkpoints/` (sorted by filename, newest first).
    - If no checkpoints exist: report "No checkpoint found. Use `/gse:go` to start." and exit.
 
-4. Read the checkpoint YAML and extract: `git_state.worktrees`, `status_snapshot`, `backlog_sprint_snapshot`, `note`
+4. Read the checkpoint YAML and extract: `git_state.worktrees`, `status_snapshot`, `backlog_sprint_snapshot`, `last_task`, `note`
 
 ### Step 2 — Verify Worktrees
 
@@ -140,6 +140,8 @@ SESSION RESUMED
   Last activity: {last_activity}
   Last task: TASK-{ID} ({task_title})
 ```
+
+Open the briefing with the session context: *"You paused while working on {last_task}."* (skip if `last_task` is empty).
 
 If a note was attached to the checkpoint:
 ```

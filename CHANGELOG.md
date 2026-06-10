@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.66.1] - 2026-06-10
+
+### Added
+- Added checkpoint round-trip coherence check to audit.py templates category + regression test in test_audit.py (backlog R2).
+- Added TESTING.md "Recovery checklist (manual)": kill mid-PRODUCE, corrupt status.yaml (§12.7 ladder), backup-tag reversion.
+- Added CLAUDE.md Meta-3 — deterministic-guard placement rule (code→tests, prose→audit engine, semantics→LLM jobs; evidence bar).
+
+### Fixed
+- Fixed resume.md never reading back `last_task` from the checkpoint (gap surfaced by the new coherence rule); briefing now opens with it.
+
+### Changed
+- Changed TESTING.md unit-test inventory to list all 4 test files (was test_deploy.py only).
+
 ## [0.66.0] - 2026-06-10
 
 ### Added

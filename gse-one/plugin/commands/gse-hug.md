@@ -137,7 +137,7 @@ Example — beginner flow (1 question at a time):
 
 Example — expert flow (all at once):
 ```
-[Step 0] → Skipped (language detected from first message)
+[Step 0] → Language question asked (always — locale-detected default preselected)
 [Step 1] → Inferences: IT=expert (from vocabulary), domain=api, team=solo
 [Step 2]  → All remaining questions in one block:
             AskUser([

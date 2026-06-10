@@ -443,7 +443,7 @@ An agent is a named role that shapes how the coding agent reasons about a specif
 | **ux-advocate** | Evaluates user experience and accessibility. | `/gse:preview`, `/gse:review` |
 | **guardrail-enforcer** | Canonical rule reference for guardrail compliance (P11): defines the Soft/Hard/Emergency tier taxonomy, Decision Tier compliance matrix, and GUARD-NNN output format. Not spawned as a runtime sub-agent — its semantics are enforced deterministically by system hooks (`plugin/hooks/hooks.claude.json`: branch protection, force-push interception, open-findings warning) and by inline Step 0 guardrail checks authored into activities (Sprint Freeze, Hard/Soft preflights, Decision tier routing). This **Compliance archetype** invocation pattern is distinct from Reviewer/Operational/Observational/Identity archetypes — see CLAUDE.md §Agent archetypes. | Consulted as rule reference (no direct invocation) |
 | **devil-advocate** | Challenges the agent's own productions for AI integrity (P16). | `/gse:review` |
-| **coach** | Observes the AI+user collaboration across **8 axes** — pedagogy (P14: explicit learning goals + inferred gaps, 5-option P14 preambles, LRN- notes); profile calibration (drift between declared profile and observed behavior); sprint velocity; workflow health (stalls, friction); quality trends (test pass-rate, review findings); engagement pattern (P16 pushback, acceptance streaks); process deviation (activity skips, shortcuts); sustainability (session length, cadence). Each axis is individually toggleable. Holds extensible **coaching recipes** (both pedagogical and workflow) — user-editable and self-updatable via compound Axe 3. | Activity start (pedagogy axis when learning_goals set); sprint close and mid-sprint stall (velocity/health/quality); end of Gate sequences (engagement); activity-skip events (process deviation); session-boundary events (sustainability); `/gse:compound` Axe 3 (all axes + recipe curation) |
+| **coach** | Observes the AI+user collaboration across **8 axes** — pedagogy (P14: explicit learning goals + inferred gaps, 5-option P14 preambles, LRN- notes); profile calibration (drift between declared profile and observed behavior); sprint velocity; workflow health (stalls, friction); quality trends (test pass-rate, review findings); engagement pattern (P16 pushback, acceptance streaks); process deviation (activity skips, shortcuts); sustainability (session length, cadence). Each axis is individually toggleable. Holds extensible **coaching recipes** (both pedagogical and workflow) — user-editable and self-updatable via compound Axe 3. | Activity start (pedagogy axis when learning_goals set); sprint close and mid-sprint stall (velocity/health/quality); end of Gate sequences (engagement); activity-skip events (process deviation); session-boundary events (sustainability); `/gse:go` after recovery check (workflow overview); `/gse:pause` end-of-session check; `/gse:compound` Axe 2 (axes 2-8 feed) and Axe 3 (axes 1-2 feed + recipe curation) |
 | **deploy-operator** | Manages Hetzner/Coolify deployment lifecycle. Governs safety (credential handling, no-exposure), idempotence (phase tracking in `.gse/deploy.json`), and cost-confirmation gates. | `/gse:deploy` |
 
 ---
@@ -789,7 +789,7 @@ System hooks are reserved for actions where deterministic enforcement is critica
 |------|---------|--------|-------|--------------------|
 | **Protect main** | `git commit` on `main` branch (any form, incl. chained `&& git commit` and `git -C . commit`) | Block the commit, send feedback to agent. Sanctioned exceptions (hook allows): `hooks.protect_main: false`, `git.strategy: none` (Micro mode), and the repository-initialization commit (no HEAD yet — covers the HUG foundational commit and §14.3 Step 1.7 — Git baseline verification auto-fix) | Hard (exit 2) | P12 (version control) |
 | **Block force-push** | any force push: `-f` / `--force` / `--force-with-lease`, flag in any position | Block the push, send feedback to agent | Emergency (exit 2) | P12 (version control) |
-| **Review findings on push** | `git push` (any form) | Warn if `review_findings_open > 0` in `status.yaml` | Informational (exit 0) | P11 (guardrails), P6 (traceability) |
+| **Review findings on push** | `git push` (any form) | Warn if `review_findings_open > 0` in `status.yaml` | Soft (warn-only, exit 0) | P11 (guardrails), P6 (traceability) |
 
 **Hook failure handling:** If a hook command fails (e.g., `status.yaml` not found), the failure is non-blocking — the user's work is not interrupted.
 
@@ -910,10 +910,10 @@ traces:
 #### Knowledge tracking
 
 The agent maintains a lightweight **competency map** in the HUG profile (`.gse/profile.yaml`) that tracks:
-- Concepts explained (contextual mode) — with date, so it doesn't repeat
+- Concepts mentioned (contextual mode) — with date, so it doesn't repeat
 - Learning sessions completed (proactive mode) — with topic, depth, and note path
-- Learning goals expressed by the user — with progress status
-- Competency gaps detected — with project relevance
+- Learning goals expressed by the user (`learning_goals` in `profile.yaml`) — progress is inferred from linked LRN- notes and competency entries; there is no dedicated progress field
+- Competency gaps detected — recorded by the coach in `status.yaml → detected_gaps[]` and surfaced through the map
 - Notes produced — index of all learning notes with topics
 
 This map is used to calibrate both the contextual tips and the proactive proposals, and to progressively adjust the user's effective expertise level over time. As the user learns, the agent naturally shifts from Gate-tier to Inform-tier decisions, from verbose to concise explanations, and from frequent to rare guardrails — the coaching works itself out of a job.
@@ -1001,6 +1001,8 @@ When the agent teaches (P14) or recommends a practice, it cites its sources when
 - "I cannot find an authoritative source for this recommendation — it is based on my general understanding. Please verify independently."
 
 This allows the user to **check independently** and reduces the false authority that fluent AI-generated prose creates.
+
+**"Verified but wrong" escalation (CRITICAL).** When a claim previously tagged *Verified* turns out to be false, the corresponding review finding is escalated to severity **CRITICAL** at review merge time — false certainty is the most dangerous failure mode, and this escalation is the **only** path by which any reviewer finding reaches CRITICAL (baseline reviewer severities remain HIGH / MEDIUM / LOW, per §6.5 — Test Review Layering). The escalation is performed by the devil's advocate integration in `/gse:review` (see `plugin/agents/devil-advocate.md` — Integration with P15 Confidence Signaling, and design §5.11 — Devil's Advocate Agent).
 
 ### P16 — Adversarial Self-Review and User Pushback
 
@@ -1153,14 +1155,14 @@ The HUG activity captures and maintains the following profile dimensions:
 | **Domain background** | Source of analogies for adaptive communication (P9) | Teaching / Business / Science / Engineering / Design |
 | **Decision involvement** | Calibrate decision tier thresholds (P7) | autonomous (more Auto) / collaborative / supervised (more Gate) |
 | **Project domain** | Adapt engineering recommendations | web / api / cli / data / mobile / embedded / library / scientific / other (9 canonical values — see `plugin/templates/profile.yaml`) |
-| **Team context** | Adapt collaboration recommendations | Solo / Small team / Large team |
+| **Team context** | Adapt collaboration recommendations | Solo / Pair / Small team / Large team |
 | **Learning goals** | Drive proactive learning proposals (P14) | "I want to understand testing" / "Learn git basics" / None |
 | **Contextual tips** | Enable/disable in-activity micro-explanations (P14) | Enabled / Disabled |
 | **Emoji** | Enable/disable emoji in chat output | On (default) / Off |
 | **User name** | Display name in dashboard and artefacts (optional) | Free text / Skip (defaults to git user name or "Unknown") |
 
 **Smart interview:** The agent infers as many dimensions as possible from context before asking:
-- **Language:** detected from the user's first message
+- **Language:** always asked at Step 0 (first question, asked alone), with a locale-detected default preselected — per `/gse:hug` Step 0 — Language Detection
 - **Project domain:** detected from package manifest, file extensions
 - **IT expertise:** estimated from vocabulary and question complexity
 - **Team context:** detected from git log (multiple committers?)
@@ -2624,7 +2626,7 @@ git:
   backup_retention_days: 30            # how long to keep backup tags
 
 github:
-  enabled: false                       # auto-detected when git remote exists; if false, COMPOUND Axe 2 is skipped
+  enabled: false                       # auto-detected when git remote exists; if false, COMPOUND Axe 2 keeps the local export but hides the ticket options, and INTEGRATE Axe 2 is skipped
   repo: ""                             # auto-detected from git remote — the project's OWN GitHub repo (for issue sync)
   upstream_repo: ""                    # optional override for COMPOUND Axe 2 methodology feedback
                                        # Target repo resolution order (per design §5.16 — State Schemas, "Upstream repository resolution (Axe 2)"):
@@ -2898,7 +2900,7 @@ When invoked, `/gse:go` follows this decision tree:
 
 1. **Load the target activity's source file verbatim** — paraphrase from agent memory is forbidden. Preserves structural details (interactive-mode blocks, multi-language question forms, exact option sets) that paraphrasing silently drops.
 
-2. **Execute every Step defined in the activity, in order** — silent skipping is forbidden. A Step may be legitimately omitted only when: (a) the Step itself is declared conditional in the source (e.g., `If config.dependency_audit: true, run this Step`) and the condition fails; (b) the Step is overridden by an explicit user instruction; (c) the Step is documented as exempt in the activity's frontmatter. Any other omission is agent-driven and MUST be accompanied by an Inform-tier note: *"[Inform] Skipping /gse:<activity> Step N — <reason>."* So the user can decide whether to override or accept the agent's judgment.
+2. **Execute every Step defined in the activity, in order** — silent skipping is forbidden. A Step may be legitimately omitted only when: (a) the Step itself is declared conditional in the source (e.g., `If config.testing.dependency_audit: true, run this Step`) and the condition fails; (b) the Step is overridden by an explicit user instruction; (c) the Step is documented as exempt in the activity's frontmatter. Any other omission is agent-driven and MUST be accompanied by an Inform-tier note: *"[Inform] Skipping /gse:<activity> Step N — <reason>."* So the user can decide whether to override or accept the agent's judgment.
 
 **Exempt activities** (display-only, no state mutation, strict Step fidelity not required): `/gse:status`, `/gse:health`, `/gse:backlog` (display mode), `/gse:audit` (self-verifying).
 
@@ -2923,7 +2925,7 @@ If `.gse/` exists, scan for unsaved work from a previous session that ended with
 
 **Step 1.6 — Dependency vulnerability check:**
 
-If `config.yaml → dependency_audit: true` (default for projects with package manifests):
+If `config.yaml → testing.dependency_audit: true` (default for projects with package manifests):
 1. Run the appropriate audit command (`npm audit` / `pip-audit` / `cargo audit` / equivalent)
 2. If **critical** vulnerabilities found → Soft guardrail: warn and suggest update
 3. If no vulnerabilities or low-severity only → proceed silently to Step 2
@@ -2966,7 +2968,7 @@ Evaluate states **in order** — the first matching row wins.
 **Lifecycle guardrails (mode-differentiated):**
 1. **No PRODUCE without REQS (Full and Lightweight)** — No TASK can move to `in-progress` unless at least one REQ- artefact with testable acceptance criteria is traced to it. In Full mode, the quality assurance checklist (Step 7) must also have been run. REQS is test-driven: acceptance criteria ARE the future validation test specs. **Exception:** Micro mode and `artefact_type: spike`.
 2. **No PRODUCE without test strategy (Full only)** — The test approach (verification from DESIGN + validation from REQS acceptance criteria) must be defined before coding starts. Test strategy comes AFTER DESIGN and PREVIEW. In Lightweight mode, a minimal test strategy is auto-generated at PRODUCE time (Soft guardrail — Inform tier). **Exception:** Micro mode and `artefact_type: spike`.
-3. **Sprint Freeze (Hard, all modes except Micro)** — Once a sprint has been delivered, its plan transitions to the *completed* state. From that point on, the sprint is **frozen** to ensure sprint closure immutability: no new task may be added to it and no existing task within it may be transitioned forward (e.g., from *planned* to *in-progress*, or from *in-progress* to *review*). Activities that would otherwise write to a frozen sprint (`/gse:task`, `/gse:produce`, `/gse:fix`, `/gse:review`) MUST present a Gate with exactly three options: *(1) Start next sprint now* — the agent promotes the next sprint via the standard opening sequence (`/gse:plan --strategic` in Lightweight mode; `/gse:collect` > `/gse:assess` > `/gse:plan --strategic` in Full mode), then executes the intended activity in the newly opened sprint; *(2) Cancel* — abort the current activity with no state change; *(3) Discuss*. Option 1 is the default. **No "amend closed sprint" escape hatch is offered** — the sanctioned way to capture complementary work is to open a successor sprint (e.g., titled *"Sprint N+1 — Complementary tasks"*). **Exempt activities** (three categories — see design §5.16 — State Schemas, Sprint Freeze Design Mechanics for the mechanics): *closed-sprint consumers* (`/gse:compound`, `/gse:integrate`); *non-mutating activities* that do not transition TASK state (`/gse:pause`, `/gse:resume`, `/gse:go`, `/gse:status`, `/gse:health`, `/gse:backlog`, `/gse:learn`, `/gse:hug`, `/gse:collect`, `/gse:assess`, `/gse:deploy`); *sprint-opening* (`/gse:plan --strategic`); and the *transition performer itself* (`/gse:deliver` — Step 9.2 is what sets `plan.yaml.status: completed`, so consulting the guard would be self-defeating).
+3. **Sprint Freeze (Hard, all modes except Micro)** — Once a sprint has been delivered, its plan transitions to the *completed* state. From that point on, the sprint is **frozen** to ensure sprint closure immutability: no new task may be added to it and no existing task within it may be transitioned forward (e.g., from *planned* to *in-progress*, or from *in-progress* to *review*). Activities that would otherwise write to a frozen sprint (`/gse:task`, `/gse:produce`, `/gse:fix`, `/gse:review`, and the sprint-artefact producers `/gse:reqs`, `/gse:design`, `/gse:preview`, `/gse:tests`) MUST present a Gate with exactly three options: *(1) Start next sprint now* — the agent promotes the next sprint via the standard opening sequence (`/gse:plan --strategic` in Lightweight mode; `/gse:collect` > `/gse:assess` > `/gse:plan --strategic` in Full mode), then executes the intended activity in the newly opened sprint; *(2) Cancel* — abort the current activity with no state change; *(3) Discuss*. Option 1 is the default. **No "amend closed sprint" escape hatch is offered** — the sanctioned way to capture complementary work is to open a successor sprint (e.g., titled *"Sprint N+1 — Complementary tasks"*). **Exempt activities** (three categories — see design §5.16 — State Schemas, Sprint Freeze Design Mechanics for the mechanics): *closed-sprint consumers* (`/gse:compound`, `/gse:integrate`); *non-mutating activities* that do not transition TASK state (`/gse:pause`, `/gse:resume`, `/gse:go`, `/gse:status`, `/gse:health`, `/gse:backlog`, `/gse:learn`, `/gse:hug`, `/gse:collect`, `/gse:assess`, `/gse:deploy`); *sprint-opening* (`/gse:plan --strategic`); and the *transition performer itself* (`/gse:deliver` — Step 9.2 is what sets `plan.yaml.status: completed`, so consulting the guard would be self-defeating).
 
 **Decision tier override:**
 4. **Supervised mode** — When `decision_involvement: supervised`, ALL technical choices during PRODUCE are escalated to **Gate-tier** decisions. The agent presents options and waits for user confirmation.

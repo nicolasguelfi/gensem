@@ -14,7 +14,7 @@ Arguments: $ARGUMENTS
 | `<topic>`          | Start a learning session on the specified topic |
 | `--notes`          | List all learning notes |
 | `--notes <topic>`  | Show the learning note for a specific topic |
-| `--notes --recent` | Show the 5 most recent learning notes |
+| `--notes --recent` | Show the learning notes of the current sprint |
 | `--roadmap`        | Show personalized learning roadmap based on competency map |
 | `--quick`          | Force quick mode (5 min) |
 | `--deep`           | Force deep mode (15 min) |

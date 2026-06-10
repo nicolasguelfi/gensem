@@ -65,7 +65,7 @@ If `.gse/` exists, scan for unsaved work before proceeding:
 
 ### Step 2.5 — Dependency Vulnerability Check
 
-If `config.yaml → dependency_audit: true` (default for projects with package manifests):
+If `config.yaml → testing.dependency_audit: true` (default for projects with package manifests):
 
 1. **Detect package manager** — Look for `package-lock.json` / `yarn.lock` (npm audit), `requirements.txt` / `pyproject.toml` (pip-audit), `Cargo.lock` (cargo audit), `go.sum` (govulncheck).
 2. **Run audit** — Execute the appropriate audit command.

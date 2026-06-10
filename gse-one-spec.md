@@ -1020,6 +1020,8 @@ The risk analysis chain (P7→P8→P11) assumes the agent is a reliable evaluato
 
 During `/gse:review`, the agent activates a **devil's advocate perspective** on its own productions. This is not a quality review — it is an integrity review that specifically targets AI failure modes:
 
+**Context isolation (mandatory):** the pass runs in a freshly spawned sub-agent (subprocess) receiving only a context brief — never inline in the main conversation, whose accumulated rationalizations would be inherited and re-validated (anchoring, sunk-cost bias). Runtimes unable to spawn fall back inline with a visible Inform note, and the execution mode is traced in `review.md` (`DA execution: isolated | inline-degraded`). Best-effort complement: when the spawn facility exposes model selection, a different model than the producer is preferred — weights-level blind spots are context-independent, so fresh context alone does not decorrelate them.
+
 1. **Challenge assumptions** — "The design assumes X. What if X is false? What evidence supports X?"
 2. **Hunt hallucinations** — "Does this library/API/pattern actually exist? Verify with a concrete check."
 3. **Question complaisance** — "The user validated Y, but is Y truly the best choice? What alternatives were NOT presented?"

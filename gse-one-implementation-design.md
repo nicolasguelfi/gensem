@@ -1059,7 +1059,7 @@ The canonical run produces TCP-NNN campaign, `test_evidence` update on the TASK,
 ````markdown
 ### Devil's Advocate — [IMPL] review tier (added to review skill)
 
-After the standard quality review (the `[IMPL]` tier per spec §6.5), activate the devil-advocate agent:
+After the standard quality review (the `[IMPL]` tier per spec §6.5), activate the devil-advocate agent — in a freshly spawned sub-agent context (Claude Code: Agent tool; Cursor: subagent; opencode: subagent), context brief only, inline fallback traced as `DA execution: inline-degraded` per review.md Step 3:
 
 1. **Scope:** Only the agent's own productions from this sprint (not user-written code)
 

@@ -146,7 +146,9 @@ After all parallel sub-agents return:
 
 ### Step 3 — Devil's Advocate (P16)
 
-After the standard review completes, **spawn the devil-advocate sub-agent** (`"$(cat ~/.gse-one)/agents/devil-advocate.md"` — adopt this role; same parallel-spawn form as the Step 2 perspectives) to run the devil's advocate pass. This is a meta-review that challenges the AI's own work.
+After the standard review completes, **spawn the devil-advocate sub-agent in its own fresh context** (`"$(cat ~/.gse-one)/agents/devil-advocate.md"` via the runtime's subprocess/spawn facility, with a context brief per the orchestrator's Sub-agent delegation protocol — NOT inline role adoption: the pass must not inherit the main conversation's accumulated rationalizations, or it will re-validate them). This is a meta-review that challenges the AI's own work.
+
+**Fallback and trace:** if the runtime cannot spawn a sub-agent, run the pass inline AND emit an Inform note (*"[Inform] Devil's advocate pass running inline — sub-agent spawn unavailable on this runtime."*, same pattern as the P4 runtime-forced fallback). In both cases, record the execution mode in the AI Integrity Findings section of `review.md`: `DA execution: isolated` or `DA execution: inline-degraded`. Opportunistic enhancement: if the spawn facility exposes model selection, prefer a different model than the one that produced the artefacts (best-effort — weights-level blind spots are context-independent).
 
 #### 3a — Hallucination Hunt
 

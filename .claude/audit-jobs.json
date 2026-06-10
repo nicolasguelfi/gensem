@@ -194,8 +194,6 @@
         "gse-one/src/templates/Dockerfile.node",
         "gse-one/src/templates/Dockerfile.static",
         "gse-one/src/templates/.dockerignore",
-        "gse-one/src/templates/deploy-env.example",
-        "gse-one/src/templates/deploy-env-training.example",
         "gse-one-spec.md",
         "gse-one-implementation-design.md"
       ],

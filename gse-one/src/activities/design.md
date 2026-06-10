@@ -23,7 +23,7 @@ Before executing, read:
 1. `.gse/status.yaml` — current sprint number
 2. `docs/sprints/sprint-{NN}/reqs.md` — requirements to design for
 3. `.gse/plan.yaml` — living sprint plan (scope and constraints)
-4. `docs/sprints/sprint-{NN}/design.md` — existing design (if any)
+4. `docs/sprints/sprint-{NN}/design.md` — existing design (if any; authoritative format in `plugin/templates/sprint/design.md`)
 5. `.gse/decisions.md` — previous architecture decisions (for consistency)
 6. `.gse/profile.yaml` — user preferences
 7. `.gse/sources.yaml` — external sources that may influence design

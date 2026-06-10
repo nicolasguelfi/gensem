@@ -1682,7 +1682,7 @@ The health dashboard tracks three coverage dimensions:
 | Dimension | Measures | Target |
 |-----------|---------|--------|
 | **Code coverage** | % of code lines/branches exercised by tests | Configurable (default 60%) |
-| **Requirements coverage** | % of REQ with at least one linked test | 100% for `must` priority, 80% for `should` |
+| **Requirements coverage** | % of REQ with at least one linked passing test | 100% for `must` priority, 80% for `should` |
 | **Risk coverage** | % of high-risk modules (security, Gate decisions, imports) with dedicated tests | 100% |
 
 When coverage drops below the configured minimum, a **Hard guardrail** triggers:

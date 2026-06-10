@@ -15,7 +15,7 @@ pause_checkpoint: ""                   # filename of the active checkpoint (e.g.
 health:
   score: 0.0                           # Composite score 0-10
   dimensions:
-    requirements_coverage: 0           # 0-10: % of REQ with linked tests
+    requirements_coverage: 0           # 0-10: % of REQ with linked passing tests
     test_pass_rate: 0                  # 0-10: % of tests passing
     design_debt: 0                     # 0-10: inverse of known shortcuts
     review_findings: 0                 # 0-10: ratio of resolved findings

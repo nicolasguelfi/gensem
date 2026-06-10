@@ -233,34 +233,15 @@ Unless `--skip-cleanup` was specified:
 
 ### Step 6 — Release Notes
 
-Generate release notes at `docs/sprints/sprint-{NN}/release.md`:
+Generate release notes at `docs/sprints/sprint-{NN}/release.md` using the **authoritative template** `plugin/templates/sprint/release.md` — instantiate its `gse:` frontmatter (`type: release`, `sprint`, `version`, `tag`, `commit`, `traces.implements: [all delivered TASK IDs]`, timestamps) and fill its sections from sprint data:
 
-```markdown
-# Sprint S{NN} — Release Notes
+- **Overview** — one-paragraph summary of the sprint delivery
+- **What's New** — delivered TASKs grouped per the template's subsections (table: Task | Type | Description | Complexity)
+- **Review Summary** — findings count by severity (HIGH/MEDIUM/LOW), all-resolved flag
+- **Test Summary** — tests run / passed / failed
+- **Health Score** — before / after (from `status.yaml → health`)
 
-**Version**: v{version}
-**Date**: {date}
-**Sprint**: S{NN}
-
-## Delivered
-
-| Task | Type | Description | Complexity |
-|------|------|-------------|------------|
-| TASK-{ID} | {type} | {title} | {complexity} |
-
-## Review Summary
-- Findings: {count} ({high} HIGH, {medium} MEDIUM, {low} LOW)
-- All findings resolved: {yes/no}
-
-## Test Summary
-- Tests run: {count}
-- Passed: {count}
-- Failed: {count}
-
-## Health Score
-- Before: {score_before}
-- After: {score_after}
-```
+Do not invent an ad-hoc skeleton — the template is the single authority for structure.
 
 ### Step 7 — Post-Delivery Hook
 

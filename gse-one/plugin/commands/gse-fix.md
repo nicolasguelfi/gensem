@@ -197,6 +197,7 @@ Mark each fixed finding as resolved in `docs/sprints/sprint-{NN}/review.md`:
 
 1. Update TASK in `backlog.yaml`:
    - `status: done` (ready to merge)
+   - `completed_at: {timestamp}` (per the backlog.yaml schema — set when status → `done` or `reviewed`)
    - `review_findings_fixed: {count}`
 2. **Decrement `status.yaml.review_findings_open`** by the number of findings resolved in this fix pass (findings whose `status` transitioned to `fixed` in Step 5). If all findings across all sprint `review.md` files are now resolved, set the counter to 0. This counter is consumed by the git-push hook (spec §P13 — System hooks; design §7 — Hooks Design) to warn the user before pushing a branch with open findings.
 3. *(Cursor fields `last_activity` / `last_activity_timestamp` in `status.yaml` are maintained centrally by the orchestrator after the activity closes — see `plugin/agents/gse-orchestrator.md` — section "Sprint Plan Maintenance", and `gse-one-implementation-design.md` §10.1 — Sprint Plan Lifecycle. FIX writes no cursor fields directly, per v0.53.0.)*

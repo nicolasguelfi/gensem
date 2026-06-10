@@ -282,8 +282,7 @@ After the canonical test run succeeds and before Finalize, compare what was deli
 
 1. Ensure all changes are committed (no uncommitted work in worktree)
 2. Update TASK in `backlog.yaml`:
-   - `status: review` (TASK is produced and ready to be reviewed by `/gse:review`; the terminal `done`/`reviewed` statuses are set later by REVIEW or FIX per spec §12.3 Status lifecycle)
-   - `completed_at: {timestamp}`
+   - `status: review` (TASK is produced and ready to be reviewed by `/gse:review`; the terminal `done`/`reviewed` statuses — and `completed_at` — are set later by REVIEW or FIX per spec §12.3 Status lifecycle)
    - `git.uncommitted_changes: 0`
 3. **No status.yaml write needed** — the current TASK is derivable from `backlog.yaml` (the single TASK with `status: in-progress`). Cursor fields (`last_activity`, `last_activity_timestamp`) are set centrally by the orchestrator after the activity closes — see `plugin/agents/gse-orchestrator.md` — section "Sprint Plan Maintenance", and `gse-one-implementation-design.md` §10.1 — Sprint Plan Lifecycle.
 4. Update complexity budget: subtract task complexity from sprint remaining budget

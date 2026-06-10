@@ -188,7 +188,8 @@ Verify the project environment is ready. **This step is blocking** — do NOT me
    - If yes: run `git init`, create initial `.gitignore`, **apply the Git Identity Verification preflight** (see below), then create a **foundational commit** on `main`:
      ```bash
      git init
-     # create .gitignore with project-appropriate entries
+     # create .gitignore: seed it from the GSE-One additions template, then add project-appropriate entries
+     cat "$(cat ~/.gse-one)/templates/gitignore-additions.txt" >> .gitignore
      # [Git Identity Verification preflight — see below]
      git add .gitignore
      git commit -m "chore: initialize repository"

@@ -19,7 +19,7 @@ templates:
     target: .gse/config.yaml
     created_by: /gse:hug
     scope: project
-    description: Project configuration (~50 keys across 15 sections)
+    description: Project configuration (~60 keys across 15 sections)
 
   - source: profile.yaml
     target: .gse/profile.yaml
@@ -150,18 +150,6 @@ templates:
     created_by: /gse:deploy
     scope: project
     description: Deploy state — phases, server, coolify, domain, applications
-
-  - source: deploy-env.example
-    target: deploy-env.example
-    created_by: /gse:deploy (Solo / Instructor)
-    scope: project
-    description: .env template for Hetzner+Coolify deployment (HETZNER_API_TOKEN, DEPLOY_DOMAIN)
-
-  - source: deploy-env-training.example
-    target: deploy-env-training.example
-    created_by: /gse:deploy (Learner)
-    scope: project
-    description: .env template for learner role (shared Coolify, no Hetzner token)
 
   - source: Dockerfile.streamlit
     target: Dockerfile

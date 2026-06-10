@@ -215,9 +215,11 @@ RVW-{NNN}:
   suggestion: "{proposed fix}"
   tags: [AI-INTEGRITY]  # if from devil's advocate
   task: TASK-{ID}
+  status: open          # open | fixed — flipped to `fixed` by /gse:fix Step 5; counted by status.yaml review_findings_open
+  fixed_by_commit: ""   # optional — set by /gse:fix when resolved
 ```
 
-Persist findings to `docs/sprints/sprint-{NN}/review.md`.
+Persist findings to `docs/sprints/sprint-{NN}/review.md` (authoritative format in `plugin/templates/sprint/review.md`).
 
 ### Step 5 — Update Health Score
 
@@ -239,7 +241,7 @@ Report:
 
 **Update TASK statuses** in `backlog.yaml` based on review results:
 - If HIGH or MEDIUM findings exist for a TASK → set `status: fixing` (requires `/gse:fix` before delivery)
-- If no HIGH or MEDIUM findings → set `status: reviewed` (LOW findings are tracked but non-blocking; the user can still address them via `/gse:fix --severity LOW`, which would transition `reviewed` → `fixing` → `done`)
+- If no HIGH or MEDIUM findings → set `status: reviewed` and `completed_at: {timestamp}` (the TASK reached a terminal pre-merge state — per the backlog.yaml schema, `completed_at` is set when status → `done` or `reviewed`). LOW findings are tracked but non-blocking; the user can still address them via `/gse:fix --severity LOW`, which would transition `reviewed` → `fixing` → `done`
 
 **Rationale:** this threshold aligns with the canonical rule in spec §14 and design §10.1 (FIX is inserted into `workflow.pending` if HIGH or MEDIUM findings exist). MEDIUM findings weight significantly in the `review_findings` health formula (×0.8); letting them pass without triage would silently accumulate tech debt. The user retains full agency via `/gse:fix --severity HIGH` to narrow the fix scope. The distinction between `reviewed` (clean first pass) and `done` (fixed after findings) preserves the signal for coach Axis 5 (`quality_trends`): a high ratio of `reviewed` vs `done` indicates high PRODUCE quality.
 

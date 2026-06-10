@@ -100,7 +100,7 @@ _See spec §P14 "P14 preamble — 5-option format (canonical)" for the shared 5-
 
 #### Step 4 — Save Learning Note
 
-Create a learning note artefact:
+Create a learning note artefact (authoritative format in `plugin/templates/learning-note.md`):
 
 ```yaml
 ---

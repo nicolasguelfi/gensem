@@ -132,7 +132,6 @@ For each in-scope item, define functional requirements using the standard format
   traces:
     derives_from: [TASK-{NNN}]
     tested_by: []        # filled by TESTS activity
-    implemented_by: []   # filled by PRODUCE activity
   sprint: {NN}
   status: draft
 ```
@@ -330,7 +329,7 @@ The agent returns findings tagged `[REQ-QUALITY]` covering:
 
 ### Step 8 — Persist
 
-Save requirements to `docs/sprints/sprint-{NN}/reqs.md`:
+Save requirements to `docs/sprints/sprint-{NN}/reqs.md` (authoritative format in `plugin/templates/sprint/reqs.md`):
 
 ```yaml
 ---

@@ -64,17 +64,17 @@ _Any guardrail violations detected during this sprint._
 
 ## Health Impact
 
-| Dimension          | Before | After | Delta |
-|--------------------|--------|-------|-------|
-| Test coverage      |        |       |       |
-| Doc completeness   |        |       |       |
-| Code quality       |        |       |       |
-| Req traceability   |        |       |       |
-| Design coherence   |        |       |       |
-| Security posture   |        |       |       |
-| UX compliance      |        |       |       |
-| Debt ratio         |        |       |       |
-| **Overall score**  |        |       |       |
+| Dimension (spec §7.1) | Before | After | Delta |
+|------------------------|--------|-------|-------|
+| requirements_coverage  |        |       |       |
+| test_pass_rate         |        |       |       |
+| design_debt            |        |       |       |
+| review_findings        |        |       |       |
+| complexity_budget      |        |       |       |
+| traceability           |        |       |       |
+| git_hygiene            |        |       |       |
+| ai_integrity           |        |       |       |
+| **Overall score**      |        |       |       |
 
 ## Notes
 

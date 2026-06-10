@@ -20,7 +20,15 @@ tests are a welcome future contribution.
 
 ## Unit tests
 
-Located in `gse-one/tests/test_deploy.py`. Cover:
+Located in `gse-one/tests/` — five files:
+
+- `test_deploy.py` — deploy tool deterministic core (detailed below)
+- `test_audit.py` — audit engine regression guards (false-positive classes, catalog chain, checkpoint round-trip coherence)
+- `test_hooks.py` — generated guardrail hooks executed against synthetic stdin JSON
+- `test_counters.py` — P15/P16 integrity-counter helper (whitelist, comment-preserving writes, health backstop)
+- `test_checkpoint` coverage note: checkpoint schema coherence is enforced through the audit engine (`audit.py` templates category) per CLAUDE.md Meta-3 — no dedicated test file.
+
+`test_deploy.py` covers:
 
 - `sanitize_component()` — 9 edge cases (empty, special chars, hyphen collapse, trim, truncate)
 - `build_subdomain()` — solo mode, training mode, sanitization, FQDN construction
@@ -156,6 +164,44 @@ Run this checklist when modifying: `destroy`, `deploy_app`, `training_init`,
       from `phases_completed`
 
 ---
+
+## Recovery checklist (manual)
+
+Session/state recovery scenarios — these exercise LLM-driven activity behavior and
+file-system state, so they are manual by nature (like the E2E deploy checklist).
+Run them when touching pause/resume, state schemas, or the deliver tag strategy.
+
+### R1 — Kill mid-PRODUCE, then `/gse:go`
+
+1. Start `/gse:produce` on a TASK in a sandbox project; kill the session (close the
+   terminal) after the first file edits, before the activity closes.
+2. Reopen and run `/gse:go`.
+3. **Expected:** go detects the in-flight state; the scope reconciliation uses
+   `status.yaml → activity_start_sha` (`git diff --name-status <sha>..HEAD`) to list
+   what was already touched; `plan.yaml → workflow.pending` still contains the
+   interrupted activity; no state file is corrupted.
+
+### R2 — Corrupt `status.yaml`, then the §12.7 recovery ladder
+
+1. In a sandbox project, truncate `.gse/status.yaml` mid-line (invalid YAML).
+2. Run any activity (e.g., `/gse:status`).
+3. **Expected:** the agent applies the spec §12.7 Resilience recovery ladder in
+   order: (1) `git checkout -- .gse/status.yaml` if a committed version exists;
+   (2) else restore the fields covered by the latest checkpoint in
+   `.gse/checkpoints/`; (3) else recreate from the template and re-populate from
+   session context. The error and the recovery path used are reported; a corrupt
+   file is never left in place.
+
+### R3 — Revert a delivery via backup tags
+
+1. Complete a `/gse:deliver` in a sandbox project (this creates the backup tags,
+   including the pre-main-merge class introduced in v0.63.0).
+2. List tags (`git tag -l 'gse-backup/*'`), pick the pre-merge tag, and follow the
+   deliver.md reversion path (`git reset --hard <tag>` on the integration branch /
+   revert of the merge commit on main as documented).
+3. **Expected:** the working tree returns to the pre-delivery state; `.gse/` state
+   files match the reverted code state; the cleanup step (deliver Step 8 — Cleanup
+   Backup Tags) only removes tags after user confirmation.
 
 ## CI (future work)
 

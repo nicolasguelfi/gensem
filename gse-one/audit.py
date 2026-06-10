@@ -824,6 +824,64 @@ def audit_templates() -> list:
             )
         )
 
+    # Checkpoint schema round-trip coherence (v0.66.1, backlog R2 — recovery-
+    # critical). The authoritative template checkpoint.yaml must keep its
+    # fields, and the distinctive structured fields must stay referenced by
+    # BOTH the writer (pause.md) and the reader (resume.md); same for the
+    # pause-state pair in status.yaml. Generic tokens (timestamp/user/note)
+    # are template-presence-checked only (too common for reference checks).
+    # Placement rationale (CLAUDE.md Meta-3): prose/template coherence lives
+    # in this engine — not in a dedicated unittest file per property.
+    checkpoint = templates_dir / "checkpoint.yaml"
+    pause_md = SRC / "activities" / "pause.md"
+    resume_md = SRC / "activities" / "resume.md"
+    status_tpl = templates_dir / "status.yaml"
+    if checkpoint.exists() and pause_md.exists() and resume_md.exists():
+        ckpt_text = _read_text(checkpoint)
+        pause_text = _read_text(pause_md)
+        resume_text = _read_text(resume_md)
+        status_text = _read_text(status_tpl) if status_tpl.exists() else ""
+        drift = []
+        for field in ("timestamp", "user", "last_task", "note",
+                      "status_snapshot", "backlog_sprint_snapshot",
+                      "git_state"):
+            if f"{field}:" not in ckpt_text:
+                drift.append(
+                    f"checkpoint.yaml lost authoritative field `{field}`"
+                )
+        for field in ("status_snapshot", "backlog_sprint_snapshot",
+                      "git_state", "last_task"):
+            for label, text in (("pause.md", pause_text),
+                                ("resume.md", resume_text)):
+                if field not in text:
+                    drift.append(
+                        f"`{field}` (checkpoint.yaml) not referenced by {label}"
+                    )
+        for field in ("session_paused", "pause_checkpoint"):
+            if f"{field}:" not in status_text:
+                drift.append(
+                    f"status.yaml template lost pause-state field `{field}`"
+                )
+            for label, text in (("pause.md", pause_text),
+                                ("resume.md", resume_text)):
+                if field not in text:
+                    drift.append(
+                        f"`{field}` (status.yaml) not referenced by {label}"
+                    )
+        if drift:
+            findings.append(
+                Finding(
+                    "templates",
+                    "warning",
+                    f"{len(drift)} checkpoint schema coherence issue(s) "
+                    "(pause/resume round-trip)",
+                    "\n".join(drift),
+                    "Realign src/templates/checkpoint.yaml with pause.md "
+                    "(writer) and resume.md (reader)",
+                    file="gse-one/src/templates/checkpoint.yaml",
+                )
+            )
+
     if not findings or all(f.severity == "info" for f in findings):
         findings.append(
             Finding("templates", "info", "template schemas OK"),

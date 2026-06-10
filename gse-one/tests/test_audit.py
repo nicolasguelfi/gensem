@@ -232,5 +232,24 @@ class TestAuditCatalog(unittest.TestCase):
         )
 
 
+class TestCheckpointCoherence(unittest.TestCase):
+    """The checkpoint round-trip property (template fields referenced by both
+    pause.md writer and resume.md reader) is enforced by audit_templates()
+    per CLAUDE.md Meta-3 (prose/template coherence lives in the audit engine,
+    not in per-property unittest files). This test runs that engine check on
+    the live corpus so a schema drift fails the suite at commit time."""
+
+    def test_live_corpus_round_trip_clean(self):
+        findings = audit.audit_templates()
+        drift = [
+            f for f in findings
+            if "checkpoint schema coherence" in f.title
+        ]
+        self.assertEqual(
+            [], [f.detail for f in drift],
+            "checkpoint.yaml / pause.md / resume.md / status.yaml drifted",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

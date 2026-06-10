@@ -30,6 +30,7 @@ Confidence-severity escalation rules:
 
 ## Checklist
 
+- [ ] **Option-framing challenge** — For each Gate-tier DEC- of the sprint carrying P8 consequence analysis: does the entry have its `Excluded alternative:` disclosure (spec §P8 — anti-framing rule)? Was the excluded option genuinely weaker, or was the menu framed toward the agent's preference? Missing disclosure or questionable framing → `[AI-INTEGRITY]` finding.
 - [ ] **Hallucination hunt** — Verify that all referenced libraries, packages, APIs, CLI flags, and configuration options actually exist. Use concrete verification commands:
   - Python libraries: `pip show <lib>` — confirm installed and check version
   - Node packages: `npm list <lib>` — confirm installed

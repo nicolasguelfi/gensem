@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.68.0] - 2026-06-10
+
+### Added
+- Added P8 anti-framing rule: choice-Gates with consequence analysis disclose one credible excluded alternative + exclusion reason (backlog AI4).
+- Added `Excluded alternative:` line to the P4 pattern template and to the DEC- entry format (decisions.md template).
+- Added devil-advocate checklist item auditing the disclosure a posteriori (option-framing challenge).
+
+### Changed
+- Changed orchestrator P8 bullet and design Gate walk-through description to carry the new line.
+
 ## [0.67.0] - 2026-06-10
 
 ### Added

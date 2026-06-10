@@ -1655,7 +1655,7 @@ Typical examples: *"chose `crypto.randomUUID()` over the uuid package"*, *"folde
 | `/gse:produce` | In the produce report (commit message body) AND as a section in `docs/sprints/sprint-{NN}/produce-{TASK-ID}.md` if such artefact exists |
 | `/gse:task` | In the ad-hoc task commit message body |
 
-**d. On "Promote":** for each selected decision, walk through a standard Gate (Question / Context / Options with consequence horizons per P8 / Discuss). If the user picks an alternative, the agent rolls back the inform-tier choice and applies the new one. The resulting DEC-NNN is added to `decisions.md`.
+**d. On "Promote":** for each selected decision, walk through a standard Gate (Question / Context / Options with consequence horizons per P8 / Excluded alternative when one was set aside (P8 anti-framing) / Discuss). If the user picks an alternative, the agent rolls back the inform-tier choice and applies the new one. The resulting DEC-NNN is added to `decisions.md`.
 
 **Ordering at activity closure:**
 

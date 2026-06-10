@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.67.0] - 2026-06-10
+
+### Added
+- Added `plan-summary.md → ## Outcome Metrics` (7 sprint outcome metrics from existing state — no new collection ledger) written by deliver Step 9.1 (backlog M5).
+- Added compound Axe 2 "Calibration falsifiability review" — confronts P16 thresholds (3/5/8, 2/3/4) and budget with archived metrics; contradictions become methodology tickets.
+- Added spec §P16 sentence declaring calibration constants falsifiable via the archived metrics.
+
+### Fixed
+- Fixed design §5.18 lagging v0.64.0: `applications[]` schema missing `source_type`/`coolify.server_uuid`; `training-init` bullet missing the two optional handout keys.
+- Fixed deliver.md plan-summary consumer list ("never read by the orchestrator" contradicted plan.md velocity calibration and coach axes).
+
 ## [0.66.1] - 2026-06-10
 
 ### Added

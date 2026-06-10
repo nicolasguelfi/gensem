@@ -82,12 +82,15 @@ Sources to scan (in order):
 | `.gse/status.yaml → activity_history[*].notes` | Free-text notes describing methodology friction |
 | `.gse/status.yaml → workflow_observations[]` (current sprint, not yet summarized) | Raw observations produced by the coach sub-agent during the sprint across the 7 workflow axes (sprint_velocity, workflow_health, quality_trends, engagement_pattern, process_deviation, sustainability, profile_calibration). Filter: entries where `sprint == current_sprint` AND `summarized != true`. |
 | Agent conversation memory for this sprint | Recurring user questions, explicit frustrations, ad-hoc deviations, Gates that felt awkward, Inform notes that surprised the user |
+| `docs/sprints/sprint-{NN}/plan-summary.md → ## Outcome Metrics` (last ≤ 3 sprints) | Sprint outcome data for the calibration falsifiability review below |
 
 For each observation, the agent records:
 - Raw text of the observation (verbatim user quote if available)
 - Source reference (RVW-NNN, DEC-NNN, activity name, or "conversation")
 - Suggested theme label (e.g., "scope-lock ergonomy", "dashboard freshness", "git identity setup")
 - Severity heuristic (HIGH = blocked the user / MEDIUM = slowed down / LOW = minor inconvenience)
+
+**Calibration falsifiability review.** Read `## Outcome Metrics` from the last ≤ 3 `plan-summary.md` archives and confront the methodology's calibration constants with the observed data — P16 pushback thresholds (3/5/8), root-cause escalation thresholds (2/3/4), sprint complexity budget. Contradiction examples: pushback never triggered across 3 sprints for a beginner profile; `fix_rounds`/`review_rounds` rework consistently high with zero devil-advocate escalation; velocity stuck below 60 % of budget for 3 sprints. Each contradiction becomes a regular observation (theme: "calibration") that flows through 2.2 → 2.3 like any other — the improvement proposal is a threshold recalibration, routed through the existing methodology-ticket flow (no dedicated mechanism). Skip silently if fewer than 2 archives carry the metrics section (pre-v0.67 sprints).
 
 #### 2.2 — Synthesize into themes
 

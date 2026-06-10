@@ -1,6 +1,6 @@
 # P2 — Agile Terminology
 
-**Category:** Foundations
+**Category:** Foundations (definitional — no runtime agent obligation; operationalized by the spec §16 Glossary. See spec §2 intro taxonomy.)
 **Principle:** All terminology is drawn from agile engineering methods; the agent and user share a common vocabulary anchored in a project glossary.
 
 ## Description

@@ -1,6 +1,6 @@
 # P3 — Artefacts Are Everything
 
-**Category:** Foundations
+**Category:** Foundations (definitional — the tracking obligation is owned and audited by P6 + spec §12.2. See spec §2 intro taxonomy.)
 **Principle:** Every project file is an artefact — code, requirements, design, tests, configuration, plans, decisions, and learning notes — tracked and managed uniformly.
 
 ## Description

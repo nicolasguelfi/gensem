@@ -467,6 +467,8 @@ The 16 principles are organized into four categories:
 | **Infrastructure** | P12, P13, P14 | What GSE-One manages automatically behind the scenes |
 | **AI Integrity** | P15, P16 | How GSE-One protects the user from the agent's own limitations |
 
+Principles also split along a second axis, made explicit here so audits read them correctly: **definitional principles** (P2, P3) establish vocabulary and scope — they impose no runtime obligation on the agent and cannot be "violated", only contradicted by the artefacts that operationalize them (§16 Glossary for P2; P6 + §12.2 Artefact Frontmatter for P3). All other principles are **behavioral**: each carries at least one auditable agent obligation. This asymmetry is deliberate (Meta-1 — documented, not forced into uniformity).
+
 **Foundations**
 
 ### P1 — Iterative & Incremental Lifecycle
@@ -475,10 +477,10 @@ Documents and artefacts correspond to increments. They must be modular at the fi
 Operationally, this is ensured by: sprint artefacts in `docs/sprints/sprint-NN/` (Section 12 — Artefact Storage Conventions), git branches per sprint and per task (Section 10 — Version Control Strategy), and YAML frontmatter with sprint number on every artefact (Section 12.2 — Frontmatter).
 
 ### P2 — Agile Terminology
-All terminology is inherited from the agile engineering methods domain (sprints, backlogs, user stories, etc.). See the Glossary (Section 16) for all defined terms.
+All terminology is inherited from the agile engineering methods domain (sprints, backlogs, user stories, etc.). See the Glossary (Section 16) for all defined terms. *Definitional principle — no runtime agent obligation; operationalized by §16 Glossary (see the §2 intro taxonomy).*
 
 ### P3 — Artefacts Are Everything
-Artefacts encompass all project files: code, requirements, design documents, tests, configuration, plans, decisions, learning notes, and any other deliverable. Every artefact is tracked via YAML frontmatter (Section 12.2) and assigned a unique ID (P6).
+Artefacts encompass all project files: code, requirements, design documents, tests, configuration, plans, decisions, learning notes, and any other deliverable. Every artefact is tracked via YAML frontmatter (Section 12.2) and assigned a unique ID (P6). *Definitional principle — the tracking obligation itself is owned and audited by P6 + §12.2 (see the §2 intro taxonomy).*
 
 **Risk & Communication**
 
@@ -1289,6 +1291,8 @@ The agent also creates backlog items **automatically** during other activities (
 |---------|----------|-------------|
 | `/gse:compound` | **Compound** | Capitalize learnings across 3 axes: **Axe 1** (project — patterns, errors, best practices → `compound.md`), **Axe 2** (methodology — what worked/didn't in GSE-One itself → closes with a 3-option Gate: *(1) export as a local feedback document only, (2) propose GitHub tickets for upstream submission, (3) both*; quality filter capped at `compound.max_proposed_issues_per_sprint` issues per sprint, theme-grouped, deduplicated against existing issues, each validated by the user before submission), **Axe 3** (competencies — feed P14 learning notes) |
 | `/gse:integrate` | **Integrate** | Route capitalized solutions: Axe 1 → project config/rules, Axe 2 → issue on the upstream repo resolved per `config.yaml → github.upstream_repo` resolution order (design §5.16 — State Schemas) if user accepts, Axe 3 → `docs/learning/` + competency map |
+
+**Why `/gse:integrate` stays a standalone command** (decision 2026-06-10, pre-release review): although it almost always follows `/gse:compound`, merging it into compound's closure Gates would lose three real standalone uses — **replay** (route tickets after the fact, e.g., when `github.enabled` was `false` at compound time and is enabled later), **`--dry-run`** (inspect the integration plan without executing), and **`--axis` filtering** (route a single axis). The two-step shape also keeps compound's closure Gate small (capitalize first, route later).
 
 ### 3.10 Commands by Lifecycle Phase
 

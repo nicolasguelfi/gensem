@@ -17,6 +17,8 @@ Arguments: $ARGUMENTS
 | `--dry-run`        | Show integration plan without executing |
 | `--help`           | Show this command's usage summary |
 
+**Why standalone:** this activity deliberately stays separate from `/gse:compound` — it must be replayable after the fact (e.g., enable `github.enabled` later and route the pending tickets), support `--dry-run`, and route single axes. See spec §3.9 — Capitalization. (Meta-2 inline note, decision 2026-06-10.)
+
 ## Prerequisites
 
 Before executing, read:

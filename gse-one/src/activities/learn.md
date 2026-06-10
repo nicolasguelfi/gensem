@@ -19,6 +19,8 @@ Arguments: $ARGUMENTS
 | `--deep`           | Force deep mode (15 min) |
 | `--help`           | Show this command's usage summary |
 
+**Ownership note:** `/gse:learn` is the user-initiated path of the pedagogy system — an explicit request, never blocked by the coach's anti-spam arbitration (spec §P14 — Pedagogical ownership map). Proactive triggers belong to the coach; this activity serves the user's own initiative.
+
 ## Prerequisites
 
 Before executing, read:

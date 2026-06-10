@@ -382,6 +382,14 @@ GSE-One inherits agile principles but adapts them for a context that standard ag
 | **Spike mode** | Complexity-boxed experiments bypassing REQS/TESTS guardrails | XP has spikes, but without formal guardrail bypass or complexity caps |
 | **Three project modes** (Micro/Lightweight/Full) | Scale ceremony to project complexity (assessed from structural signals, not file count) | Agile methodologies are typically one-size (Scrum) or customizable but heavy (SAFe) |
 
+#### Positioning among AI-native methodologies
+
+Most AI-native development approaches optimize **throughput**: better prompts, more agents, faster generation. GSE-One optimizes **trustworthy delegation** — the conditions under which a non-expert can responsibly hand software work to an AI. Three differentiators carry that positioning:
+
+- **Governance** — every decision is classified (Auto / Inform / Gate, P7), consequence-projected (P8), journaled (DEC-), and backed by deterministic guardrails (hooks) rather than goodwill.
+- **Adaptivity** — the methodology calibrates itself to the human (HUG profile, P9 communication, three lifecycle modes) instead of assuming a developer persona.
+- **Integrity** — the AI itself is treated as a risk source: confidence signaling (P15), adversarial self-review and pushback encouragement (P16), falsifiable calibration constants. Frameworks that only orchestrate agents have no equivalent layer.
+
 ### 1.3 GSE-One Overview
 
 GSE-One (Generic Software Engineering One) is an AI engineering companion that guides users through the full software development lifecycle. It is implemented as a plugin for AI coding agents (Claude Code, Cursor, or any compatible agent-based IDE) and provides 24 commands covering planning, requirements, design, production, quality, delivery, deployment, and capitalization.
@@ -968,6 +976,19 @@ When the coach proposes a pedagogy topic (axis 1) or when `/gse:learn` presents 
 Options 3 and 4 are recorded in `status.yaml → learning_preambles[]` to avoid re-proposing the same topic spuriously. Labels are canonical — implementations (coach.md, learn.md, orchestrator) use this exact wording.
 
 **AI Integrity**
+
+#### Pedagogical ownership map
+
+Four entry points can propose learning content; without an explicit authority rule they compete and over-trigger. Ownership is split as follows:
+
+| Entry point | Owner | Scope |
+|---|---|---|
+| P14 contextual mode (2-3 sentence tips during activities) | **P14 contract** (this section) for content rules; **coach.md** for trigger/anti-spam arbitration | At most 1 tip per step, only unexplained concepts |
+| P14 proactive mode (learning preambles at transitions) | **coach.md** (pedagogy axis) — runtime authority for WHEN; P14 for the canonical 5-option format | Respects `learning_preambles[]` history (`not-now`, `not-interested`) |
+| `/gse:learn` (user-initiated, reactive + proactive modes) | **learn.md** — user path, never blocked by anti-spam (explicit request overrides arbitration) | Produces learning notes in `docs/learning/` |
+| Coach axis 1 (pedagogy observation) | **coach.md** — sole writer of `detected_gaps[]` and preamble ledgers | Feeds proposals into the P14 proactive path; never emits directly |
+
+**Arbitration rule:** when two entry points want to speak in the same turn, `coach.md` anti-spam safeguards decide (single authority); the P14 contract governs what any of them may say; an explicit user request via `/gse:learn` always wins.
 
 ### P15 — Agent Fallibility (Self-Awareness)
 
@@ -3289,6 +3310,20 @@ Removing code or dependencies still earns **negative points** (1-2 pt credit) re
 ## Appendix C — Maintainer Guide
 
 This section helps anyone maintaining, extending, or debugging GSE-One understand the architecture and avoid cascading inconsistencies.
+
+### Era-bound assumptions registry
+
+The constants below are NOT methodological choices — they are snapshots of the 2024-2026 platform ecosystem, embedded in the corpus because the methodology has to run on real runtimes. **Review trigger: re-validate every row at each major release of a supported platform (Claude Code, Cursor, opencode) and at each audit touching runtime integration.** A row that no longer holds is updated at its listed locations (number + name cross-references), not silently.
+
+| Era-bound constant | Where it lives | Why it is time-bound | Likely evolution |
+|---|---|---|---|
+| Sub-agent parallelism "up to 8" | spec §1.1.1 execution loop; orchestrator Context Architecture | Current runtime concurrency limits | Higher caps or dynamic scheduling |
+| Cursor ≥2.4 for `AskQuestion` | spec §P4; orchestrator P4 bullet | Version gate of one platform feature | Becomes universal, gate removable |
+| Interactive tool names (`AskUserQuestion` / `AskQuestion` / `question`) | spec §P4; orchestrator P4 bullet | Vendor API naming | Renames; the abstract `AskUser` alias is the stable layer |
+| Interactive tool limit "≤4-5 options" | spec §P4 | Current widget UX caps | Larger or scrollable widgets |
+| `backlog.yaml` compaction cap "~200 lines" | spec §12 state management ×2; orchestrator Context overflow prevention | Sized to current context windows | Grows with context windows; the *compaction mechanism* stays |
+| `pip show` / `npm list` as canonical existence checks | devil-advocate checklist (×2 modes); deliver Step 1.6 | Today's dominant package managers | New ecosystems (uv, bun, …) join the list |
+| Python ≥3.9 stdlib-only tools | tools docstrings; TESTING.md; install.sh preflight (≥3.8) | Current ubiquity baseline | Floor raises as platforms drop old runtimes |
 
 ### File hierarchy and propagation rules
 

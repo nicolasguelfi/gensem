@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.71.0] - 2026-06-10
+
+### Added
+- Added Appendix C "Era-bound assumptions registry" — 7 platform-era constants with locations and review trigger at major platform releases (backlog AI5; config parameterization rejected as over-engineering).
+- Added spec §P14 "Pedagogical ownership map" — coach.md is runtime authority for proactive triggers/anti-spam; /gse:learn never blocked (backlog M7); authority notes in coach.md and learn.md.
+- Added spec §1.2 "Positioning among AI-native methodologies" — governance / adaptivity / integrity differentiators (backlog M4).
+
 ## [0.70.0] - 2026-06-10
 
 ### Added

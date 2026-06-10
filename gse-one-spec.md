@@ -2694,7 +2694,7 @@ Upgrading from Micro → Lightweight → Full is possible at any time via `/gse:
 | Sprint artefacts | Full set (plan-summary, reqs, design, tests, review, compound) | reqs.md only | None |
 | Health dashboard | 8 dimensions | 3 of 8 (test_pass_rate, review_findings, git_hygiene) | None |
 | Complexity budget | Tracked | Not tracked | Not tracked |
-| Decision tiers | Full P7 assessment | Simplified (Auto + Gate only, no Inform) | Gate only (security/destructive actions) |
+| Decision tiers | Full P7 assessment | Simplified (Auto + Gate for decisions; Inform kept for guardrail and transparency notices) | Gate only (security/destructive actions) |
 | REQS guardrail | Hard (mandatory) | Hard (mandatory, reduced ceremony) | Not enforced |
 | TESTS guardrail | Hard (formal strategy required) | Soft (auto-generated strategy, Inform) | Not enforced |
 | REQS ceremony | Full: elicitation + REQs + quality checklist + coverage analysis | Reduced: elicitation + REQs (no quality checklist, no coverage analysis) | None |

@@ -30,7 +30,7 @@ GSE-One is an AI engineering companion that brings structured software developme
 
 - **24 commands** covering the full SDLC — from onboarding (`/gse:hug`) to capitalization (`/gse:compound`)
 - **3 modes** — Micro, Lightweight, Full — auto-selected by complexity assessment, user-overridable
-- **Adaptive risk analysis** — 3-tier decision system (Auto / Gate / Hard) calibrated to user expertise
+- **Adaptive risk analysis** — 3-tier decision system (Auto / Inform / Gate) calibrated to user expertise, backed by 3-level guardrails (Soft / Hard / Emergency) for high-consequence actions
 - **Unified backlog** — single task tracking with git state per-task
 - **8-dimension health dashboard** — generated HTML with radar chart, kanban, lifecycle checklist
 - **AI integrity guardrails** — confidence levels, verification gates, devil's advocate agent

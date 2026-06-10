@@ -28,11 +28,11 @@ Loaded on-demand during the audit (not all at once, to preserve context):
 
 - `.claude/audit-jobs.json` — the canonical job catalog (Categories A-F); the assigned job's `files` list defines the reading scope
 - `CLAUDE.md` — maintainer conventions (cross-reference "number + name" form, principle title convention, Meta-1/Meta-2 anti-rigidity discipline)
-- `gse-one-spec.md` — for spec file-quality jobs (Category B) and cross-layer jobs (Categories C, D)
-- `gse-one-implementation-design.md` — for design file-quality jobs (Category B) and cross-layer jobs (Categories C, D)
-- `gse-one/src/activities/*.md` — sample for implementation file-quality (Category B) and cross-layer clusters (Category D)
-- `gse-one/src/agents/*.md` — sample for implementation file-quality (Category B) and cross-layer clusters (Category D)
-- `gse-one/plugin/tools/*.py` — sample for implementation file-quality (Category B)
+- `gse-one-spec.md` — for the spec file-quality job (Category A) and cross-layer jobs (Categories C, D)
+- `gse-one-implementation-design.md` — for the design file-quality job (Category A) and cross-layer jobs (Categories C, D)
+- `gse-one/src/activities/*.md` — sample for intra-layer uniformity jobs (Category B) and cross-layer clusters (Category D)
+- `gse-one/src/agents/*.md` — sample for intra-layer uniformity jobs (Category B) and cross-layer clusters (Category D)
+- `gse-one/plugin/tools/*.py` — sample for intra-layer uniformity jobs (Category B)
 - `gse-one/gse_generate.py` — for ACTIVITY_NAMES, SPECIALIZED_AGENTS (Category D clusters)
 
 ## Core Principles
@@ -165,7 +165,7 @@ Category F jobs are deterministic (run via `audit.py`, not an LLM sub-agent). Th
 
 ## Audit dimensions (historical model, pre-catalog)
 
-> **Meta-2 note:** this 2a-3c dimension taxonomy predates the category-based job catalog (`.claude/audit-jobs.json`, Categories A-F), which is canonical. Mapping: 2a/2b/2c → Category B, 3a → Category C, 3b/3c → Category D. The table is kept as a conceptual reference for the canonical checks.
+> **Meta-2 note:** this 2a-3c dimension taxonomy predates the category-based job catalog (`.claude/audit-jobs.json`, Categories A-F), which is canonical. Mapping: 2a/2b → Category A (file quality), 2c → Category B (intra-layer uniformity), 3a → Category C, 3b/3c → Category D. The table is kept as a conceptual reference for the canonical checks.
 
 The auditor operates across **6 dimensions**, each with ~4 canonical checks. This catalog is a reference; concrete prompts may combine or extend.
 

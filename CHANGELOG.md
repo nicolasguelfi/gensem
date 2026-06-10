@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.63.0] - 2026-06-10
+
+*Full treatment of the 2026-06-10 methodology audit (16 errors, 103 warnings, 20 recommendations) + repaired audit system. Details: `docs/post-audit-reports/2026-06-10-audit-v0.62.8-treatment.md`.*
+
+### Added
+- Added `status.yaml → task_status_snapshot` — real comparison source for `sessions_without_progress` in go/resume.
+- Added trace link types `validates` / `enforces` / `tested_by` to spec §P6; tests artefacts use them.
+- Added 2 audit jobs (distribution-channel-coherence, audit-system-self-coherence) — catalog now 28 jobs incl. Category F.
+- Added hook smoke tests and catalog regression tests (86 tests total); deliver backup tag class 3 (pre-main-merge).
+- Added configuration policy (project-local files, no durable env vars) + prompt-injection rule for collect External Mode.
+
+### Changed
+- Changed hooks: stdin-JSON transport, regex matching (any force-push form), live config.yaml toggles, sanctioned main-commit exceptions.
+- Changed review/deliver health writes to delegate to /gse:health canonical formulas under nested `health.dimensions.*`.
+- Changed Sprint Freeze to guard reqs/design/preview/tests; LC03 flow restored (compound > integrate > plan --strategic).
+- Changed spec/design/activities via alignment sweep: cross-references, enums, schemas, templates-as-authority, GFM fence repair.
+
+### Fixed
+- Fixed hooks layer silent no-op: guards read nonexistent CLAUDE_TOOL_INPUT env var — never fired since creation.
+- Fixed audit_catalog.py rejecting Category F (broke /gse-audit Phase 2 and audit.py --cluster).
+- Fixed state reads against retired fields (task/resume/go/backlog/status) and phantom health dimensions.
+- Fixed Dockerfile healthchecks using curl/wget absent from slim base images (streamlit, python, node).
+- Fixed engine detector false positives at source (placeholder paths, worktree copies, /gse:X mentions).
+
+### Removed
+- Removed orphan deploy-env templates; phantom /gse:override, `--perspective tests`, `implemented_by`, `traces.tests`.
+
 ## [0.62.8] - 2026-05-18
 
 *Secondary docs alignment with the v0.62.7 curl install path + retroactive CHANGELOG entry for v0.62.5 (omitted at the time).*

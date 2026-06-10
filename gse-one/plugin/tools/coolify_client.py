@@ -174,22 +174,26 @@ class CoolifyClient:
     # -------------------------------------------------------------------
 
     def list_projects(self) -> list[CoolifyProject]:
+        """Return all Coolify projects."""
         data = self._request("GET", "/projects")
         if not isinstance(data, list):
             return []
         return [self._to_project(d) for d in data]
 
     def get_project(self, uuid: str) -> CoolifyProject:
+        """Return one project by UUID."""
         data = self._request("GET", f"/projects/{uuid}")
         return self._to_project(data)
 
     def find_project_by_name(self, name: str) -> Optional[CoolifyProject]:
+        """Return the first project matching `name`, or None."""
         for p in self.list_projects():
             if p.name == name:
                 return p
         return None
 
     def create_project(self, name: str, description: str = "") -> CoolifyProject:
+        """Create a project and return it."""
         data = self._request(
             "POST", "/projects", json_body={"name": name, "description": description}
         )
@@ -200,6 +204,7 @@ class CoolifyClient:
         return self.get_project(uuid)
 
     def delete_project(self, uuid: str) -> None:
+        """Delete a project by UUID."""
         self._request("DELETE", f"/projects/{uuid}")
 
     def ensure_project(self, name: str, description: str = "") -> CoolifyProject:
@@ -214,6 +219,7 @@ class CoolifyClient:
     # -------------------------------------------------------------------
 
     def list_environments(self, project_uuid: str) -> list[CoolifyEnvironment]:
+        """Return the environments of a project."""
         proj = self.get_project(project_uuid)
         envs = []
         for e in proj.environments or []:
@@ -229,6 +235,7 @@ class CoolifyClient:
     def find_environment_by_name(
         self, project_uuid: str, name: str
     ) -> Optional[CoolifyEnvironment]:
+        """Return the named environment of a project, or None."""
         for e in self.list_environments(project_uuid):
             if e.name == name:
                 return e
@@ -237,6 +244,7 @@ class CoolifyClient:
     def create_environment(
         self, project_uuid: str, name: str
     ) -> CoolifyEnvironment:
+        """Create an environment within a project and return it."""
         data = self._request(
             "POST",
             f"/projects/{project_uuid}/environments",
@@ -263,18 +271,21 @@ class CoolifyClient:
     # -------------------------------------------------------------------
 
     def list_applications(self) -> list[CoolifyApplication]:
+        """Return all applications visible to the token."""
         data = self._request("GET", "/applications")
         if not isinstance(data, list):
             return []
         return [self._to_application(d) for d in data]
 
     def get_application(self, uuid: str) -> CoolifyApplication:
+        """Return one application by UUID."""
         data = self._request("GET", f"/applications/{uuid}")
         return self._to_application(data)
 
     def find_application_by_name(
         self, name: str
     ) -> Optional[CoolifyApplication]:
+        """Return the first application matching `name`, or None."""
         for a in self.list_applications():
             if a.name == name:
                 return a
@@ -320,10 +331,12 @@ class CoolifyClient:
         return app
 
     def update_application(self, uuid: str, **fields: Any) -> CoolifyApplication:
+        """PATCH application fields and return the updated application."""
         self._request("PATCH", f"/applications/{uuid}", json_body=fields)
         return self.get_application(uuid)
 
     def delete_application(self, uuid: str) -> None:
+        """Delete an application by UUID."""
         self._request("DELETE", f"/applications/{uuid}")
 
     # -------------------------------------------------------------------
@@ -335,6 +348,7 @@ class CoolifyClient:
         return self._request("POST", f"/applications/{uuid}/start") or {}
 
     def stop_app(self, uuid: str) -> dict:
+        """Stop a running application by UUID."""
         return self._request("POST", f"/applications/{uuid}/stop") or {}
 
     def restart_app(self, uuid: str) -> dict:
@@ -349,6 +363,7 @@ class CoolifyClient:
         return self._request("GET", "/deploy", query=query) or {}
 
     def get_deployment_status(self, uuid: str) -> dict:
+        """Return the status payload of a deployment by UUID."""
         app = self.get_application(uuid)
         return {"uuid": uuid, "status": app.status, "fqdn": app.fqdn}
 

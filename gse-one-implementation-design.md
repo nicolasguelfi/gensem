@@ -58,7 +58,7 @@ gse-one/
 │   │   ├── devil-advocate.md
 │   │   ├── coach.md
 │   │   └── deploy-operator.md
-│   └── templates/                       # 30 templates (MANIFEST.yaml acts as self-descriptor and is not counted; after the sprint/audit.md MANIFEST entry is added (Cluster 10), template count and MANIFEST entries converge)
+│   └── templates/                       # 28 templates (MANIFEST.yaml acts as self-descriptor and is not counted)
 │
 ├── plugin/                              # Single deployable directory (Claude + Cursor + opencode)
 │   ├── .claude-plugin/plugin.json       # Claude Code manifest
@@ -1744,7 +1744,7 @@ _Optional section. Lists ambiguities to resolve in downstream activities, each t
 - `/gse:plan --strategic` uses the backlog items seeded during Intent Capture (which carry `traces.derives_from: [INT-001]`).
 - `/gse:reqs` reads the intent artefact to cross-check that all user-stated goals are covered by at least one REQ. Requirements get `traces.derives_from: [INT-001, ...]`.
 
-**Pivot / re-capture command:** out of scope for v0.28 — will be added later as `/gse:intent --pivot` or similar. For now, if the user wants to replace the intent, they manually archive `docs/intent.md` and re-run `/gse:go` on a greenfield-looking project (or use `/gse:hug --update` to reset the first-project flag).
+**Pivot / re-capture command:** out of scope for v0.28 — will be added later as a dedicated intent-pivot command (name TBD). For now, if the user wants to replace the intent, they manually archive `docs/intent.md` and re-run `/gse:go` on a greenfield-looking project (or use `/gse:hug --update` to reset the first-project flag).
 
 **Exempt / skip conditions:**
 - Existing project (non-greenfield) → no Intent Capture; inferred implicit from existing artefacts.
@@ -1850,7 +1850,7 @@ For each resolved question, the agent:
 - A question has `resolves_in: PLAN` but no `/gse:plan` is ever called (Micro mode) → the question remains `pending` until `/gse:compound` or `/gse:deliver`, which surface pending OQs as a reminder in the release notes.
 - A question is resolved outside the agent (user edits the file manually) → the next activity-entry scan reads the updated status and respects it.
 
-**Scope-resolve as Step 0 of `/gse:plan`:** the transversal activity-entry scan IS the scope-resolve mechanism. `/gse:plan --strategic` Step 0 scans for `resolves_in: PLAN` questions; if any have `impact: scope-shaping`, the Gate explicitly frames them as "scope-shaping questions — resolve before sprint selection". No separate `/gse:scope` skill is introduced.
+**Scope-resolve as Step 0 of `/gse:plan`:** the transversal activity-entry scan IS the scope-resolve mechanism. `/gse:plan --strategic` Step 0 scans for `resolves_in: PLAN` questions; if any have `impact: scope-shaping`, the Gate explicitly frames them as "scope-shaping questions — resolve before sprint selection". No separate scope-resolve skill is introduced.
 
 **Config Application Transparency — Design Mechanics (spec P7 Config Application Transparency):**
 
@@ -2327,7 +2327,7 @@ On `coach: propose` (pedagogy), the orchestrator presents the 5-option P14 Gate.
 | Learning notes | `docs/learning/LRN-*.md` | Pedagogy | Per-project, durable artefacts with traces |
 | `profile_drift_signals{}` | `.gse/status.yaml` | Profile calibration | Per-project, persistent — feeds `/gse:hug --update` proposals |
 | `workflow_observations[]` | `.gse/status.yaml` | sprint_velocity, workflow_health, quality_trends, engagement_pattern, process_deviation, sustainability | **Persistent** — cross-sprint ledger for trending. Axes like `quality_trends`, `sprint_velocity`, `sustainability` depend on history across ≥ 3 sprints. Individual observations may be summarized (not purged) at `/gse:compound`. |
-| Coaching recipes | `gse-one/plugin/agents/coach.md` Recipes section | All axes (tagged `for: pedagogy | workflow | both`) | **Edit destination:** the user-local copy in `.claude/agents/coach.md` / `.cursor/agents/coach.md` (per-project) OR the shipped template (shared defaults) |
+| Coaching recipes | `gse-one/plugin/agents/coach.md` Recipes section | All axes (tagged `for: pedagogy \| workflow \| both`) | **Edit destination:** the user-local copy in `.claude/agents/coach.md` / `.cursor/agents/coach.md` (per-project) OR the shipped template (shared defaults) |
 
 **Coaching recipes — dual maintenance:**
 

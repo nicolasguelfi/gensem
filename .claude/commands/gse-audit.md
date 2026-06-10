@@ -85,6 +85,8 @@ This returns the 17 deterministic categories — 12 coherence categories (versio
 
 If `--deterministic-only` is passed: skip Phase 2-3, jump to Phase 4 — Aggregation, then Phase 5 — Unified report rendering.
 
+**Engine-side inspection flags** (implemented by `audit.py` / `audit_catalog.py`, useful beyond the skill flow): `audit.py --cluster <job-id>` filters deterministic findings to one catalog job's file set (handy for the Phase 3.5 verification pass); `audit.py --list-clusters` and `audit_catalog.py --list` enumerate the catalog; `audit_catalog.py --show <job-id>` prints one job's full spec.
+
 ### Phase 2 — Load the audit catalog
 
 Read `.claude/audit-jobs.json`:
@@ -430,9 +432,9 @@ If `--no-save` was passed, skip this entire phase and only output the report to 
 ```
 /gse-audit                                  # full: 23 LLM jobs + Python engine (incl. 5 F-jobs)
 /gse-audit --deterministic-only             # fast Python-only (~5s)
-/gse-audit --coherence-only                 # 17 jobs, skip Category E
+/gse-audit --coherence-only                 # 19 LLM jobs (A-D) + engine F-jobs, skip Category E
 /gse-audit --strategic-only                 # 4 jobs, critique only
-/gse-audit --category D                     # only horizontal clusters (9 jobs)
+/gse-audit --category D                     # only horizontal clusters (11 jobs)
 /gse-audit --job deploy-cluster             # single cluster audit
 /gse-audit --format json --fail-on error    # CI mode
 ```

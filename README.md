@@ -65,7 +65,7 @@ The curl installer reads five environment variables that override auto-detection
 
 | Variable | Values | Description |
 |---|---|---|
-| `GSE_PLATFORM` | `claude` \| `cursor` \| `opencode` \| `all` | Restrict install to one platform (default: every platform detected on PATH) |
+| `GSE_PLATFORM` | `claude` \| `cursor` \| `opencode` \| `all` \| `both` | Restrict install to one platform — `both` = claude + cursor (default: every platform detected on PATH) |
 | `GSE_MODE` | `plugin` \| `no-plugin` | Install as a platform plugin or copy artifacts into a project's `.claude/` / `.cursor/` / `.opencode/` |
 | `GSE_SCOPE` | `project` \| `local` \| `user` | Claude Code plugin scope only (default: `user`); ignored by Cursor and opencode |
 | `GSE_VERSION` | `latest` \| `vX.Y.Z` | Release tag to install; `latest` resolves via the GitHub API (default: `latest`) |
@@ -229,7 +229,7 @@ gse-one/
 │   ├── .claude-plugin/plugin.json    # Claude Code manifest
 │   ├── .cursor-plugin/plugin.json    # Cursor manifest
 │   ├── skills/                       # 24 skills (shared, with name: field)
-│   ├── commands/                     # 23 /gse-<name>.md (Cursor)
+│   ├── commands/                     # 24 /gse-<name>.md (Cursor)
 │   ├── agents/                       # 11 agents (shared)
 │   ├── templates/                    # 30 templates (shared)
 │   ├── tools/                        # Python tools (dashboard, etc.)
@@ -238,7 +238,7 @@ gse-one/
 │   ├── settings.json                 # Claude only
 │   └── opencode/                     # opencode subtree
 │       ├── skills/                   # 24 skills (name: injected)
-│       ├── commands/                 # 23 /gse-<name>.md
+│       ├── commands/                 # 24 /gse-<name>.md
 │       ├── agents/                   # 10 specialized (mode: subagent)
 │       ├── plugins/gse-guardrails.ts # Native TS guardrails plugin
 │       ├── AGENTS.md                 # Orchestrator body (markered)
@@ -407,7 +407,7 @@ See `gse-one-implementation-design.md` §5.18 for the full design.
 
 ### Prerequisites
 
-- **Python 3.9+** (already required by GSE-One for the dashboard tool)
+- **Python 3.8+** (the GSE-One runtime baseline — same requirement as the installer)
 - **hcloud CLI** — installed automatically in Phase 1 if missing
 - **SSH** — available natively on macOS / Linux / Windows 10+
 
@@ -447,8 +447,9 @@ Thank you — contributions keep `/gse:deploy` usable across releases of Hetzner
 
 GSE-One ships with a **two-part audit tool** for maintainers and forkers of the methodology repository:
 
-1. **Coherence audit** — checks internal consistency across spec, design, and implementation (20 parallel jobs)
-2. **Strategic critique** — evaluates methodology quality, relevance, and user value (4 of the 20 jobs)
+1. **Coherence audit** — checks internal consistency across spec, design, and implementation (23 parallel LLM jobs)
+2. **Strategic critique** — evaluates methodology quality, relevance, and user value (4 of the 28 jobs)
+3. **Distribution hygiene** — Category F invariants on the shipped plugin (5 deterministic jobs run by the Python engine)
 
 Not for user projects — for those, use `/gse:status`, `/gse:health`, `/gse:review`, `/gse:assess`, `/gse:compound`, `/gse:collect`.
 
@@ -457,14 +458,14 @@ Not for user projects — for those, use `/gse:status`, `/gse:health`, `/gse:rev
 **Slash command (Claude Code, interactive):**
 
 ```
-/gse-audit                    # all 20 jobs in parallel
+/gse-audit                    # all 28 jobs (23 LLM in parallel + 5 engine F-jobs)
 /gse-audit --deterministic-only   # fast Python engine only
-/gse-audit --coherence-only   # skip strategic critique (16 jobs)
+/gse-audit --coherence-only   # skip strategic critique (19 LLM jobs + F)
 /gse-audit --strategic-only   # only Category E (4 jobs)
 /gse-audit --job deploy-cluster   # single job
 ```
 
-Spawns **20 parallel sub-agents** (one per job), each with its own file list and checks defined in `.claude/audit-jobs.json`. Combines with the Python deterministic engine for a unified report.
+Spawns **23 parallel sub-agents** (one per LLM job; the 5 Category F jobs run inside the Python engine), each with its own file list and checks defined in `.claude/audit-jobs.json`. Combines with the Python deterministic engine for a unified report.
 
 **CLI (for CI or quick checks, Python only):**
 
@@ -493,16 +494,16 @@ _LOCAL/audits/latest.md                   # convenience copy, always overwritten
 
 `_LOCAL/` is gitignored, so audit history accumulates locally without ever reaching git. Use `--no-save` to disable, or `--save-to <path>` for an explicit location (e.g., CI artifact export).
 
-The `/gse-audit` slash command saves the **augmented** report (deterministic findings + LLM findings from 20 sub-agents + strategic recommendations). The `audit.py` CLI saves the **deterministic-only** report when invoked standalone. No duplicate files when the skill invokes the engine internally.
+The `/gse-audit` slash command saves the **augmented** report (deterministic findings + LLM findings from the sub-agents + strategic recommendations). The `audit.py` CLI saves the **deterministic-only** report when invoked standalone. No duplicate files when the skill invokes the engine internally.
 
-### What the audit covers (20 jobs, 5 categories)
+### What the audit covers (28 jobs, 6 categories)
 
 **Category A — Single-file quality** *(2 jobs, non-directional)*
 - `spec-file-quality` — internal quality of `gse-one-spec.md`
 - `design-file-quality` — internal quality of `gse-one-implementation-design.md`
 
 **Category B — Intra-layer uniformity** *(5 jobs, non-directional)*
-- `activities-structure-uniformity` — all 23 activity skills follow uniform skeleton
+- `activities-structure-uniformity` — all 24 activity skills follow their documented structural patterns
 - `agents-structure-uniformity` — all 11 agents follow uniform skeleton
 - `tools-quality-uniformity` — all 5 Python tools follow SE standards
 - `templates-completeness` — all ~30 templates valid + in MANIFEST
@@ -511,7 +512,7 @@ The `/gse-audit` slash command saves the **augmented** report (deterministic fin
 **Category C — Layer pair** *(1 job, bidirectional)*
 - `spec-design-coherence` — design refines spec; may reveal spec improvements
 
-**Category D — Horizontal clusters** *(8 jobs, bidirectional)*
+**Category D — Horizontal clusters** *(11 jobs, bidirectional)*
 - `governance-cluster` — orchestrator + 16 principles + spec/design
 - `deploy-cluster` — deploy activity + agent + refs + tools + templates + spec + design
 - `sprint-lifecycle-cluster` — plan→reqs→design→preview→tests→produce→review→fix→deliver
@@ -527,9 +528,16 @@ The `/gse-audit` slash command saves the **augmented** report (deterministic fin
 - `user-value-critique` — does it deliver value to each user profile (solo/instructor/learner/forker)?
 - `robustness-and-recovery-critique` — is it robust to failures?
 
+**Category F — Distribution hygiene** *(5 deterministic jobs, run by `audit.py` — no LLM sub-agent)*
+- `plugin-language-hygiene` — English-only distributed prose (marked multilingual zones excepted)
+- `plugin-secret-leak-hygiene` — no keys, tokens, or credentials in the shipped plugin
+- `plugin-personal-leak-hygiene` — no maintainer-personal paths or identities
+- `plugin-debug-residue-hygiene` — no debug prints or dead branches in shipped code
+- `plugin-runtime-path-integrity` — every `$(cat ~/.gse-one)/X` reference resolves against installed subpaths
+
 ### Catalog: `.claude/audit-jobs.json`
 
-All 20 jobs are defined declaratively with explicit file lists, scopes, and checks. To add a job (e.g., when your fork adds a new subsystem), edit the catalog and validate:
+All 28 jobs are defined declaratively with explicit file lists, scopes, and checks. To add a job (e.g., when your fork adds a new subsystem), edit the catalog and validate:
 
 ```bash
 python3 gse-one/audit_catalog.py --validate

@@ -10,6 +10,12 @@ deterministic core (state, sanitization, detection, preflight, env parsing) that
 be unit-tested without infrastructure, and an infrastructure-dependent surface
 (Coolify API, SSH, hcloud, DNS, Let's Encrypt) that can only be validated end-to-end.
 
+Known coverage gap (tracked): 8 deploy.py public functions are infrastructure-bound
+(`detect_situation`, `wait_dns`, `poll_health`, `deploy_app`, `app_status`, `destroy`,
+`training_init`, `training_reap`) and currently covered only by the manual E2E
+checklist below — the audit engine's `test_coverage` check reports them. Mocked unit
+tests are a welcome future contribution.
+
 ---
 
 ## Unit tests

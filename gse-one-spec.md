@@ -474,6 +474,8 @@ Artefacts encompass all project files: code, requirements, design documents, tes
 
 **Risk & Communication**
 
+*(Principles appear in numeric order; P5 — Living Planning and P6 — Traceability below are classified **Foundations** in the table above despite sitting under this banner.)*
+
 ### P4 — Human-in-the-Loop by Default
 GSE-One promotes human oversight for important or critical aspects of any artefact. The level of human involvement is calibrated by decision tier (see P7). For decisions that require user input, the agent uses the **structured interaction pattern**:
 
@@ -1141,7 +1143,7 @@ If the agent made no Inform-tier decisions during the activity (rare — all cho
 |---------|----------|-------------|
 | `/gse:hug` | **User Profile** | Establish or update the full engineering context profile (see Section 3.2.1). Also verifies that the project is a git repository (initializes with foundational commit if needed) and creates `.gse/` |
 
-#### 3.2.1 HUG Profile Dimensions
+### 3.2.1 HUG Profile Dimensions
 
 The HUG activity captures and maintains the following profile dimensions:
 
@@ -1883,7 +1885,7 @@ Guardrails make cost visible and require proportional acknowledgment. Soft guard
 | Working on main | User or agent tries to edit code directly on `main` | **Hard** — propose creating a feature branch |
 | Uncommitted changes | Agent tries to switch branch with uncommitted work | **Hard** — commit or stash first |
 | Unreviewed merge | `/gse:deliver` called before `/gse:review` | **Hard** — review first |
-| Merge conflict | Conflict detected during merge | **Gate** — present conflict, explain options, wait for user choice |
+| Merge conflict | Conflict detected during merge | **Gate** — present conflict, explain options, wait for user choice *(Gate is a decision tier, not a guardrail level — this row routes to a decision rather than a Soft/Hard/Emergency block; kept here for completeness of git-event coverage)* |
 | Force push | Any force push attempt | **Emergency** — explain data loss risk |
 | Branch sprawl | More than 5 active branches | **Soft** — suggest cleanup |
 | Stale branches | Branch not touched in >2 sprints | **Soft** — suggest deletion or archival |
@@ -2671,7 +2673,7 @@ deploy:
 
 ### 13.2 Lightweight Mode
 
-For micro-projects (single file, 1-hour task, quick script), the full lifecycle is overkill. GSE-One supports a **lightweight mode** that reduces overhead while preserving traceability:
+For simple projects (few dependencies, single component, no persistence — one notch above the trivial scripts that Micro mode handles), the full lifecycle is overkill. GSE-One supports a **lightweight mode** that reduces overhead while preserving traceability (the matrix below draws the exact Micro / Lightweight / Full boundary):
 
 ```yaml
 lifecycle:
@@ -2789,10 +2791,14 @@ Available at any time, outside of phase sequencing:
 | Activity | Command |
 |----------|---------|
 | Planning (any level) | `/gse:plan` |
-| Backlog management | `/gse:backlog` |
-| Learning (reactive + proactive) | `/gse:learn` |
-| Health dashboard | `/gse:health` |
 | Project status | `/gse:status` |
+| Health dashboard | `/gse:health` |
+| Project methodology audit | `/gse:audit` |
+| Backlog management | `/gse:backlog` |
+| Ad-hoc task | `/gse:task` |
+| Learning (reactive + proactive) | `/gse:learn` |
+| Session pause / resume | `/gse:pause`, `/gse:resume` |
+| Deployment | `/gse:deploy` |
 | Session pause | `/gse:pause` |
 | Session resume | `/gse:resume` |
 | Ad-hoc task | `/gse:task` |
@@ -2837,8 +2843,8 @@ LC00 (once)
                                        v
                               next sprint → LC01
 
-Cross-cutting (available at any point):
-  PLAN, LEARN, HEALTH, STATUS, PAUSE, RESUME, TASK
+Cross-cutting (available at any point — same set as the §3 activity table + tactical PLAN):
+  PLAN, STATUS, HEALTH, AUDIT, BACKLOG, TASK, LEARN, PAUSE, RESUME, DEPLOY
 ```
 
 ### 14.0.1 Activity Ceremony by Expertise Level
@@ -3279,7 +3285,7 @@ src/agents/gse-orchestrator.md     ← Agent context (routing + global rules)
   ↓ (activities implemented as)
 src/activities/*.md                ← Skill files (execution details)
   ↓ (generated into)
-plugin/                            ← Deployable plugin (Claude Code + Cursor)
+plugin/                            ← Deployable plugin (Claude Code + Cursor + opencode)
 ```
 
 ### Discipline: what goes where

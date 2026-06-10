@@ -237,7 +237,13 @@ def sanitize_component(name: str, max_len: int = SUBDOMAIN_COMPONENT_MAX) -> str
 def build_subdomain(
     project_dir: str, deploy_user: Optional[str], domain: str
 ) -> dict:
-    """Build the full subdomain per P1. Returns dict with components and FQDN."""
+    """Build the full subdomain per P1. Returns dict with components and FQDN.
+
+    Contract note (Meta-2 documented exception): this function returns the
+    legacy ``{"ok": bool, ...}`` shape, NOT the status-wrapped contract used
+    by the other library functions. Aligning it is a breaking contract change
+    deferred to a dedicated release (callers: _cmd_subdomain, tests).
+    """
     project_name = sanitize_component(Path(project_dir).name)
     if not project_name:
         return {

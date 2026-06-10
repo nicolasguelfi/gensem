@@ -572,6 +572,9 @@ def audit_links() -> list:
     for f in md_files:
         if "_LOCAL" in f.parts or "_ARCHIVED" in f.parts:
             continue
+        # Worktree copies duplicate root-level findings — skip them
+        if "worktrees" in f.parts:
+            continue
         if f in seen:
             continue
         seen.add(f)
@@ -589,6 +592,10 @@ def audit_links() -> list:
         # Match `gse-one/...` paths (simple heuristic)
         for m in re.finditer(r"`(gse-one/[a-zA-Z0-9_./-]+)`", text):
             path = m.group(1)
+            # Skip placeholder/convention paths, not real link targets
+            # (e.g. `gse-one/...`, `gse-one/src/X/...` in CLAUDE.md conventions)
+            if "..." in path or "/X/" in path or path.endswith("/X"):
+                continue
             target = REPO_ROOT / path
             if not target.exists():
                 broken.append(f"{f.relative_to(REPO_ROOT)} → {path}")

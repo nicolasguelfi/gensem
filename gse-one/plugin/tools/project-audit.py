@@ -10,7 +10,7 @@ Usage (via registry):
     python3 "$(cat ~/.gse-one)/tools/project-audit.py" --help
 
 Detects methodology drift via deterministic checks. Outputs findings as
-AUD-NNN entries. Phase 1 ships 5 core checks; 10 more ship in J.2.b.
+AUD-NNN entries. Runs the full set of 15 checks (checks 1-15).
 Semantic layer (project-reviewer agent) ships in Phase 2.
 
 See design §3.4 Dashboard parser format contracts and §5.Z /gse:audit

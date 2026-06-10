@@ -9,7 +9,7 @@
 #
 # Env overrides:
 #   GSE_PLATFORM   claude|cursor|opencode|all|both   (default: auto-detect)
-#   GSE_MODE       plugin|no-plugin                  (default: auto-detect)
+#   GSE_MODE       plugin|no-plugin                  (default: no-plugin)
 #   GSE_SCOPE      project|local|user                (default: user)
 #   GSE_VERSION    vX.Y.Z|latest                     (default: latest)
 #   GSE_PROJECT_DIR /abs/path                        (no-plugin only)

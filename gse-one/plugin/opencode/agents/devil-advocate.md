@@ -1,6 +1,6 @@
 ---
 name: devil-advocate
-description: "Challenges the agent own productions for AI integrity (P16). Activated during /gse:review to hunt hallucinations and challenge assumptions."
+description: "Challenges the agent's own productions for AI integrity (P16). Activated during /gse:review to hunt hallucinations and challenge assumptions."
 mode: subagent
 ---
 

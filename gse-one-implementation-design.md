@@ -864,7 +864,7 @@ Three project modes based on complexity assessment:
 | Mode | Selection | Lifecycle | Git | Health | REQS | TESTS |
 |------|-----------|-----------|-----|--------|------|-------|
 | **Micro** | Trivial (script, no manifest) | PRODUCE → DELIVER | direct commit | none | Not enforced | Not enforced |
-| **Lightweight** | Simple (few deps, no persistence) | PLAN → REQS → PRODUCE → DELIVER | branch-only | 3 dims | Hard (reduced ceremony) | Soft (auto-generated) |
+| **Lightweight** | Simple (few deps, no persistence) | PLAN → REQS → PRODUCE → DELIVER (incl. minimal integrity pass at DELIVER Step 1.6 — devil-advocate `delivery-integrity` mode, since v0.70.0) | branch-only | 3 dims | Hard (reduced ceremony) | Soft (auto-generated) |
 | **Full** | Complex (persistence, multi-component, CI) | LC01 → LC02 → LC03 | worktree | 8 dims | Hard (full ceremony) | Hard (formal strategy) |
 
 Micro mode: 1 state file only (`.gse/status.yaml` with inline profile + task list).

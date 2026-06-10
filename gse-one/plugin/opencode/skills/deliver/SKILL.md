@@ -149,6 +149,18 @@ Read `docs/sprints/sprint-{NN}/test-strategy.md` if it exists. Identify **declar
 
 This step enforces the three canonical Test-Specific Guardrails defined in spec §9.3.1 and the contract of spec §6.3 — Test Execution and Evidence (line 1586: *"Write `test_evidence` on each covered TASK"*). It is the consumer of the `test_evidence` field and the test-strategy / test-reports coherence check.
 
+### Step 1.6 — Minimal Integrity Pass (Lightweight mode only)
+
+Runs only when the project lifecycle mode is **lightweight** (`.gse/config.yaml`). Full mode is already covered by the complete devil's advocate pass in `/gse:review`; Micro mode is excluded by design (Gate-only tier for throwaway experiments — see spec §13.2 mode comparison).
+
+Lightweight has no REVIEW activity, so this is the only P16 integrity net before the code reaches `main`. Keep it minimal — this is NOT a review:
+
+1. **Spawn the devil-advocate in `delivery-integrity` mode** (`"$(cat ~/.gse-one)/agents/devil-advocate.md"`) in a fresh sub-agent context (same isolation contract as review.md Step 3 — inline fallback allowed with the Inform note, execution mode traced).
+2. Input: the sprint diff (`git diff main...HEAD --stat` + changed files) and the sprint artefacts.
+3. The mode's restricted checklist (see agent file): referenced libraries/packages/APIs actually exist (`pip show` / `npm list` / docs URL), version compatibility, unverified critical assertions (P15 — claims tagged Verified without evidence, or untagged critical claims). Maximum 5 findings, most critical first.
+4. **Routing:** HIGH findings → Gate before proceeding to Step 2 (*Fix now / Accept the risk — recorded as a DEC- / Discuss*). MEDIUM/LOW findings → Inform, appended to the release notes (Step 6).
+5. Record `DA execution: isolated | inline-degraded` alongside the findings.
+
 ### Step 2 — Merge Features into Sprint Branch
 
 For each feature branch (in dependency order):

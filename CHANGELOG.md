@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.70.0] - 2026-06-10
+
+### Added
+- Added deliver Step 1.6 — Minimal Integrity Pass, Lightweight mode only: devil-advocate `delivery-integrity` mode before any merge (backlog M1 feature).
+- Added devil-advocate `delivery-integrity` mode: restricted checklist (library/API existence, versions, unverified critical assertions), ≤ 5 findings; HIGH Gates the merge.
+
+### Changed
+- Changed spec §13.2 caveat into the implemented-coverage description; Micro stays uncovered by design; design mode table aligned.
+
 ## [0.69.0] - 2026-06-10
 
 ### Changed

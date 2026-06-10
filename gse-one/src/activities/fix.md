@@ -127,7 +127,7 @@ For each finding (RVW-NNN), apply the **Root-Cause Discipline** protocol (spec P
 
 After applying a patch, if the symptom persists (user reports it again, or the evidence re-run still fails):
 
-1. **Increment** `status.yaml → fix_attempts_on_current_symptom` by 1.
+1. **Increment** the counter via `python3 "$(cat ~/.gse-one)/tools/counters.py" incr fix_attempts_on_current_symptom` (returns the new value — use it for the threshold check below; never hand-edit status.yaml).
 2. Read `profile.yaml → dimensions.it_expertise` to determine the threshold:
    - `beginner` → threshold = 2
    - `intermediate` → threshold = 3
@@ -148,7 +148,7 @@ After applying a patch, if the symptom persists (user reports it again, or the e
      - "<path>"
    ```
 4. The devil-advocate returns a list of findings. Display them to the user. **At least one finding MUST be addressed** (fixed, explicitly dismissed with a DEC-, or resolved via user input) before any further patch on this symptom is attempted.
-5. **Reset** `fix_attempts_on_current_symptom` to 0 when:
+5. **Reset** the counter (`python3 "$(cat ~/.gse-one)/tools/counters.py" reset fix_attempts_on_current_symptom`) when:
    - The user confirms resolution ("it works now", "fixed", user moves on to a different topic).
    - The symptom explicitly changes (a different observable defect is reported).
    - A new sprint is promoted (`/gse:plan --strategic`).

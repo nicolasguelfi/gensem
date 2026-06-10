@@ -158,6 +158,7 @@ Track the number of sessions (invocations of `/gse:go` or `/gse:resume`) where n
    - If **at least one TASK status changed** → reset `sessions_without_progress` to 0.
 3. Persist `status.yaml → sessions_without_progress` with the new value, then refresh the snapshot: write the current map of `{TASK-id: status}` to `status.yaml → task_status_snapshot`.
 4. The coach `mid_sprint_stall` event trigger (feeds axes 3-4 — sprint velocity, workflow health; per `plugin/agents/coach.md` Invocation contract + `plugin/agents/gse-orchestrator.md` — section "Coach delegation") reads this counter and activates when `sessions_without_progress >= 2`.
+5. **Integrity-counter backstop:** run `python3 "$(cat ~/.gse-one)/tools/counters.py" health`. If it returns `"stale": true` (≥ 5 activity transitions without any P16 integrity-counter write), emit an Inform note: *"P16 integrity counters have not moved for N activities — re-check the counting obligations (spec §P16) before proceeding."* Informational only — no Gate.
 
 If the session-without-progress count reaches the configured threshold:
 

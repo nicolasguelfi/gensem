@@ -190,6 +190,8 @@ Track these 2 signals at the **root level** of `status.yaml` (per spec §12.4 �
 - `consecutive_acceptances` — count of review rounds where the user accepted all findings without discussion (primary trigger)
 - `pushback_dismissed` — number of times the user dismissed a pushback checkpoint with "Everything looks good" (governs per-sprint suppression)
 
+Both counters are written via `counters.py` (incr/reset — registry incantation; writer contract in spec §P16 — the orchestrator owns the writes, never hand-edits the YAML).
+
 When `consecutive_acceptances` reaches threshold (beginner=3, intermediate=5, expert=8): trigger a pushback checkpoint — present the 3 most impactful recent decisions and ask: "I want to make sure we're aligned. Do these choices still look right?"
 
 **Suppression rule:** If the user responds "Everything looks good" (or equivalent affirmation) to **two consecutive** pushback checkpoints (`pushback_dismissed >= 2`), suppress further pushback for the rest of the sprint. This prevents the agent from harassing a user who has genuinely reviewed and approved. **Beginner exception** (`profile.yaml → dimensions.it_expertise: beginner`): suppress for the next **3 Gates** only, and have the coach emit one Inform note when suppression activates (per spec §P16 — User Pushback Encouragement).

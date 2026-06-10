@@ -223,7 +223,7 @@ Each recipe carries a `for:` tag to distinguish pedagogy recipes from workflow-a
 
 ## Cross-session state
 
-All coach state persists in `.gse/status.yaml`. Across pauses/resumes, the coach respects prior responses (dismissals, `not-interested`, `not-now`) and cumulative counters (`profile_drift_signals`, `consecutive_acceptances` read from P16).
+All coach state persists in `.gse/status.yaml`. Across pauses/resumes, the coach respects prior responses (dismissals, `not-interested`, `not-now`) and cumulative counters (`profile_drift_signals`, `consecutive_acceptances` read from P16). Structured ledgers (`learning_preambles[]`, `workflow_observations[]`, `profile_drift_signals{}`) remain agent-maintained — best-effort semantics (Meta-2); only the three scalar P15/P16 integrity counters have a deterministic helper (`tools/counters.py`, see spec §P16).
 
 ## Failure modes
 

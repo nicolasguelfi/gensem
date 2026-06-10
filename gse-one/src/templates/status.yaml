@@ -32,13 +32,20 @@ health:
 # P16 pushback detection — see spec P16 for increment/reset rules
 # Incremented: Gate decision accepted without modification, single-word confirmation of artefact
 # Reset to 0: user selects Discuss, asks why, modifies proposal, rejects option, or checkpoint triggers
+# Writes go through tools/counters.py (incr/reset) — never hand-edit (see counters_last_write below)
 consecutive_acceptances: 0             # primary counter — triggers pushback at threshold (beginner=3, intermediate=5, expert=8)
 pushback_dismissed: 0                  # times user chose "Everything looks good" — if >=2, suppress for rest of sprint
 
 # P16 root-cause discipline — see spec P16 "Root-Cause Discipline before patching" for rules
 # Incremented: patch applied but symptom persists (user reports again, or evidence test still fails)
 # Reset to 0: user confirms resolution, symptom explicitly changes, or new sprint promotion
+# Writes go through tools/counters.py (incr/reset) — never hand-edit
 fix_attempts_on_current_symptom: 0     # triggers devil-advocate escalation at threshold (beginner=2, intermediate=3, expert=4)
+
+# Deterministic integrity-counter ledger (P15/P16) — stamped by tools/counters.py on every
+# incr/reset of the three counters above. `counters.py health` compares it against
+# activity_history to flag >= 5 transitions without any counter write (backstop, run at go/resume).
+counters_last_write: ""                # ISO 8601 — last integrity-counter write by counters.py
 
 # P6 scope reconciliation — recorded at start of creator activities (produce, task)
 # Used at closure to compute `git diff --name-status <sha>..HEAD` and detect scope drift

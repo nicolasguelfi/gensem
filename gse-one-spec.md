@@ -1033,7 +1033,7 @@ RVW-012 [AI-INTEGRITY] [MEDIUM] — Unverified library recommendation
 
 The agent monitors the user's engagement pattern. If it detects signs of **passive acceptance** (the user validates everything without pushback), it triggers a proactive challenge:
 
-**Passive acceptance counter:** The agent maintains a `consecutive_acceptances` counter in `.gse/status.yaml` (persisted across context window resets). This counter is **incremented** by +1 for each of the following events:
+**Passive acceptance counter:** The agent maintains a `consecutive_acceptances` counter in `.gse/status.yaml` (persisted across context window resets), updating it via the deterministic helper `counters.py` (`python3 "$(cat ~/.gse-one)/tools/counters.py" incr|reset <counter>` — never hand-editing the YAML). Event detection remains conversational and best-effort (Meta-2): what IS deterministic is the arithmetic, the persistence timestamp (`counters_last_write`), and the `health` backstop that flags ≥ 5 activity transitions without any counter write (surfaced at `/gse:go` and `/gse:resume`). This counter is **incremented** by +1 for each of the following events:
 - The user chooses the agent's recommended option in a **Gate decision** (the primary signal)
 - The user confirms a reformulation, plan, design, or requirement set with a single-word response ("yes", "ok", "1") **without modification or question**
 
@@ -1090,7 +1090,7 @@ When applying a fix to a reported defect — either during `/gse:fix` processing
 
 **Failed-patch counter and devil-advocate escalation:**
 
-The agent maintains a `fix_attempts_on_current_symptom` counter in `.gse/status.yaml`. The counter is **incremented** by +1 each time a patch fails to resolve the symptom (the user reports the same symptom again, or the evidence test still fails after the patch). The counter is **reset to 0** when:
+The agent maintains a `fix_attempts_on_current_symptom` counter in `.gse/status.yaml`, via the same deterministic helper `counters.py` as the P16 pushback counters (incr/reset; event detection stays conversational, best-effort). The counter is **incremented** by +1 each time a patch fails to resolve the symptom (the user reports the same symptom again, or the evidence test still fails after the patch). The counter is **reset to 0** when:
 - The user explicitly confirms resolution ("it works now", "fixed", user moves on to a different topic),
 - The symptom explicitly changes (a different observable defect is reported),
 - A new sprint starts (`/gse:plan --strategic` promotes the next sprint).
@@ -2375,6 +2375,7 @@ pushback_dismissed: 0                  # times user chose "Everything looks good
 # Incremented: patch applied but symptom persists (user reports again, or evidence test still fails)
 # Reset to 0: user confirms resolution, symptom explicitly changes, or new sprint starts
 fix_attempts_on_current_symptom: 0     # triggers devil-advocate escalation at threshold (beginner=2, intermediate=3, expert=4)
+counters_last_write: ""                # ISO 8601 — last integrity-counter write by counters.py (health backstop)
 
 # P6 scope reconciliation — recorded at start of creator activities (produce, task)
 # Used at closure to compute `git diff --name-status <sha>..HEAD` and detect scope drift
@@ -2440,6 +2441,7 @@ The following fields are **mandatory** — tools and the dashboard depend on the
 | `task_status_snapshot` | map TASK-id → status | Last session's TASK status snapshot — written by `/gse:go` Step 4 — Stale Sprint Detection and `/gse:resume` Step 6 — Finalize; drives `sessions_without_progress` |
 | `consecutive_acceptances` | integer ≥ 0 | P16 pushback counter |
 | `fix_attempts_on_current_symptom` | integer ≥ 0 | P16 root-cause discipline counter — triggers devil-advocate escalation at threshold |
+| `counters_last_write` | ISO 8601 string | last integrity-counter write by `counters.py` — feeds the `health` staleness backstop |
 
 **Validation rule:** After creating or updating `config.yaml` or `status.yaml`, the agent SHOULD verify that all required fields are present and non-empty. If the dashboard tool (`dashboard.py`) is available, regenerate the dashboard and verify the output does not contain placeholder values ("Unknown Project", empty phase).
 

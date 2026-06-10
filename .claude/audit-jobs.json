@@ -97,7 +97,8 @@
         "Error handling pattern consistent (return dict with 'status' field OR raise typed exceptions)",
         "CLI pattern uniform (argparse + subcommands where applicable)",
         "Stdlib-only by default; optional dependencies documented and gracefully degraded",
-        "No print() in library code; CLI output goes through a rendering function"
+        "No print() in library code; CLI output goes through a rendering function",
+        "No durable configuration read from os.environ / process.env outside the sanctioned list (GSE_* installer overrides, HOME, LOCALAPPDATA, NO_COLOR/FORCE_COLOR, standard CI vars) — durable config belongs in project-local files per CLAUDE.md > Tool architecture > Configuration policy"
       ]
     },
     {

@@ -26,6 +26,7 @@ Before executing, read:
 2. `.gse/config.yaml` — project configuration
 3. `.gse/backlog.yaml` — all tasks and their statuses
 4. `.gse/profile.yaml` — user profile (for display preferences)
+5. `.gse/plan.yaml` — sprint goal, budget, and workflow trajectory (when present; absent in Micro mode)
 
 ## Workflow
 
@@ -38,7 +39,7 @@ PROJECT: {project_name}
 Sprint:  S{NN} ({current_phase})
 Phase:   {current phase description}
 Last:    {last_activity} on {last_activity_timestamp}
-Health:  {overall_score}/10
+Health:  {health.score}/10
 ```
 
 ### Step 2 — Sprint State
@@ -54,11 +55,16 @@ Budget: {used}/{total} complexity points ({remaining} remaining)
 | TASK-{ID}  | {type}   | {status}    | {N}        | {branch or —}    |
 ```
 
-Status symbols:
-- `planned` — not started
+Status symbols (full 9-value lifecycle, per `backlog.yaml` — the authoritative schema):
+- `open` — in the backlog pool, not part of a sprint
+- `planned` — in the sprint, not started
 - `in-progress` — actively being worked on
-- `done` — completed, pending review
-- `delivered` — merged and released
+- `review` — produced, awaiting `/gse:review`
+- `reviewed` — reviewed clean (no HIGH/MEDIUM findings) — ready to merge
+- `fixing` — FIX in progress on review findings
+- `done` — reviewed + fixed (FIX applied) — ready to merge
+- `delivered` — merged by `/gse:deliver`
+- `deferred` — pushed to a later sprint
 
 ### Step 3 — Artefact Inventory
 
@@ -158,8 +164,10 @@ If `--decisions` is specified, show recent Gate decisions:
 
 ```
 DECISIONS (last 10)
-  {timestamp} | {activity} | {gate_type} | {choice} | {rationale}
+  {Date} | {Tier} | {Type} | {Decision} | {Rationale}
 ```
+
+*(columns mirror the authoritative DEC- fields of `gse-one/src/templates/decisions.md`)*
 
 ### Step 6.5 — Open Items (pedagogical visibility)
 
@@ -202,7 +210,7 @@ This step is **purely a read of existing files** — it does not modify state, d
 Based on current state, suggest next actions:
 
 - If tasks are in-progress: "Continue with `/gse:produce`"
-- If all tasks done: "Ready for `/gse:review`"
-- If reviews complete: "Ready for `/gse:deliver`"
+- If tasks are in `review`: "Ready for `/gse:review`"
+- If all tasks `done` or `reviewed`: "Ready for `/gse:deliver`"
 - If stale sprint detected ({N} sessions without progress > `lifecycle.stale_sprint_sessions`): "Sprint has had {N} sessions without progress — consider `/gse:go`"
 - If health score below 5/10: "Health is low — consider addressing {worst dimension}"

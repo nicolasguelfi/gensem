@@ -44,9 +44,19 @@ VALID_TYPES = {
 
 VALID_REFINEMENTS = {"none", "downward", "bidirectional"}
 
-VALID_CATEGORIES = {"A", "B", "C", "D", "E"}
+VALID_CATEGORIES = {"A", "B", "C", "D", "E", "F"}
 
 VALID_SEVERITIES = {"error", "warning", "info", "recommendation"}
+
+# Maps the catalog's embedded `schema` block keys to the code-side enums.
+# `load_catalog` cross-checks both sides so a category/type addition cannot
+# desynchronize silently again (the v0.62 Category F omission hid exactly here).
+_SCHEMA_ENUM_KEYS = {
+    "categories": VALID_CATEGORIES,
+    "types": VALID_TYPES,
+    "refinements": VALID_REFINEMENTS,
+    "severities": VALID_SEVERITIES,
+}
 
 
 # ---------------------------------------------------------------------------
@@ -120,6 +130,19 @@ def load_catalog(repo_root: Path, catalog_path: Optional[Path] = None) -> list:
     if not isinstance(data, dict) or "jobs" not in data:
         raise CatalogError("Audit catalog must be a JSON object with a 'jobs' key")
 
+    # Cross-check the embedded `schema` block (when present) against the
+    # code-side enums — single source of truth guard (tolerant: only the
+    # keys actually declared in the JSON are compared).
+    schema = data.get("schema")
+    if isinstance(schema, dict):
+        for key, code_enum in _SCHEMA_ENUM_KEYS.items():
+            declared = schema.get(key)
+            if declared is not None and set(declared) != code_enum:
+                raise CatalogError(
+                    f"Catalog schema.{key} {sorted(set(declared))} does not match "
+                    f"audit_catalog.py enum {sorted(code_enum)} — update both sides together"
+                )
+
     raw_jobs = data["jobs"]
     if not isinstance(raw_jobs, list):
         raise CatalogError("'jobs' must be a list")
@@ -174,7 +197,10 @@ def validate_job(job: AuditJob) -> None:
         )
 
     # Semantic cross-checks
-    if job.type == "file_quality" and len(job.files) != 1:
+    # Category F file_quality jobs are multi-glob product scans over the
+    # whole distributed plugin tree by design (Meta-2 documented exception)
+    # — the single-file rule applies to A-E file_quality jobs only.
+    if job.type == "file_quality" and job.category != "F" and len(job.files) != 1:
         raise CatalogError(
             f"Job '{job.id}': file_quality must have exactly 1 file "
             f"(got {len(job.files)})"
@@ -193,6 +219,13 @@ def validate_job(job: AuditJob) -> None:
         raise CatalogError(f"Job '{job.id}': no checks defined")
     if not job.files:
         raise CatalogError(f"Job '{job.id}': no files defined")
+    for label, entries in (("files", job.files), ("checks", job.checks)):
+        for entry in entries:
+            if not isinstance(entry, str) or not entry.strip():
+                raise CatalogError(
+                    f"Job '{job.id}': every '{label}' entry must be a "
+                    f"non-empty string (got {entry!r})"
+                )
 
 
 # ---------------------------------------------------------------------------

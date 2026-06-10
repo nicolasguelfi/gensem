@@ -199,5 +199,38 @@ class TestAuditCategoriesPresent(unittest.TestCase):
         self.assertEqual(expected, actual)
 
 
+class TestAuditCatalog(unittest.TestCase):
+    """Regression guards for the audit catalog chain (.claude/audit-jobs.json
+    + audit_catalog.py). Added after the v0.62 Category F incident: the 5 F-jobs
+    shipped in the catalog while VALID_CATEGORIES still ended at E, so --list,
+    --validate and audit.py --cluster were all broken with all tests green."""
+
+    REPO_ROOT = ROOT.parent
+
+    def test_shipped_catalog_loads(self):
+        import audit_catalog
+        jobs = audit_catalog.load_catalog(self.REPO_ROOT)
+        self.assertGreaterEqual(len(jobs), 26)
+
+    def test_every_job_within_enums(self):
+        import audit_catalog
+        jobs = audit_catalog.load_catalog(self.REPO_ROOT)
+        for job in jobs:
+            self.assertIn(job.category, audit_catalog.VALID_CATEGORIES, job.id)
+            self.assertIn(job.type, audit_catalog.VALID_TYPES, job.id)
+            self.assertIn(job.refinement, audit_catalog.VALID_REFINEMENTS, job.id)
+
+    def test_catalog_cli_validate_exits_zero(self):
+        import subprocess
+        proc = subprocess.run(
+            [sys.executable, str(ROOT / "audit_catalog.py"), "--validate"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(
+            proc.returncode, 0,
+            f"--validate failed:\n{proc.stdout}\n{proc.stderr}",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

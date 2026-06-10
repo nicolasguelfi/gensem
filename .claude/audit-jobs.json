@@ -1,6 +1,7 @@
 {
-  "version": "1.0",
+  "version": "1.1",
   "schema": {
+    "categories": ["A", "B", "C", "D", "E", "F"],
     "types": ["file_quality", "intra_layer_group", "layer_pair", "horizontal_cluster", "qualitative_critique"],
     "refinements": ["none", "downward", "bidirectional"],
     "severities": ["error", "warning", "info", "recommendation"]
@@ -18,7 +19,7 @@
         "16 principles (P1-P16) consistently cited and applied across their appearances",
         "Modes (Micro / Lightweight / Full) remain logically distinct with no overlap",
         "Gates uniform in severity (each Gate has a defined threshold)",
-        "Internal numeric consistency (if §1.6 says 23 commands, §12 TOC must match)",
+        "Internal numeric consistency (if §1.6 says 24 commands, §12 TOC must match)",
         "Internal cross-references resolve (e.g., §4.2 referenced → §4.2 exists)",
         "No TODO/FIXME/TBD markers",
         "Tables well-formed (consistent column counts, alignment, headers)"
@@ -47,14 +48,14 @@
       "type": "intra_layer_group",
       "refinement": "none",
       "files": ["gse-one/src/activities/*.md"],
-      "scope": "All 23 activity skills follow a uniform structural skeleton and tone.",
+      "scope": "All activity skills under gse-one/src/activities/ follow a uniform structural skeleton and tone.",
       "checks": [
         "YAML frontmatter present with a 'description' field",
         "Standard sections present (Options / Prerequisites / Workflow or Phases)",
         "User-facing message tone consistent across activities",
         "Gate decisions formatted identically (same wording patterns)",
         "References to agents, templates, tools use consistent path conventions",
-        "Phase/step numbering uniform",
+        "Phase/step numbering follows one of the 3 documented patterns (flat Step / multi-mode Mode→Step / Phase-over-Step per CLAUDE.md > Activity structural conventions); flag only files matching none of the patterns, or multi-mode files missing the inline workflow structure note",
         "Error message format consistent"
       ]
     },
@@ -63,15 +64,16 @@
       "category": "B",
       "type": "intra_layer_group",
       "refinement": "none",
-      "files": ["gse-one/src/agents/*.md"],
-      "scope": "All agents (orchestrator + 10 specialized) follow a uniform structure.",
+      "files": ["gse-one/src/agents/*.md", "CLAUDE.md"],
+      "scope": "All agents (orchestrator + 10 specialized) follow the structure of their declared archetype.",
       "checks": [
         "YAML frontmatter (name, description) present",
-        "Standard sections (Role / Activated by / Perspective / Required readings / Core Principles / Anti-patterns / Output format)",
+        "Each agent matches its declared archetype's standard sections per CLAUDE.md > Agent archetypes (Identity / Reviewer / Operational / Observational / Compliance); flag only deviations from the agent's OWN archetype, never cross-archetype differences",
+        "The archetype table in CLAUDE.md > Agent archetypes matches the actual structure of gse-one/src/agents/*.md (agents per archetype, standard sections)",
         "Tone consistent (neutral, directive, cite patterns not judgment)",
         "Activation triggers match the activities that reference them",
         "Each specialized agent declares its 'Activated by' clearly",
-        "Anti-patterns formatted as NEVER/ALWAYS statements uniformly"
+        "Where an agent's archetype includes an Anti-patterns section (Operational), anti-patterns are formatted as NEVER/ALWAYS statements uniformly"
       ]
     },
     {
@@ -82,6 +84,7 @@
       "files": [
         "gse-one/plugin/tools/dashboard.py",
         "gse-one/plugin/tools/deploy.py",
+        "gse-one/plugin/tools/project-audit.py",
         "gse-one/plugin/tools/coolify_client.py",
         "gse-one/audit.py",
         "gse-one/audit_catalog.py"
@@ -94,7 +97,8 @@
         "Error handling pattern consistent (return dict with 'status' field OR raise typed exceptions)",
         "CLI pattern uniform (argparse + subcommands where applicable)",
         "Stdlib-only by default; optional dependencies documented and gracefully degraded",
-        "No print() in library code; CLI output goes through a rendering function"
+        "No print() in library code; CLI output goes through a rendering function",
+        "No durable configuration read from os.environ / process.env outside the sanctioned list (GSE_* installer overrides, HOME, LOCALAPPDATA, NO_COLOR/FORCE_COLOR, standard CI vars) — durable config belongs in project-local files per CLAUDE.md > Tool architecture > Configuration policy"
       ]
     },
     {
@@ -167,6 +171,8 @@
         "Cross-platform parity (Claude / Cursor / opencode) described in design matches code",
         "Spec's orchestrator description matches the markdown content",
         "Specialized agent invocations consistent across all activities",
+        "Command-count claims in the spec match the actual number of activity files in gse-one/src/activities/ — derive the count from the glob, never trust a hard-coded number",
+        "CLAUDE.md 'Files to keep in sync' list matches the generation/verification steps actually performed by gse_generate.py --verify",
         "[bidirectional] If orchestrator content reveals a missing principle in spec, propose addition"
       ]
     },
@@ -188,14 +194,12 @@
         "gse-one/src/templates/Dockerfile.node",
         "gse-one/src/templates/Dockerfile.static",
         "gse-one/src/templates/.dockerignore",
-        "gse-one/src/templates/deploy-env.example",
-        "gse-one/src/templates/deploy-env-training.example",
         "gse-one-spec.md",
         "gse-one-implementation-design.md"
       ],
-      "scope": "Entire deployment ecosystem coherent horizontally + aligned with spec deploy row and design §5.18.",
+      "scope": "Entire deployment ecosystem coherent horizontally + aligned with spec deploy row and design §5.18 — /gse:deploy — Application Deployment Activity.",
       "checks": [
-        "Every concept in deploy.md has a matching description in design §5.18",
+        "Every concept in deploy.md has a matching description in design §5.18 — /gse:deploy — Application Deployment Activity",
         "Deploy-operator principles reflected in skill phases",
         "Dockerfile templates match what the skill documents (ports, healthchecks, CMD)",
         "References consulted at documented points in the skill",
@@ -225,8 +229,10 @@
         "gse-one/src/templates/sprint/plan-summary.md",
         "gse-one/src/templates/sprint/reqs.md",
         "gse-one/src/templates/sprint/design.md",
+        "gse-one/src/templates/sprint/preview.md",
         "gse-one/src/templates/sprint/tests.md",
         "gse-one/src/templates/sprint/review.md",
+        "gse-one/src/templates/sprint/audit.md",
         "gse-one/src/templates/sprint/release.md",
         "gse-one/src/templates/sprint/compound.md",
         "gse-one/src/templates/backlog.yaml",
@@ -293,7 +299,7 @@
       ],
       "scope": "Cross-cutting activities (orchestration, onboarding, learning, health) coherent with spec and design.",
       "checks": [
-        "/gse:go decision logic matches design §5.14",
+        "/gse:go decision logic matches design §5.14 — /gse:go — Orchestrator Decision Logic",
         "/gse:hug profile detection algorithm uniform",
         "/gse:learn → profile.yaml topics schema used",
         "/gse:health → 8 dimensions defined consistently",
@@ -345,7 +351,7 @@
       ],
       "scope": "Review + tests + produce + their 7 invoked agents coherent as the QA subsystem.",
       "checks": [
-        "/gse:review spawns the correct 5 specialized agents (code-reviewer, security-auditor, requirements-analyst, architect, test-strategist) + devil-advocate",
+        "/gse:review spawns the correct 6 specialized agents (code-reviewer, security-auditor, requirements-analyst, architect, test-strategist, plus ux-advocate conditionally for web/UI projects) + devil-advocate (Step 3)",
         "Agent invocations documented in the activity",
         "Test Review Layering (3 tiers: STRATEGY, TST-SPEC, IMPL) applied",
         "RVW-NNN, TST-NNN, REQ-NNN formats consistent",
@@ -375,7 +381,7 @@
         "Methodology feedback export schema matches template",
         "Upstream repo resolution (integrate Axe 2) matches git config conventions",
         "Compound Axes (1 capitalization, 2 upstream feedback, 3 coaching recipes) well-separated",
-        "Deliver Step 9 (freeze sprint) consistent with design §5.16"
+        "Deliver Step 9 — Finalize (Step 9.2 sets plan.yaml.status: completed, the sprint-freeze trigger) consistent with design §5.16 — State Schemas (Sprint Freeze — Design Mechanics)"
       ]
     },
     {
@@ -407,6 +413,51 @@
       ]
     },
     {
+      "id": "distribution-channel-coherence",
+      "category": "D",
+      "type": "horizontal_cluster",
+      "refinement": "downward",
+      "files": [
+        "install.sh",
+        "install.py",
+        ".github/workflows/release.yml",
+        "README.md",
+        "CLAUDE.md"
+      ],
+      "scope": "The v0.62.7 distribution channel (curl bootstrap, installer, release workflow) stays coherent with the canonical contracts in CLAUDE.md > Critical rules > Build pipeline (Distribution) and > Tool architecture.",
+      "checks": [
+        "The release.yml packaged asset list matches the tarball contents described in CLAUDE.md Distribution paragraph (gse-one/plugin/, install.py, VERSION, CHANGELOG.md, README.md, install.sh)",
+        "The env-var overrides implemented in install.sh (GSE_PLATFORM, GSE_MODE, GSE_SCOPE, GSE_VERSION, GSE_PROJECT_DIR) match the set documented in README's 'Environment variables' section — both directions",
+        "install.sh delegates mode selection to install.py and does not duplicate install logic (per CLAUDE.md: 'it does not duplicate install logic')",
+        "The subpaths distributed by install.py's _copy_common_assets (tools/, templates/, references/, VERSION) cover the allow-list asserted by the plugin-runtime-path-integrity F-job",
+        "The 6 install modes in CLAUDE.md's 'Per-mode registry target' table each map to an install.py function ending with _write_registry(<target>), and the registry invariant (~/.gse-one points to the install target, never the source repo) holds in every mode",
+        "install.py and install.sh read the version from the root VERSION file (no hard-coded version strings)"
+      ]
+    },
+    {
+      "id": "audit-system-self-coherence",
+      "category": "D",
+      "type": "horizontal_cluster",
+      "refinement": "bidirectional",
+      "files": [
+        ".claude/commands/gse-audit.md",
+        ".claude/agents/methodology-auditor.md",
+        ".claude/audit-jobs.json",
+        "gse-one/audit.py",
+        "gse-one/audit_catalog.py"
+      ],
+      "scope": "The audit system audits itself: protocol doc, auditor role, job catalog, and Python engine stay mutually coherent (the v0.62 Category F addition drifted all four — this job exists so that class of drift is caught at the next run).",
+      "checks": [
+        "Job counts and per-category counts stated in gse-audit.md prose and its category table match the actual catalog content (load it; never trust the prose)",
+        "Category/type/refinement enums are identical across the audit-jobs.json schema block, audit_catalog.py constants (VALID_CATEGORIES, VALID_TYPES, VALID_REFINEMENTS), gse-audit.md docs ('Customizing the catalog' + sub-agent prompt template), and methodology-auditor.md Output format",
+        "The sub-agent prompt template fields in gse-audit.md Phase 3 match the Finding fields defined in methodology-auditor.md Output format (same names, same enums, including direction: retraction)",
+        "Every flag documented in gse-audit.md Options is either implemented in audit.py argparse (engine flags) or explicitly described as skill-level orchestration (LLM-side flags); no documented flag is dead",
+        "The deterministic-vs-LLM division of labor (5 F-jobs engine-side, never spawned) is stated consistently in gse-audit.md frontmatter, category table note, Phase 1, and Phase 2",
+        "python3 gse-one/audit_catalog.py --validate exits 0 on the shipped catalog (run it)",
+        "[bidirectional] If the engine or catalog exposes capabilities undocumented in gse-audit.md (flags, categories, helpers), propose an upward doc update"
+      ]
+    },
+    {
       "id": "methodology-design-critique",
       "category": "E",
       "type": "qualitative_critique",
@@ -419,7 +470,7 @@
       ],
       "scope": "Strategic critique of the methodology design as a whole. Not about coherence, but about quality of the methodology choices themselves.",
       "checks": [
-        "Fitness for purpose: Are the 23 commands, 11 agents, 16 principles actually effective for the stated goals (Built by AI / Governed by Humans, structured SDLC for AI+human pair)?",
+        "Fitness for purpose: Are the 24 commands, 11 agents, 16 principles actually effective for the stated goals (Built by AI / Governed by Humans, structured SDLC for AI+human pair)?",
         "Complexity economy: Are there mechanisms that bring little value for their cognitive cost? Redundancies? Unnecessary abstraction layers?",
         "Principle coherence: Do the 16 principles form a coherent whole, or are some weak, rarely applicable, or conflicting?",
         "Mode balance: Are Micro / Lightweight / Full genuinely distinct in usage, or do they overlap?",
@@ -476,7 +527,7 @@
         "Instructor journey: Is a training session with 20 learners smooth end-to-end? Likely breaking points?",
         "Learner journey: Can a novice in a training session follow without external help?",
         "Forker journey: Does a developer forking gensem for customization have enough support? Sufficient documentation?",
-        "Accessibility: Does the vocabulary (23 commands, 11 agents, 16 principles) create an entry barrier?",
+        "Accessibility: Does the vocabulary (24 commands, 11 agents, 16 principles) create an entry barrier?",
         "Return on investment: Is the learning curve proportional to the gain?"
       ]
     },
@@ -597,7 +648,8 @@
       "checks": [
         "Each unique top-level <subpath> in $(cat ~/.gse-one)/<subpath>/... is in the allow-list",
         "Allow-list: tools, templates, references, VERSION, skills, commands, agents, rules, hooks, opencode",
-        "Any reference to a subpath outside this set is an error — either add it to install.py or fix the reference"
+        "Any reference to a subpath outside this set is an error — either add it to install.py or fix the reference",
+        "Allow-list stays in sync with what install.py actually distributes (_copy_common_assets subdirs + VERSION + top-level gse-one/plugin/ directories) — flag a warning if the derived set and the literal allow-list diverge"
       ]
     }
   ]

@@ -15,7 +15,7 @@ pause_checkpoint: ""                   # filename of the active checkpoint (e.g.
 health:
   score: 0.0                           # Composite score 0-10
   dimensions:
-    requirements_coverage: 0           # 0-10: % of REQ with linked tests
+    requirements_coverage: 0           # 0-10: % of REQ with linked passing tests
     test_pass_rate: 0                  # 0-10: % of tests passing
     design_debt: 0                     # 0-10: inverse of known shortcuts
     review_findings: 0                 # 0-10: ratio of resolved findings
@@ -84,6 +84,7 @@ activity_history: []                   # list of { activity, completed_at, sprin
 
 # Stale sprint detection (complexity/session-based, not calendar-based)
 sessions_without_progress: 0           # incremented each /gse:go or /gse:resume with no TASK status change
+task_status_snapshot: {}               # map TASK-id → status at the end of the last /gse:go or /gse:resume — comparison source for sessions_without_progress
 
 # Review findings counter (used by hooks)
 review_findings_open: 0

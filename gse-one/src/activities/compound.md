@@ -54,23 +54,7 @@ Analyze the sprint for project-level learnings:
 
 5. **Technical debt identified** — Flag shortcuts taken during the sprint that should be addressed in future sprints. Add to backlog pool with `artefact_type: refactor`.
 
-6. Persist to `docs/sprints/sprint-{NN}/compound.md`:
-
-```markdown
-# Sprint S{NN} — Capitalization
-
-## Patterns
-- {pattern}: {description and when to apply}
-
-## Lessons Learned
-- {lesson}: {context and prevention strategy}
-
-## Best Practices Confirmed
-- {practice}: {evidence of effectiveness}
-
-## Technical Debt
-- {debt item}: {impact and remediation suggestion}
-```
+6. Persist to `docs/sprints/sprint-{NN}/compound.md` — fill the **Axe 1: Project Capitalization** section of the **authoritative template** `plugin/templates/sprint/compound.md` (subsections: What Went Well / What Could Be Improved / Patterns Discovered / Best Practices Confirmed / Learning Notes Generated / Technical Debt). Do not invent an ad-hoc skeleton — the template is the single authority for structure.
 
 ### Step 2 — Axe 2: Methodology Capitalization
 

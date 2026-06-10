@@ -100,7 +100,7 @@ GUARD-001 [EMERGENCY] — Force push attempted on protected branch 'main'
   Guardrail: Emergency — Git Protection
   Trigger: git push --force origin main
   Action: BLOCKED — This action is irreversible and could destroy team history.
-  Required: User must explicitly confirm with /gse:override --reason "..."
+  Required: User must explicitly acknowledge the risk in their own words (Emergency tier — spec §9 Guardrails); the acknowledgment is recorded as a DEC- entry in the decision journal.
 
 GUARD-002 [HARD] — Complexity budget exceeded
   Guardrail: Hard — Complexity Budget

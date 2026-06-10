@@ -107,7 +107,7 @@ Before entering the deployment phases, `/gse:deploy` presents a **Step -1 Orient
 - **Learner** — user deploys only the application to a pre-configured shared server (starts at Phase 6 — app-only mode).
 - **Skip** (meta-action) — experienced user bypasses orientation; no `user_role` persisted.
 
-The three role values persist via `deploy.py record-role` into `deploy.json → user_role` (enum: `solo | instructor | learner`). As the operator agent, adapt your communication tone and step guidance to the persisted role if present (e.g., Solo gets cost-context framing; Instructor gets classroom-context framing; Learner gets `.env.training` precondition reminders). The `user_role` is informational in v1 — no behavioral branching beyond Step -1. The `--silent` flag bypasses Step -1 entirely (for scripting, CI, or experienced users). See `plugin/activities/deploy.md` Step -1 for the full routing logic.
+The three role values persist via `deploy.py record-role` into `deploy.json → user_role` (enum: `solo | instructor | learner`). As the operator agent, adapt your communication tone and step guidance to the persisted role if present (e.g., Solo gets cost-context framing; Instructor gets classroom-context framing; Learner gets `.env.training` precondition reminders). The `user_role` is informational in v1 — no behavioral branching beyond Step -1. The `--silent` flag bypasses Step -1 entirely (for scripting, CI, or experienced users). See `plugin/skills/deploy/SKILL.md` Step -1 for the full routing logic.
 
 ## CDN metadata (Phase 5 Step 7)
 
@@ -116,7 +116,7 @@ During Phase 5 (DNS + SSL), after domain propagation is confirmed, `/gse:deploy`
 - **Accept Cloudflare** — `record-cdn --provider cloudflare --enabled [--bot-protection]` persists the full CDN state. Cloudflare sits in front of the origin server, providing DDoS protection and caching.
 - **Decline CDN** — `record-cdn --provider none` persists the explicit "no CDN" state (`enabled: false`, `bot_protection: false`). This distinguishes "CDN declined" from "CDN undecided" (absent field).
 
-As the operator agent, acknowledge the CDN state if relevant to subsequent operations (e.g., if `bot_protection: true`, some API-style applications may experience challenge-page anomalies on programmatic requests; suggest Cloudflare page rules for API paths). See `plugin/activities/deploy.md` Phase 5 Step 7 for the full gate details.
+As the operator agent, acknowledge the CDN state if relevant to subsequent operations (e.g., if `bot_protection: true`, some API-style applications may experience challenge-page anomalies on programmatic requests; suggest Cloudflare page rules for API paths). See `plugin/skills/deploy/SKILL.md` Phase 5 Step 7 for the full gate details.
 
 ## Deployment lifecycle
 
@@ -137,7 +137,7 @@ These are the failure modes most frequently observed in real deploy sessions. Wh
 
 | Symptom | Likely cause | Recommended action |
 |---|---|---|
-| **HTTP 422 on `POST /api/v1/applications/public`**, body mentions `server_uuid` | Coolify newer versions require an explicit server UUID at app-creation time. | The deploy tool auto-resolves the UUID via `GET /api/v1/servers` and retries. If the retry still fails, surface the body to the user and ask them to check the Coolify server-list view manually. |
+| **HTTP 422 on `POST /api/v1/applications/public`**, body mentions `server_uuid` | Coolify newer versions require an explicit server UUID at app-creation time. | The deploy tool does NOT yet send `server_uuid` nor auto-resolve it (tracked as a future enhancement). Remediate manually: list servers with `curl -H "Authorization: Bearer $COOLIFY_API_TOKEN" "$COOLIFY_URL/api/v1/servers"`; create the application once via the Coolify UI (or an explicit curl POST including `server_uuid`); write the returned app UUID into `.gse/deploy.json → applications[].coolify.app_uuid`; then re-run `deploy-app` — it adopts the existing application by UUID and triggers the deployment. |
 | **HTTP 422 on `POST /api/v1/applications/public`** for a **private GitHub repo** | Coolify's public-source endpoint cannot clone a private repo. | Do NOT suggest making the repo public (privacy regression — see Anti-patterns). Direct the user to `docs/deploy/learner-private-repo-setup.md` for the GitHub App route. |
 | **Build OK, container `exited:unhealthy`**, healthcheck command uses `curl` | The `python:3.13-slim` (and `python:3.X-slim`) base images do NOT include `curl`. | Replace the Dockerfile `HEALTHCHECK CMD curl ...` with a stdlib equivalent: `HEALTHCHECK CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:{PORT}{HEALTH_PATH}').status==200 else 1)"`. The generated `Dockerfile.python` and `Dockerfile.streamlit` templates use the stdlib form by default. |
 | **Build fails immediately**, error mentions missing `pyproject.toml` | Default Dockerfile template assumed `pyproject.toml` but the project only ships `requirements.txt`. | Use the `Dockerfile.python` template's requirements-aware branch (detected automatically by the preflight tool's project type detection). If the user has a hand-rolled Dockerfile, propose switching to `pip install -r requirements.txt`. |

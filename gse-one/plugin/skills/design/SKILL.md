@@ -24,7 +24,7 @@ Before executing, read:
 1. `.gse/status.yaml` — current sprint number
 2. `docs/sprints/sprint-{NN}/reqs.md` — requirements to design for
 3. `.gse/plan.yaml` — living sprint plan (scope and constraints)
-4. `docs/sprints/sprint-{NN}/design.md` — existing design (if any)
+4. `docs/sprints/sprint-{NN}/design.md` — existing design (if any; authoritative format in `plugin/templates/sprint/design.md`)
 5. `.gse/decisions.md` — previous architecture decisions (for consistency)
 6. `.gse/profile.yaml` — user preferences
 7. `.gse/sources.yaml` — external sources that may influence design
@@ -154,7 +154,7 @@ Consequence horizon:
   - Medium-term (3 sprints): {impact}
   - Long-term (project lifetime): {impact}
 
-Reversibility: easy | moderate | difficult | irreversible
+Reversibility: High cost | Medium cost | Low cost   (the spec §11.2 — Format scale, same as recorded in Step 5)
 
 Gate: [Accept recommendation] / [Choose different option] / [Discuss]
 ```

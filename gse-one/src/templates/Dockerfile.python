@@ -22,5 +22,5 @@ RUN uv sync --frozen --no-dev 2>/dev/null || uv pip install -r requirements.txt 
 COPY . .
 
 EXPOSE 8000
-HEALTHCHECK CMD curl --fail http://localhost:$PORT/ || exit 1
+HEALTHCHECK CMD python -c "import os,sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://localhost:' + os.environ.get('PORT','8000') + '/').status == 200 else 1)"
 CMD ["uv", "run", "python", "main.py"]

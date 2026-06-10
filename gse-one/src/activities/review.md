@@ -144,7 +144,7 @@ After all parallel sub-agents return:
 
 ### Step 3 — Devil's Advocate (P16)
 
-After the standard review completes, run the devil's advocate pass. This is a meta-review that challenges the AI's own work.
+After the standard review completes, **spawn the devil-advocate sub-agent** (`"$(cat ~/.gse-one)/agents/devil-advocate.md"` — adopt this role; same parallel-spawn form as the Step 2 perspectives) to run the devil's advocate pass. This is a meta-review that challenges the AI's own work.
 
 #### 3a — Hallucination Hunt
 
@@ -190,7 +190,7 @@ Track these 2 signals at the **root level** of `status.yaml` (per spec §12.4 �
 
 When `consecutive_acceptances` reaches threshold (beginner=3, intermediate=5, expert=8): trigger a pushback checkpoint — present the 3 most impactful recent decisions and ask: "I want to make sure we're aligned. Do these choices still look right?"
 
-**Suppression rule:** If the user responds "Everything looks good" (or equivalent affirmation) to **two consecutive** pushback checkpoints (`pushback_dismissed >= 2`), suppress further pushback for the rest of the sprint. This prevents the agent from harassing a user who has genuinely reviewed and approved.
+**Suppression rule:** If the user responds "Everything looks good" (or equivalent affirmation) to **two consecutive** pushback checkpoints (`pushback_dismissed >= 2`), suppress further pushback for the rest of the sprint. This prevents the agent from harassing a user who has genuinely reviewed and approved. **Beginner exception** (`profile.yaml → dimensions.it_expertise: beginner`): suppress for the next **3 Gates** only, and have the coach emit one Inform note when suppression activates (per spec §P16 — User Pushback Encouragement).
 
 #### P15 Confidence Integration (Design 5.11)
 
@@ -215,19 +215,15 @@ RVW-{NNN}:
   suggestion: "{proposed fix}"
   tags: [AI-INTEGRITY]  # if from devil's advocate
   task: TASK-{ID}
+  status: open          # open | fixed — flipped to `fixed` by /gse:fix Step 5; counted by status.yaml review_findings_open
+  fixed_by_commit: ""   # optional — set by /gse:fix when resolved
 ```
 
-Persist findings to `docs/sprints/sprint-{NN}/review.md`.
+Persist findings to `docs/sprints/sprint-{NN}/review.md` (authoritative format in `plugin/templates/sprint/review.md`).
 
 ### Step 5 — Update Health Score
 
-Compute impact on health dimensions:
-- `review_findings`: based on count and severity of findings
-- `ai_integrity`: based on `[AI-INTEGRITY]` findings
-- `test_coverage`: based on test-strategist findings
-- `design_debt`: based on architect findings
-
-Update `.gse/status.yaml` health scores.
+*(Merged into Step 6 — health dimensions are written once, by the mandatory 8-dimension update in Step 6 — Present Summary. This heading is retained to keep step numbering stable for cross-references; do not perform a separate write here.)*
 
 ### Step 6 — Present Summary
 
@@ -239,7 +235,7 @@ Report:
 
 **Update TASK statuses** in `backlog.yaml` based on review results:
 - If HIGH or MEDIUM findings exist for a TASK → set `status: fixing` (requires `/gse:fix` before delivery)
-- If no HIGH or MEDIUM findings → set `status: reviewed` (LOW findings are tracked but non-blocking; the user can still address them via `/gse:fix --severity LOW`, which would transition `reviewed` → `fixing` → `done`)
+- If no HIGH or MEDIUM findings → set `status: reviewed` and `completed_at: {timestamp}` (the TASK reached a terminal pre-merge state — per the backlog.yaml schema, `completed_at` is set when status → `done` or `reviewed`). LOW findings are tracked but non-blocking; the user can still address them via `/gse:fix --severity LOW`, which would transition `reviewed` → `fixing` → `done`
 
 **Rationale:** this threshold aligns with the canonical rule in spec §14 and design §10.1 (FIX is inserted into `workflow.pending` if HIGH or MEDIUM findings exist). MEDIUM findings weight significantly in the `review_findings` health formula (×0.8); letting them pass without triage would silently accumulate tech debt. The user retains full agency via `/gse:fix --severity HIGH` to narrow the fix scope. The distinction between `reviewed` (clean first pass) and `done` (fixed after findings) preserves the signal for coach Axis 5 (`quality_trends`): a high ratio of `reviewed` vs `done` indicates high PRODUCE quality.
 
@@ -249,19 +245,9 @@ If findings with severity HIGH or MEDIUM exist:
 
 > **State transition note (v0.53.0):** `status.yaml` cursor fields (`last_activity`, `last_activity_timestamp`) are maintained centrally by the orchestrator after the activity closes — see `plugin/agents/gse-orchestrator.md` — section "Sprint Plan Maintenance", and `gse-one-implementation-design.md` §10.1 — Sprint Plan Lifecycle. Activity-local state (TASK statuses, health scores) remains authored here.
 
-**Update health scores in `status.yaml`** (MANDATORY after every review). Compute and write the 8 health dimensions using the formulas from the spec:
-- `test_pass_rate`: (passing tests / total tests) × 10
-- `review_findings`: 10 − (open HIGH × 1.5 + MEDIUM × 0.8 + LOW × 0.3), floor 0
-- `design_debt`: 10 − (design HIGH × 2.0 + MEDIUM × 1.0 + LOW × 0.5), floor 0
-- `requirements_coverage`: (traced requirements / total requirements) × 10
-- `complexity_ratio`: (remaining budget / total budget) × 10
-- `git_hygiene`: 10 if on correct branches, no stale branches, no uncommitted; deduct for issues
-- `ai_integrity`: 10 − (unverified assertions × 1.5 + hallucination findings × 2.0), floor 0
-- `delivery_velocity`: (delivered tasks / planned tasks) × 10
+**Update health scores in `status.yaml`** (MANDATORY after every review). Compute the 8 health dimensions (`requirements_coverage`, `test_pass_rate`, `design_debt`, `review_findings`, `complexity_budget`, `traceability`, `git_hygiene`, `ai_integrity`) exactly as specified in `/gse:health` Step 2 — Calculate Dimensions — the canonical formula source in the distributed plugin (mirrors spec §7.1 — Dimension computation). Write them under the canonical nested path `status.yaml → health.dimensions.<dimension>`, then update `health.score` (mean of enabled dimensions) and `health.last_computed` (ISO 8601). These values are read by the dashboard to populate the health radar chart. Without them, the radar shows empty.
 
-Write these values at the top level of `status.yaml` (e.g., `test_pass_rate: 9`). These values are read by the dashboard to populate the health radar chart. Without them, the radar shows empty.
-
-**Update `status.yaml.review_findings_open`** — set this counter to the total count of HIGH + MEDIUM findings currently unresolved across all sprint `review.md` files (i.e., findings without `status: fixed`). This counter is consumed by the git-push hook (spec §6 System Hooks, design §15 Hooks Design) which warns the user before pushing a branch with open findings. The counter is decremented by `/gse:fix` Step 6 when findings are resolved. If all findings are resolved (clean review or post-FIX), set to 0.
+**Update `status.yaml.review_findings_open`** — set this counter to the total count of HIGH + MEDIUM findings currently unresolved across all sprint `review.md` files (i.e., findings without `status: fixed`). This counter is consumed by the git-push hook (spec §P13 — System hooks; design §7 — Hooks Design) which warns the user before pushing a branch with open findings. The counter is decremented by `/gse:fix` Step 6 when findings are resolved. If all findings are resolved (clean review or post-FIX), set to 0.
 
 **Regenerate dashboard** — Run `python3 "$(cat ~/.gse-one)/tools/dashboard.py"` to update `docs/dashboard.html` with review findings, health scores, and quality metrics. After review is a key moment to check the dashboard — inform the user:
 - For beginners: "The project dashboard has been updated with the verification results. You can open it at `docs/dashboard.html`." (adapt wording to the user's language)

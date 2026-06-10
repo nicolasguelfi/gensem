@@ -141,11 +141,13 @@ Credentials (tokens, SSH keys) never live in the state file; they live in
 
 ## 7. Coolify API Endpoints Reference
 
+> Last verified: 2026-06-10
+
 | Operation | Method | Endpoint |
 |-----------|--------|----------|
 | List applications | GET | `/api/v1/applications` |
 | Get application | GET | `/api/v1/applications/{uuid}` |
-| Create application | POST | `/api/v1/applications` |
+| Create application (public repo) | POST | `/api/v1/applications/public` |
 | Update application | PATCH | `/api/v1/applications/{uuid}` |
 | Delete application | DELETE | `/api/v1/applications/{uuid}` |
 | Rebuild (full) | POST | `/api/v1/applications/{uuid}/start` |

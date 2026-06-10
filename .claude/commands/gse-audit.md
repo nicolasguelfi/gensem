@@ -1,5 +1,5 @@
 ---
-description: "Audit the GSE-One methodology repository for coherence (Categories A-D), strategic quality (Category E), and distribution hygiene (Category F). Orchestrates the Python deterministic engine (audit.py) + 26 parallel LLM sub-agents defined in .claude/audit-jobs.json. Invoked from the root of gensem or a fork."
+description: "Audit the GSE-One methodology repository for coherence (Categories A-D), strategic quality (Category E), and distribution hygiene (Category F). Orchestrates the Python deterministic engine (audit.py, including the 5 Category F distribution jobs) + 23 parallel LLM sub-agents — 28 jobs total, defined in .claude/audit-jobs.json. Invoked from the root of gensem or a fork."
 ---
 
 # /gse-audit — Methodology audit (coherence + strategic critique)
@@ -10,16 +10,18 @@ Arguments: $ARGUMENTS
 
 This command audits a **GSE-One methodology repository** (upstream or a fork). It is **not** for auditing user projects — for that, use `/gse:status`, `/gse:health`, `/gse:review`, `/gse:assess`, `/gse:compound`, `/gse:collect`.
 
-The audit covers **26 jobs** in 6 categories, listed in `.claude/audit-jobs.json`. All jobs run in parallel.
+The audit covers **28 jobs** in 6 categories, listed in `.claude/audit-jobs.json` — 23 LLM sub-agent jobs (A-E, run in parallel) + 5 deterministic F-jobs run by `audit.py`. The category table below is the human-readable summary; **derive the expected job count at runtime from the catalog output (Phase 2), never from this document** — counts here are illustrative and may lag the catalog.
 
 | Category | Purpose | # jobs | Non-directional | Directional |
 |:-:|---|:-:|:-:|:-:|
 | A | File quality (single file, intra-file) | 2 | ✓ | — |
 | B | Intra-layer group (uniformity within a level) | 5 | ✓ | — |
 | C | Layer pair (spec ↔ design) | 1 | — | ✓ |
-| D | Horizontal cluster (impl + design + spec) | 9 | — | ✓ |
+| D | Horizontal cluster (impl + design + spec) | 11 | — | ✓ |
 | E | Qualitative critique (strategic) | 4 | — | ✓ |
 | F | Distribution hygiene (plugin-as-product invariants) | 5 | ✓ | — |
+
+> **Note:** the 5 Category F jobs are executed deterministically by `audit.py` in Phase 1 — they are NEVER spawned as LLM sub-agents.
 
 **Category F — Distribution hygiene** treats `gse-one/plugin/` as a finished product shipped to end users. It applies stricter invariants than the source tree: English-monolingual (except marked multilingual zones), no secret/credential leaks, no maintainer-personal paths/identities, no debug residue in Python/TypeScript code, and all runtime path references (`$(cat ~/.gse-one)/X`) must resolve against subpaths distributed by `install.py`. All 5 F-jobs run deterministically via `audit.py` (no LLM sub-agent needed) and are fast enough (<5s total) for CI use.
 
@@ -27,7 +29,7 @@ The audit covers **26 jobs** in 6 categories, listed in `.claude/audit-jobs.json
 
 | Flag | Description |
 |------|-------------|
-| (no args) | Full audit: all 26 jobs in parallel + Python deterministic engine |
+| (no args) | Full audit: all 28 jobs — 23 LLM sub-agents in parallel + 5 F-jobs via the Python deterministic engine |
 | `--deterministic-only` | Skip LLM jobs, run Python engine only. Fast (also covers all 5 Category F jobs, which are deterministic). |
 | `--job <id>` | Run only a specific job by id (e.g. `deploy-cluster`, `plugin-language-hygiene`) |
 | `--category <A\|B\|C\|D\|E\|F>` | Run only jobs in a specific category |
@@ -43,7 +45,7 @@ The audit covers **26 jobs** in 6 categories, listed in `.claude/audit-jobs.json
 ## Required readings
 
 1. `.claude/agents/methodology-auditor.md` — **adopt this role** for every sub-agent spawn
-2. `.claude/audit-jobs.json` — the catalog of 21 jobs with exact file lists and checks per job
+2. `.claude/audit-jobs.json` — the catalog of 28 jobs with exact file lists and checks per job
 3. Sub-agents load their own files on-demand based on their assigned job specification
 
 ## Workflow
@@ -74,12 +76,16 @@ If any marker is missing, abort with:
 Unless `--strategic-only` is passed, invoke the Python engine:
 
 ```
-python3 gse-one/audit.py --format json
+python3 gse-one/audit.py --no-save --format json
 ```
 
-This returns the 12 deterministic categories (version, file integrity, plugin parity, cross-refs, numeric, links, git, Python quality, template schema, TODOs, test coverage, freshness). Retain the JSON output for Phase 4 aggregation.
+Pass `--no-save` so the engine does not save its own partial report — the skill saves the augmented report in Phase 6 (see "Division of work" there). Exception: when `--deterministic-only` is requested, drop `--no-save` and let the engine save its own report (Phase 6 is skipped for the LLM-augmented part).
 
-If `--deterministic-only` is passed: skip Phase 2-3, jump to Phase 4 rendering.
+This returns the 17 deterministic categories — 12 coherence categories (version, file integrity, plugin parity, cross-refs, numeric, links, git, Python quality, template schema, TODOs, test coverage, freshness) + the 5 Category F distribution-hygiene categories (`plugin_language`, `plugin_secrets`, `plugin_personal`, `plugin_debug`, `plugin_runtime_paths`), which fully cover the catalog's 5 F-jobs. Retain the JSON output for Phase 4 aggregation.
+
+If `--deterministic-only` is passed: skip Phase 2-3, jump to Phase 4 — Aggregation, then Phase 5 — Unified report rendering.
+
+**Engine-side inspection flags** (implemented by `audit.py` / `audit_catalog.py`, useful beyond the skill flow): `audit.py --cluster <job-id>` filters deterministic findings to one catalog job's file set (handy for the Phase 3.5 verification pass); `audit.py --list-clusters` and `audit_catalog.py --list` enumerate the catalog; `audit_catalog.py --show <job-id>` prints one job's full spec.
 
 ### Phase 2 — Load the audit catalog
 
@@ -89,13 +95,15 @@ Read `.claude/audit-jobs.json`:
 python3 gse-one/audit_catalog.py --list
 ```
 
-This gives the list of 21 jobs with their ids, categories, types, and file counts. Select which jobs to run based on the flags:
+This gives the list of 28 jobs with their ids, categories, types, and file counts. **Derive the expected job count from this catalog output, never from this document.** Select which jobs to spawn based on the flags:
 
-- Default (no flag): all 21 jobs
-- `--coherence-only`: Categories A, B, C, D (17 jobs)
+- Default (no flag): all jobs — Categories A-E as LLM sub-agent spawns; the 5 Category F jobs are already covered by the Phase 1 engine run and are NEVER spawned as sub-agents
+- `--coherence-only`: Categories A, B, C, D as LLM spawns; Category F remains covered by the Phase 1 engine — only Category E is skipped (matches the Options table)
 - `--strategic-only`: Category E (4 jobs)
-- `--category X`: only jobs with that category
-- `--job <id>`: only the named job
+- `--category X`: only jobs with that category. `--category F` or `--distribution-only` routes to the engine, no sub-agents: invoke `python3 gse-one/audit.py --category <engine-name> --format json` per the mapping below
+- `--job <id>`: only the named job. If the id is a Category F job, route to the engine likewise
+
+F-job id → engine category mapping: `plugin-language-hygiene`→`plugin_language`, `plugin-secret-leak-hygiene`→`plugin_secrets`, `plugin-personal-leak-hygiene`→`plugin_personal`, `plugin-debug-residue-hygiene`→`plugin_debug`, `plugin-runtime-path-integrity`→`plugin_runtime_paths`. Note: the engine's `--category` flag takes these engine names, not catalog letters.
 
 ### Phase 3 — Parallel sub-agent spawns (ONE message, N Agent tool calls)
 
@@ -106,21 +114,24 @@ For each selected job, construct a dedicated prompt and spawn a sub-agent with:
 - `description="Audit <job_id>"`
 - `prompt=` (constructed per the template below)
 
+**Path resolution:** the FILES TO AUDIT list is resolved by the orchestrator (you) to absolute paths BEFORE substitution into the template — expand each glob from the catalog against the repo root and paste the resolved absolute paths verbatim. Sub-agents must use absolute paths for all reads.
+
 #### Sub-agent prompt template
 
 ```
-You are the methodology-auditor (defined in .claude/agents/methodology-auditor.md — principles 1-7 apply).
+You are the methodology-auditor (defined in .claude/agents/methodology-auditor.md — principles 1-9 apply, notably 8 verify-before-report and 9 anti-rigidity).
 
 AUDIT JOB: <job.id>           # REQUIRED: include this exact id in every Finding
 CATEGORY: <job.category>
 TYPE: <job.type>
 REFINEMENT: <job.refinement>
+REPO ROOT: <absolute path to the repo root>
 
 SCOPE
 <job.scope>
 
 FILES TO AUDIT
-<list of job.files, one per line, resolved to absolute paths>
+<list of job.files, one per line, resolved by the orchestrator to absolute paths>
 
 CHECKS TO APPLY
 <numbered list from job.checks>
@@ -128,36 +139,50 @@ CHECKS TO APPLY
 OUTPUT REQUIREMENTS
 Every Finding you return MUST include these fields:
   - job_id: "<job.id>"   # exactly the job id above — required for traceability
-  - category: "<job.category>" (A | B | C | D | E)
+  - category: "<job.category>" (A | B | C | D | E | F)   # F only appears in verification passes — F jobs are not spawned in initial audits
   - severity: "error" | "warning" | "info" | "recommendation"
   - title: short one-line summary
   - location: file:line or file path
   - file: relative file path (for cluster mapping)
   - detail: evidence (text excerpt, counts, etc.)
   - fix_hint: concrete suggestion when applicable
-  - direction: "downward" | "upward" | "none"   # only for bidirectional jobs
+  - direction: "downward" | "upward" | "retraction" | "none"   # only for directional jobs
   - impact: "high" | "medium" | "low"           # only for severity=recommendation
 
 Constraints:
 - Do not over-report: apply Principle 3 (Severity discipline).
 - Cite evidence (Principle 1) — no unverifiable claims.
+- Before emitting any finding, apply Principle 8 (verify-before-report):
+  re-open the cited line; for absence claims run an explicit Grep over
+  the whole file. Discard findings that fail verification.
+- Apply Principle 9 (anti-rigidity): if a divergence carries semantic
+  information or is a documented convention (CLAUDE.md Meta-1/Meta-2),
+  classify it "info" with a document-the-convention hint, not error/warning.
 - For refinement=bidirectional: actively look for cases where the
   lower-level artifact is BETTER than the upper-level reference
   (upward direction). Propose spec or design updates in such cases.
+  Also check for retraction cases (Principle 6): content dead/orphan on
+  BOTH sides should be flagged for deletion (direction: retraction),
+  not alignment.
 - For type=qualitative_critique (Category E): you are empowered to
   offer strategic recommendations (Principle 7). Use severity=recommendation,
   include impact level, justify rationale.
 
-Return a YAML or JSON list of Finding objects, no preamble.
+Return EXACTLY ONE fenced ```json block containing a single JSON array
+of Finding objects — no preamble, no epilogue, no other format.
 Begin the audit now. Read only the FILES TO AUDIT (do not expand scope).
 ```
 
 #### Expected concurrency
 
-- 21 sub-agents running in parallel
+- 23 LLM sub-agents running in parallel (Categories A-E; derive the exact number from the Phase 2 catalog output)
 - Each reads only its assigned files (no duplication of context)
 - Total latency ≈ latency of the slowest sub-agent (not sum of all)
 - If Claude Code limits concurrent sub-agent count, the skill may need to spawn in batches — but this is infrastructure-level, not skill concern
+
+#### Failure recovery (retry-once)
+
+If a sub-agent errors, times out, or returns unparseable output, re-spawn that ONE job once with the same prompt before declaring it failed. Jobs still failing after the retry are recorded as skipped in the Phase 4 completion tally — never silently dropped.
 
 ### Phase 3.5 — Anti-false-positive verification pass (post-audit, on-demand)
 
@@ -212,24 +237,26 @@ This turns the FP log into a learning asset for detector improvement. Three of t
 
 After all sub-agents return:
 
-1. **Track completion per job.** For each of the N jobs you spawned, record whether it returned successfully. Example tally:
-   - 21/21 jobs completed successfully ✓
-   - 20/21 jobs completed, 1 skipped (`<job-id>`, reason: timeout/error) ⚠
-   - 16/21 jobs completed, 5 errored ⚠
+1. **Track completion per job.** For each of the N LLM jobs you spawned (after retry-once, see Phase 3), record whether it returned successfully. Example tally (the denominator is the spawned-job count derived in Phase 2):
+   - 23/23 LLM jobs completed successfully ✓
+   - 22/23 LLM jobs completed, 1 skipped (`<job-id>`, reason: timeout/error after retry) ⚠
+   - 18/23 LLM jobs completed, 5 errored ⚠
 
    This information MUST appear in the Summary section of the final report.
 
 2. **Collect** all findings from sub-agents into a single list. Every finding must carry its `job_id` (see the sub-agent prompt requirements).
 
-3. **Augment** with findings from Phase 1 (Python deterministic engine — `job_id="python-engine"`).
+3. **Augment** with findings from Phase 1 (Python deterministic engine — `job_id="python-engine"`, which includes the 5 Category F jobs).
 
-4. **Deduplicate** findings where `(category, title, file)` are identical. Keep the most detailed copy. When two jobs report the same issue from different angles (e.g., `governance-cluster` and `spec-design-coherence` both catch a count drift), merge their detail and retain both job_ids in the finding's `job_ids` list.
+4. **Deduplicate** same-issue findings. Exact `(category, title, file)` equality almost never fires across independent LLM outputs — instead, treat two findings as duplicates when they cite the **same file AND the same underlying defect** (same drifting value, same broken reference, same missing element), regardless of title wording; judge this during the thematic clustering of step 6. Keep the most detailed copy. When two jobs report the same issue from different angles (e.g., `governance-cluster` and `spec-design-coherence` both catch a count drift), merge their detail and retain both job_ids in the finding's `job_ids` list.
 
 5. **Classify** by severity: error, warning, info, recommendation.
 
 6. **Group coherence findings into thematic clusters.** When multiple findings share a common theme (same drift type across files), group them and present as a cluster heading with sub-findings. Example clusters observed in past runs: "Count inconsistencies", "Schema field drifts", "Severity scale drift", "Sprint lifecycle drift", "Structural defects". This grouping is a QUALITY requirement — not optional. It dramatically improves the report's actionability.
 
-7. **Render** the unified report (markdown by default) per the template in Phase 5.
+7. **Regression diff (when history exists).** If `_LOCAL/audits/latest.json` or `latest.md` exists from a previous run, compare: which findings are new since that run, which are resolved, which persist. Add a short "Since last audit" line to the Summary (e.g., "+3 new, -7 resolved, 12 persisting vs audit-YYYY-MM-DD").
+
+8. **Render** the unified report (markdown by default) per the template in Phase 5.
 
 ### Phase 5 — Unified report rendering
 
@@ -241,7 +268,8 @@ The report must follow this structure. A table-of-contents is **required** whene
 **Repository:** /path/to/gensem
 **VERSION:** X.Y.Z
 **Timestamp:** YYYY-MM-DDThh:mm:ssZ
-**Jobs run:** N/21 completed (A=2, B=5, C=1, D=9, E=4)
+**Model:** <model id that ran the LLM jobs>
+**Jobs run:** N/23 LLM jobs completed (A=2, B=5, C=1, D=11, E=4) + 5/5 F-jobs via audit.py
 **Scope:** full (or --coherence-only / --strategic-only / --job / --category)
 
 ## Table of Contents
@@ -252,6 +280,7 @@ The report must follow this structure. A table-of-contents is **required** whene
   - ...
   - Warnings
   - Info
+  - Distribution hygiene (Category F)
 - Part 2 — Strategic recommendations (Category E)
   - methodology-design-critique
   - ai-era-adequacy-critique
@@ -265,12 +294,13 @@ The report must follow this structure. A table-of-contents is **required** whene
 
 | Severity | Count | Source |
 |---|:-:|---|
-| 🔴 Errors | N | A=n, B=n, C=n, D=n, Python=n |
-| 🟡 Warnings | N | A=n, B=n, C=n, D=n, Python=n |
+| 🔴 Errors | N | A=n, B=n, C=n, D=n, F=n, Python=n |
+| 🟡 Warnings | N | A=n, B=n, C=n, D=n, F=n, Python=n |
 | 🔵 Info | N | passes + observations |
 | 💡 Recommendations | N | Category E (strategic) |
 
-**Jobs run:** X/21 completed. [If any skipped or errored, list them.]
+**Jobs run:** X/23 LLM jobs completed + 5/5 F-jobs via audit.py. [If any skipped or errored after retry, list them.]
+**Since last audit:** [+N new, -N resolved, N persisting vs <previous report> — omit when no previous run exists]
 
 ---
 
@@ -290,6 +320,9 @@ The report must follow this structure. A table-of-contents is **required** whene
 
 ### 🔵 Info
 [Passes and neutral observations]
+
+### Distribution hygiene (Category F)
+[Findings from the 5 deterministic F-jobs run by audit.py in Phase 1 — language, secrets, personal leaks, debug residue, runtime paths. When all pass, a single "5/5 F-jobs clean" line suffices.]
 
 ---
 
@@ -330,7 +363,7 @@ The report must follow this structure. A table-of-contents is **required** whene
 **Strategic recommendations for future evolution:** consider the high-impact Category E items around <theme 1> and <theme 2> as next-quarter themes.
 ```
 
-### Phase 5 — Quality requirements (preserve LLM-natural behaviors observed in real runs)
+#### Quality requirements (preserve LLM-natural behaviors observed in real runs)
 
 Past audit runs have shown that a well-executed audit naturally produces these qualities. **Preserve them** — do not regress:
 
@@ -392,16 +425,16 @@ If `--no-save` was passed, skip this entire phase and only output the report to 
 
 **The `_LOCAL/` directory is gitignored** (via `/_*/` in `.gitignore`), so saved reports never leak into commits. Forkers accumulate audit history in their working tree without polluting their repo.
 
-**Division of work with Python engine:** the Python engine (`audit.py`) saves its own deterministic-only report when invoked standalone. When `/gse-audit` runs the full flow, the skill invokes the engine with `--no-save --format json` internally to skip engine-side saving, then the skill saves the AUGMENTED report (Python findings + LLM findings from the 20 sub-agents) in Phase 6. **No duplicate files.**
+**Division of work with Python engine:** the Python engine (`audit.py`) saves its own deterministic-only report when invoked standalone. When `/gse-audit` runs the full flow, the skill invokes the engine with `--no-save --format json` internally to skip engine-side saving, then the skill saves the AUGMENTED report (Python findings + LLM findings from the sub-agents) in Phase 6. **No duplicate files.**
 
 ## Invocation examples
 
 ```
-/gse-audit                                  # full: 21 jobs + Python engine
+/gse-audit                                  # full: 23 LLM jobs + Python engine (incl. 5 F-jobs)
 /gse-audit --deterministic-only             # fast Python-only (~5s)
-/gse-audit --coherence-only                 # 17 jobs, skip Category E
+/gse-audit --coherence-only                 # 19 LLM jobs (A-D) + engine F-jobs, skip Category E
 /gse-audit --strategic-only                 # 4 jobs, critique only
-/gse-audit --category D                     # only horizontal clusters (9 jobs)
+/gse-audit --category D                     # only horizontal clusters (11 jobs)
 /gse-audit --job deploy-cluster             # single cluster audit
 /gse-audit --format json --fail-on error    # CI mode
 ```
@@ -424,7 +457,7 @@ To add a job (e.g., new cluster for a new subsystem you've added to your fork):
 
 Schema for each job:
 - `id` — stable identifier (kebab-case)
-- `category` — A | B | C | D | E
+- `category` — A | B | C | D | E | F
 - `type` — file_quality | intra_layer_group | layer_pair | horizontal_cluster | qualitative_critique
 - `refinement` — none | downward | bidirectional
 - `files` — explicit paths (globs like `src/activities/*.md` supported)

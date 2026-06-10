@@ -29,7 +29,7 @@ gse:
 - **Acceptance Criteria:**
   1. {measurable criterion 1}
   2. {measurable criterion 2}
-- **Traces:** implements (DES-001) | tested_by (TST-001, TST-002)
+- **Traces:** derives_from (TASK-NNN) | tested_by (TST-001, TST-002)
 
 ### REQ-002 — {title}
 

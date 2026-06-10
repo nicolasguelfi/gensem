@@ -14,7 +14,7 @@ Arguments: $ARGUMENTS
 | `add <description>` | Add a new work item to the pool |
 | `sprint`           | Show only items in the current sprint |
 | `pool`             | Show only items in the unassigned pool |
-| `--type <type>`    | Filter by artefact type (code, requirement, design, test, doc, config, import) |
+| `--type <type>`    | Filter by artefact type (code, requirement, design, test, doc, config, import, spike) |
 | `sync`             | Synchronize backlog with GitHub Issues (bidirectional) |
 | `--help`           | Show this command's usage summary |
 
@@ -118,7 +118,7 @@ Add to `.gse/backlog.yaml`:
   title: "Add rate limiting middleware"
   description: "Implement rate limiting for API endpoints using token bucket algorithm"
   sprint: null  # null = pool (unplanned)
-  status: open  # open | planned | in-progress | review | fixing | done | delivered | deferred
+  status: open  # open | planned | in-progress | review | reviewed | fixing | done | delivered | deferred
   priority: should  # default, can be changed
   complexity: null  # set during planning
   origin: user  # plan | review | collect | user | import | ad-hoc
@@ -153,7 +153,7 @@ For beginners (P9), simplify: *"This new item is parked for later. The current s
 
 This note appears **once per add** — never repeat it for the same TASK creation. Skip the note entirely when:
 - `plan.yaml` does not exist (Micro mode, or pre-PLAN state)
-- `plan.yaml.status` ∈ {completed, paused} — no active sprint to be confused with
+- `plan.yaml.status` ∈ {completed, abandoned} — no active sprint to be confused with
 - The user invoked `/gse:backlog add` from inside another activity (e.g., REVIEW promoting a finding to a TASK) — that flow already has its own routing logic
 
 Rationale: in observed sessions, users repeatedly added items mid-sprint without realising they were not picked up by the current sprint plan (the silent fall-through to the pool was correct methodologically but confusing pragmatically). This single sentence closes the gap pedagogically without adding a Gate.
@@ -188,7 +188,12 @@ Map statuses between GSE-One and GitHub:
 | `open` AND `sprint: null` (pool) | open (label: `pool`) |
 | `planned` | open (label: `sprint-NN`) |
 | `in-progress` | open (label: `in-progress`) |
+| `review` | open (label: `review`) |
+| `reviewed` | open (label: `reviewed`) |
+| `fixing` | open (label: `fixing`) |
+| `deferred` | open (label: `deferred`) |
 | `done` | closed |
+| `delivered` | closed (label: `delivered`) |
 
 Report sync summary: "Synced 15 items. 2 new from GitHub, 1 status updated, 12 unchanged."
 

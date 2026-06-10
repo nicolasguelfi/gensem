@@ -1,5 +1,5 @@
 <!-- GSE-ONE START -->
-<!-- gse-one-version: 0.62.8 -->
+<!-- gse-one-version: 0.63.0 -->
 # GSE-One Methodology (opencode edition)
 
 This section is managed by GSE-One. Edit `gse-one/src/` and regenerate — do not hand-edit between the START/END markers.
@@ -144,7 +144,7 @@ Rationale: the two mechanisms close the loop between agent autonomy and human go
 
 Each runtime exposes its own interactive-question tool — `AskUserQuestion` on Claude Code, `AskQuestion` on Cursor (native since 2.4), `question` on opencode — invoked only when the agent reads the activity's source verbatim.
 
-**Intent Capture for Greenfield Projects:** when `/gse:go` is invoked on a project that is **greenfield** (no source files after standard exclusions) AND has no existing intent artefact at `docs/intent.md`, the orchestrator MUST enter **Intent Capture** (spec §3 Step 5 / `/gse:go` Step 7) before the complexity assessment. This applies to **all expertise levels** — the trigger is project state, not user profile. Tone and cadence are adapted via P9 (one question at a time for beginners; grouped elicitation for experts). Intent Capture produces `INT-001` at `docs/intent.md` with the four mandatory sections (Description verbatim / Reformulated understanding / Users / Boundaries) and an optional fifth (`## Open Questions` — structured entries tagged `resolves_in: ASSESS | PLAN | REQS | DESIGN` and `impact: scope-shaping | behavioral | architectural | cosmetic`, consumed automatically by the activity-entry scan — see invariant below). Seeded backlog items carry `traces.derives_from: [INT-001]`. The user may skip Intent Capture explicitly ("I know the process"); in that case no intent artefact is written and an Inform note is logged. `/gse:collect` internal mode includes a preflight (Step 0) that redirects to Intent Capture if greenfield + no intent artefact. Rationale: previously, greenfield experts bypassed intent capture entirely (the old Intent-First mode was beginner-only) and the agent improvised ad-hoc `intent.md` files without a standard structure. Formalizing the artefact gives downstream activities (REQS, ASSESS) a stable traceability root.
+**Intent Capture for Greenfield Projects:** when `/gse:go` is invoked on a project that is **greenfield** (no source files after standard exclusions) AND has no existing intent artefact at `docs/intent.md`, the orchestrator MUST enter **Intent Capture** (spec §14.3 Step 5 — Intent Capture / `/gse:go` Step 7) before the complexity assessment. This applies to **all expertise levels** — the trigger is project state, not user profile. Tone and cadence are adapted via P9 (one question at a time for beginners; grouped elicitation for experts). Intent Capture produces `INT-001` at `docs/intent.md` with the four mandatory sections (Description verbatim / Reformulated understanding / Users / Boundaries) and an optional fifth (`## Open Questions` — structured entries tagged `resolves_in: ASSESS | PLAN | REQS | DESIGN` and `impact: scope-shaping | behavioral | architectural | cosmetic`, consumed automatically by the activity-entry scan — see invariant below). Seeded backlog items carry `traces.derives_from: [INT-001]`. The user may skip Intent Capture explicitly ("I know the process"); in that case no intent artefact is written and an Inform note is logged. `/gse:collect` internal mode includes a preflight (Step 0) that redirects to Intent Capture if greenfield + no intent artefact. Rationale: previously, greenfield experts bypassed intent capture entirely (the old Intent-First mode was beginner-only) and the agent improvised ad-hoc `intent.md` files without a standard structure. Formalizing the artefact gives downstream activities (REQS, ASSESS) a stable traceability root.
 
 **Open Questions Resolution Invariant:** the four lifecycle activities `/gse:assess`, `/gse:plan`, `/gse:reqs`, `/gse:design` MUST begin with a **Step 0 Open Questions Gate** that implements the activity-entry scan defined in spec P6:
 
@@ -322,7 +322,7 @@ After writing any artefact (reqs.md, design.md, review.md, compound.md, test-str
 - **Never auto-load:** decisions-auto.log.
 - **NEVER load all state files at once.**
 - **Artefact metadata:** Every structured artefact includes YAML frontmatter: gse.type, gse.sprint, gse.branch, gse.traces, gse.status, gse.created, gse.updated.
-- **TASK lifecycle:** open > planned > in-progress > review > fixing > done > delivered | deferred. Git state per TASK in backlog.yaml.
+- **TASK lifecycle:** open > planned > in-progress > review > (reviewed | fixing > done) > delivered | deferred. Git state per TASK in backlog.yaml.
 
 ### Resilience
 
@@ -442,7 +442,7 @@ Evaluate states **in order** — the first matching row wins.
 
 This is **not a new activity** — it is a documented use of the existing PLAN + REQS + PRODUCE + DELIVER cycle. The pedagogical insert exists because, in observed sessions, users facing a post-delivery bug defaulted to direct commits on `main` (bypassing review) or felt the methodology had no answer for them. Both are now framed: the answer is "open a tiny successor sprint", and the orchestrator says so the first time the situation arises.
 
-Edge case — if the bug is **trivial** (one-line typo, missing import, doc fix) and the user explicitly invokes `/gse:task --quick` or equivalent, the existing ad-hoc TASK channel applies (spec §1130 `/gse:task` Sprint Freeze guardrail still requires opening a successor sprint or rejecting the operation; the methodology does NOT offer a hidden "patch main directly" escape hatch). The pedagogy above remains the canonical path.
+Edge case — if the bug is **trivial** (one-line typo, missing import, doc fix) and the user explicitly invokes `/gse:task --quick` or equivalent, the existing ad-hoc TASK channel applies (the spec §14.3 — Sprint Freeze (Hard) lifecycle guardrail still requires opening a successor sprint or rejecting the operation; the methodology does NOT offer a hidden "patch main directly" escape hatch). The pedagogy above remains the canonical path.
 
 ### Lifecycle guardrails (Hard)
 
@@ -538,7 +538,7 @@ After Step 4 (status.yaml update) and **before** announcing the next activity to
 
 | Moment (computed from Step 1-4) | Coach call required? | Axes activated |
 |---|:-:|---|
-| Activity closure where `last_activity ∈ {collect, assess, plan, reqs, design, preview, tests, produce, review, fix, deliver, compound, integrate, task, deploy}` | YES — pedagogy axis | `pedagogy` (1) + opportunistic relevant workflow axes |
+| Activity closure where `last_activity ∈ {collect, assess, plan, reqs, design, preview, tests, produce, review, fix, deliver, compound, integrate, task, deploy}` | YES — opportunistic workflow axes | relevant workflow axes (2-8). *(The pedagogy axis (1) fires at activity **start**, per the Coach delegation section and the coach Invocation contract — not at closure.)* |
 | `current_phase` transition (LC0X → LC0Y) | YES — workflow axes | `workflow_health` (4), `process_deviation` (7) |
 | Sprint close (`plan.yaml.status: completed`) | YES — sprint-close batch | `sprint_velocity` (3), `quality_trends` (5), `sustainability` (8) |
 | Mid-sprint with `sessions_without_progress ≥ 2` | YES — stall detection | `sprint_velocity` (3), `workflow_health` (4) |

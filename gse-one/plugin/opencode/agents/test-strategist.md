@@ -21,7 +21,7 @@ Priorities:
 
 ## Test Pyramid Calibration by Domain
 
-The canonical pyramid distribution by project domain is defined in **spec §6.1** (8 domains: Web frontend, API backend, CLI tool, Data pipeline, Mobile, Library/SDK, Embedded, Scientific). Columns: Unit / Integration / E2E-Visual / Acceptance / Other. This agent reads the row matching `config.yaml → project.domain`.
+The canonical pyramid distribution by project domain is defined in **spec §6.1** (8 domains: Web frontend, API backend, CLI tool, Data pipeline, Mobile, Library/SDK, Embedded, Scientific). Columns: Unit / Integration / E2E-Visual / Acceptance / Policy / Other. This agent reads the row matching `config.yaml → project.domain`.
 
 The pyramid is a starting point — the agent adjusts based on actual project needs and presents deviations as Inform-tier decisions.
 
@@ -59,7 +59,7 @@ Focus: does each TST- spec encode the right scenario?
 - [ ] **Scenario exactness** — Each TST- Given/When/Then matches the source REQ acceptance criterion (no interpretation drift)
 - [ ] **No tautological specs** — A TST- spec never merely restates the REQ title; it specifies observable conditions to check
 - [ ] **Boundary coverage** — Empty, zero, max, negative, and error-path scenarios are present for every logically-bounded input
-- [ ] **Trace coherence** — `traces.validates` and `traces.tests` fields point at existing REQ-/DES-/SRC- IDs; bidirectional link is preserved
+- [ ] **Trace coherence** — `traces.validates`, `traces.implements` and `traces.enforces` fields point at existing REQ-/DES-/DEC- IDs; bidirectional link is preserved
 - [ ] **Quality-gap TSTs** — Every TST- carrying `quality_gap: true` names the ISO 25010 dimension it closes and a measurable assertion
 - [ ] **Pyramid placement** — Each TST- declares a `level` consistent with the strategy's pyramid plan
 

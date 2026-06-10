@@ -5,7 +5,7 @@ gse:
   branch: gse/sprint-{NN}/integration    # replaced at instantiation by /gse:tests
   traces:
     derives_from: []                   # e.g., [TASK-005] — task being tested
-    implements: []                     # e.g., [REQ-001, DES-001] — what these tests validate
+    implements: []                     # e.g., [REQ-001, DES-001] — doc-level rollup; per-TST links use validates / enforces (spec P6 — Trace link types)
     decided_by: []                     # e.g., [DEC-007] — shaping decisions (esp. for policy tests)
   status: draft                        # draft | reviewed | approved
   created: ""
@@ -62,7 +62,7 @@ gse:
 - **Expected:** {integrated behavior}
 - **Teardown:** {cleanup}
 
-## End-to-End Tests
+## E2E Tests
 
 > **E2E Evidence (default):** every E2E test captures a final screenshot as execution evidence (saved to `tests/e2e/screenshots/` or the framework's default screenshot directory). Screenshots are preserved per campaign for visual verification and regression diffing. This is **distinct** from full visual-regression testing (activated via `/gse:tests --visual`), which adds pixel-diff comparison against reference images.
 

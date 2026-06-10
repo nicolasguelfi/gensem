@@ -96,6 +96,8 @@ Present the recommendation with confidence tag (P15). If the domain is `web` or 
 
 ### Step 2 — Generate Previews
 
+Preview artefacts persist to `docs/sprints/sprint-{NN}/preview.md` (authoritative format in `plugin/templates/sprint/preview.md`).
+
 #### UI Preview (Wireframe Description)
 
 For tasks involving user interface elements:

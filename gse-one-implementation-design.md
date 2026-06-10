@@ -58,7 +58,7 @@ gse-one/
 │   │   ├── devil-advocate.md
 │   │   ├── coach.md
 │   │   └── deploy-operator.md
-│   └── templates/                       # 30 templates (MANIFEST.yaml acts as self-descriptor and is not counted; after the sprint/audit.md MANIFEST entry is added (Cluster 10), template count and MANIFEST entries converge)
+│   └── templates/                       # 28 templates (MANIFEST.yaml acts as self-descriptor and is not counted)
 │
 ├── plugin/                              # Single deployable directory (Claude + Cursor + opencode)
 │   ├── .claude-plugin/plugin.json       # Claude Code manifest
@@ -132,7 +132,7 @@ Key differences:
 - Cursor has `displayName` and `rules` fields; Claude does not
 - Claude loads methodology via `settings.json` → agent reference; Cursor loads via `rules/`
 
-**opencode manifest** (`opencode.json`) — opencode differs from Claude/Cursor: it does not declare `skills`/`agents`/`hooks` at top level (those are discovered from well-known directories), and its `repository` equivalent lives under the non-standard `gse.repository` key (opencode's schema has no top-level `repository` field). Instead, `opencode.json` declares a `permission` block with methodology defaults: `skill: { "*": "allow" }` (all GSE-One skills enabled), `question: "allow"` (native interactive-question tool — supports P4 interactive mode QCM across runtimes, cf. Activity Execution Fidelity Invariant §14.3), and a short `bash` denylist (`git push --force`, `rm -rf /`). Removing any of these from the default silently degrades functionality — notably, removing `question` forces QCM interactions into per-call permission prompts or text fallback.
+**opencode manifest** (`opencode.json`) — opencode differs from Claude/Cursor: it does not declare `skills`/`agents`/`hooks` at top level (those are discovered from well-known directories), and its `repository` equivalent lives under the non-standard `gse.repository` key (opencode's schema has no top-level `repository` field). Instead, `opencode.json` declares a `permission` block with methodology defaults: `skill: { "*": "allow" }` (all GSE-One skills enabled), `question: "allow"` (native interactive-question tool — supports P4 interactive mode QCM across runtimes, cf. spec §14.3 — Activity Execution Fidelity Invariant), and a short `bash` denylist (`git push --force`, `rm -rf /`). Removing any of these from the default silently degrades functionality — notably, removing `question` forces QCM interactions into per-call permission prompts or text fallback.
 
 ### 3.3 Mono-Plugin Architecture
 
@@ -157,7 +157,7 @@ Claude ignores the `rules/` directory silently. Cursor ignores `settings.json` s
 `plugin/tools/dashboard.py` reads `.gse/` state + sprint artefacts and reports project health. It is a **consumer** of the canonical artefact formats defined elsewhere — not a format authority. The contracts it depends on are:
 
 - **REQ counting**: `reqs.md` emits `### REQ-NNN — {title}` (H3 heading) per template `src/templates/sprint/reqs.md`.
-- **Review findings**: `review.md` emits `RVW-NNN [SEVERITY] — {title}` per reviewer agent output format (e.g., `src/agents/code-reviewer.md` "Output Format" section); baseline severity is `HIGH / MEDIUM / LOW` (plus `CRITICAL` reserved for P15 escalation at review merge time, spec §6.5). The parser tolerates square brackets `[HIGH]` (canonical) and parentheses `(HIGH)` (observed LLM drift) to stay robust against minor variations.
+- **Review findings**: `review.md` emits `RVW-NNN [SEVERITY] — {title}` per reviewer agent output format (e.g., `src/agents/code-reviewer.md` "Output Format" section); baseline severity is `HIGH / MEDIUM / LOW` (plus `CRITICAL` reserved for P15 escalation at review merge time — spec §P15 — Agent Fallibility, "Verified but wrong" escalation). The parser tolerates square brackets `[HIGH]` (canonical) and parentheses `(HIGH)` (observed LLM drift) to stay robust against minor variations.
 - **Health scores**: `status.yaml` stores them under `health.dimensions.<dim>` (nested) per `src/templates/status.yaml`.
 - **Test evidence**: `docs/sprints/sprint-NN/test-reports/` per spec §6.3.
 
@@ -177,7 +177,7 @@ When any of these canonical formats changes, `dashboard.py` must be updated in t
 
 **Added to the plan skill workflow** (writes branch assignments to `.gse/plan.yaml` and `.gse/backlog.yaml`):
 
-```markdown
+````markdown
 ### Git Step (Step 6 — Git Integration, between Step 5 "Promote to Sprint" and Step 7 "Persist Plan")
 
 Read `.gse/config.yaml` → `git.strategy`.
@@ -215,13 +215,13 @@ Read `.gse/config.yaml` → `git.strategy`.
 4. Update each TASK entry in `.gse/backlog.yaml` with `git.branch` (planned, not yet created) and `git.branch_status: planned`.
 
 **If strategy is `none`:** Skip all git operations.
-```
+````
 
 ### 4.2 `/gse:produce` — Git Integration
 
 **Added to the produce skill workflow** (reads branch name from `.gse/plan.yaml` tasks or `.gse/backlog.yaml` git state):
 
-```markdown
+````markdown
 ### Git Step (before production begins)
 
 Read `.gse/config.yaml` → `git.strategy`.
@@ -282,13 +282,13 @@ Commit at logical checkpoints:
 - After each file is complete
 - After each test passes
 - Before switching to a different sub-task
-```
+````
 
 ### 4.3 `/gse:review` — Git Integration
 
 **Added to the review skill workflow:**
 
-```markdown
+````markdown
 ### Git Step (at review start)
 
 Read `.gse/config.yaml` → `git.strategy`.
@@ -321,13 +321,13 @@ Read `.gse/config.yaml` → `git.strategy`.
    ```
 
 **If strategy is `none`:** Review files in-place as before.
-```
+````
 
 ### 4.4 `/gse:fix` — Git Integration
 
 **Added to the fix skill workflow:**
 
-```markdown
+````markdown
 ### Git Step (before applying fixes)
 
 Read `.gse/config.yaml` → `git.strategy`.
@@ -356,13 +356,13 @@ Read `.gse/config.yaml` → `git.strategy`.
 1. Create fix branch, switch to it, apply fixes, merge back.
 
 **If strategy is `none`:** Apply fixes in-place.
-```
+````
 
 ### 4.5 `/gse:deliver` — Git Integration
 
 **This is the most git-heavy skill. Full workflow:**
 
-```markdown
+````markdown
 ### Delivery Workflow
 
 Read `.gse/config.yaml` → `git.strategy`.
@@ -481,11 +481,11 @@ Delivered: Sprint <N> — v<version>
   Tag: v<version> (commit <hash>)
   Health at delivery: Z/10
 ```
-```
+````
 
 ### 4.6 `/gse:pause` — Git Integration
 
-```markdown
+````markdown
 ### Git Step (before checkpoint save)
 
 Read `.gse/config.yaml` → `git.auto_commit_on_pause`.
@@ -516,11 +516,11 @@ If true:
        sprint-03-feat-user-auth: <commit-hash>
        sprint-03-feat-dashboard: <commit-hash>
    ```
-```
+````
 
 ### 4.7 `/gse:resume` — Git Integration
 
-```markdown
+````markdown
 ### Git Step (after checkpoint load)
 
 1. Verify all worktrees from the checkpoint still exist:
@@ -549,11 +549,11 @@ If true:
    ```
 
 4. Propose next action based on where work stopped.
-```
+````
 
 ### 4.8 `/gse:status` — Git Extension
 
-```markdown
+````markdown
 ### Git Status Section
 
 Add to status output:
@@ -579,23 +579,23 @@ Flags:
   --branches    Show all gse/* branches
   --decisions   Show auto-decision log
   --worktrees   Show detailed worktree info
-```
+````
 
 ### 4.9 `/gse:health` — Git Hygiene Sub-Score
 
-```markdown
+````markdown
 ### Git Hygiene Computation
 
 Score 0–10 based on:
 
-| Factor | Weight | Score 10 | Score 0 |
+| Factor (spec §7.4 — Git Hygiene Sub-Score) | Weight | Score 10 | Score 0 |
 |--------|--------|----------|---------|
-| Active branches | 20% | ≤3 | >10 |
-| Stale branches | 20% | 0 | >3 |
-| Uncommitted changes | 20% | 0 across all worktrees | >5 files |
+| Active branches | 20% | <5 | >10 |
+| Stale branches (not touched in >2 sprints) | 20% | 0 | >3 |
+| Uncommitted changes | 20% | 0 across all worktrees | >0 |
 | Merge conflicts | 20% | 0 | >0 |
-| Main branch clean | 10% | Clean + tagged | Dirty |
-| Unreviewed branches | 10% | 0 | >2 |
+| Main branch status | 10% | Clean + tagged | Dirty, untagged |
+| Feature branches without review | 10% | 0 | >2 |
 
 Report as one of 8 dimensions in health dashboard:
 ```
@@ -605,11 +605,11 @@ Report as one of 8 dimensions in health dashboard:
 Git-specific alerts:
 ```
   ⚠ GIT: 2 worktrees have uncommitted changes
-  ⚠ GIT: Branch gse/sprint-02/feat/old not touched in 12 days
+  ⚠ GIT: Branch gse/sprint-02/feat/old not touched in >2 sprints
   ✓ GIT: No merge conflicts detected
   ✓ GIT: main is clean and tagged (v0.2.1)
 ```
-```
+````
 
 ---
 
@@ -617,7 +617,7 @@ Git-specific alerts:
 
 ### 5.1 `/gse:learn` — Knowledge Transfer Skill
 
-```markdown
+````markdown
 # skills/learn/SKILL.md
 ---
 description: "Start or continue a learning session. Triggered when the user asks to learn, understand, or be taught a concept. Also triggered proactively by the agent at natural workflow transition points when a competency gap is detected. Covers: /gse:learn <topic>, /gse:learn --notes, /gse:learn --roadmap."
@@ -641,7 +641,7 @@ Arguments: $ARGUMENTS
 ## Prerequisites
 
 1. Read `.gse/profile.yaml` → competency_map section
-2. Read `.gse/profile.yaml` → user.language, user.it_expertise, user.domain_background
+2. Read `.gse/profile.yaml` → `user.language`, `dimensions.it_expertise`, `dimensions.domain_background` (the expertise dimensions live under `dimensions.*`, not `user.*`)
 3. If `--notes`, read `docs/learning/` directory listing
 
 ## Workflow
@@ -659,7 +659,7 @@ Consultation mode — read and display, no session.
    - Application to the user's actual project (reference real files, branches, artefacts)
    - Practice exercise (deep mode only) — a small task in the project context
    - Quick reference card at the end
-5. Save/update learning note in `docs/learning/<topic-slug>.md`
+5. Save/update learning note in `docs/learning/LRN-{NNN}-<topic-slug>.md` (per learn.md Step 4 — Save Learning Note)
 6. Update competency_map in profile
 
 ### If proactive (agent-initiated)
@@ -689,15 +689,15 @@ Not part of the learn skill itself, but embedded in the `settings.json` agent ke
 (Claude Code) or the identity rule (Cursor). Logic:
 
 1. After any action where a technical concept was involved:
-   - Check competency_map: has this concept been explained?
+   - Check competency_map: has this concept been mentioned? (learn.md vocabulary: `mentioned`)
    - If not, and the concept is relevant: insert 2-3 sentence explanation
-   - Mark concept as explained in competency_map
+   - Mark concept as `mentioned` in competency_map
 2. Aggregate contextual tips into a learning note at sprint end (during /gse:compound)
-```
+````
 
 ### 5.2 `/gse:backlog` — Unified Work Item Management (NEW)
 
-```markdown
+````markdown
 # skills/backlog/SKILL.md
 ---
 description: "View and manage the project backlog — the unified list of all work items (TASK). Filter by sprint, pool, or artefact type. Add items manually. Sync with GitHub Issues. Triggered when user asks about tasks, backlog, work items, what's left to do, or issue management."
@@ -770,11 +770,11 @@ The backlog skill is also called internally by:
 - DELIVER: closes TASK (status: delivered), auto-closes GitHub Issues
 
 These internal calls don't show the backlog display — they just modify backlog.yaml.
-```
+````
 
 ### 5.3 `/gse:collect` — External Source Mode Extension
 
-```markdown
+````markdown
 ### External Source Workflow (added to collect skill)
 
 Triggered when $ARGUMENTS contains paths or URLs.
@@ -806,7 +806,7 @@ gse:
   source_origin: ~/other-project/src/auth.py
   adaptation: "Replaced Flask with FastAPI"
 ```
-```
+````
 
 ### 5.4 `/gse:go` — Adopt Mode
 
@@ -880,16 +880,16 @@ User can upgrade Micro → Lightweight → Full anytime via `/gse:go`.
 
 At start of /gse:hug:
 
-1. Detect current git user: `git config user.name`
+1. Detect current git user: `git config user.name` + `git config user.email` (both, per hug.md)
 2. Check if `.gse/profiles/` directory exists
 3. If team mode (multiple profiles):
    - Look for `.gse/profiles/<username>.yaml`
    - If found: load and offer to update
    - If not found: create new profile via interview
-   - Symlink `.gse/profile.yaml` → `.gse/profiles/<username>.yaml`
+   - Activate as `.gse/profile.yaml`: copy preferred (cross-platform); symlink optional where supported (per hug.md)
 4. If solo mode (no profiles/ directory):
    - Use `.gse/profile.yaml` directly (current behavior)
-   - If user answers "team" to team_context question → create profiles/ directory
+   - If the `team_context` answer is `pair`, `small-team`, or `large-team` (enum: `solo | pair | small-team | large-team`) → create profiles/ directory
      and move profile.yaml into it
 ```
 
@@ -940,7 +940,7 @@ Default enabled:
 
 ### 5.9 `/gse:tests` — Testing Strategy Skill (Extended)
 
-```markdown
+````markdown
 # skills/tests/SKILL.md
 ---
 description: "Define test strategy, set up test environment, write tests, execute campaigns, and produce evidence. Triggered when the user asks about testing, wants to add tests, or when /gse:produce needs to run tests after code production. Covers unit, integration, E2E, visual, and acceptance tests."
@@ -1026,11 +1026,11 @@ Part of the canonical run when visual testing is enabled (see spec §6.3 "Screen
 
 Only invoked by `--evidence`. Aggregates all per-run TCPs of the current sprint into a single sprint-level campaign (also TCP-prefixed), with `traces.derives_from` pointing at the rolled-up TCPs. No test execution is performed.
 
-```
+````
 
 ### 5.10 `/gse:produce` — Test Execution After Production
 
-```markdown
+````markdown
 ### Test Execution (added to produce skill, after code is written)
 
 PRODUCE invokes the **canonical test run** (spec §6.3) as its test execution phase. This section documents only the PRODUCE-specific pre/post-conditions:
@@ -1052,11 +1052,11 @@ The canonical run produces TCP-NNN campaign, `test_evidence` update on the TASK,
     code_coverage: 78
     summary: "24 tests, 22 passed, 2 failed"
 ```
-```
+````
 
-### 5.11 `/gse:review` — Devil's Advocate Agent (P16) — `[IMPL]` Tier
+### 5.11 `/gse:review` — Devil's Advocate Agent (P16)
 
-```markdown
+````markdown
 ### Devil's Advocate — [IMPL] review tier (added to review skill)
 
 After the standard quality review (the `[IMPL]` tier per spec §6.5), activate the devil-advocate agent:
@@ -1109,12 +1109,12 @@ After the standard quality review (the `[IMPL]` tier per spec §6.5), activate t
 4. **Integration with P15 confidence:**
    - Findings where confidence was "Moderate" or "Low" are flagged with higher severity
    - Findings where confidence was "Verified" but verification was wrong → CRITICAL
-```
+````
 
 ### 5.12 User Pushback Detection (Cross-cutting, in settings.json)
 
 ```markdown
-### Pushback Logic (embedded in settings.json agent key)
+### Pushback Logic (embedded in the orchestrator agent body — delivered via settings.json / .mdc / AGENTS.md per platform)
 
 The agent tracks a `consecutive_acceptances` counter in `.gse/status.yaml`:
 
@@ -1141,7 +1141,7 @@ The agent tracks a `consecutive_acceptances` counter in `.gse/status.yaml`:
 
 ### 5.13 `/gse:assess` — Gap Analysis Skill
 
-```markdown
+````markdown
 # skills/assess/SKILL.md
 ---
 description: "Evaluate project artefact status against goals. Identifies covered, partial, and uncovered goals. Triggered when user asks to assess, evaluate progress, or check readiness."
@@ -1183,11 +1183,11 @@ Gap Analysis — Sprint N
 
 ### Step 5 — Feed PLAN
 Uncovered goals → candidate TASK items in backlog pool (auto-created with `origin: assess`)
-```
+````
 
 ### 5.14 `/gse:go` — Orchestrator Decision Logic
 
-```markdown
+````markdown
 ### Orchestrator Decision Tree (added to go skill)
 
 When `/gse:go` is invoked:
@@ -1238,7 +1238,8 @@ Evaluate states in order — the first matching row wins.
 | `plan.yaml.workflow.active == fix` | Start FIX |
 | `plan.yaml.workflow.active == deliver` | Start DELIVER |
 | `plan.yaml.status == completed`, no compound | Start LC03: COMPOUND |
-| Compound done | Propose next sprint → LC01 |
+| Compound done, no integrate | Continue LC03: INTEGRATE |
+| Compound and integrate done | Propose next sprint via `/gse:plan --strategic` (promotion rule increments the sprint counter) → LC01 |
 | Sprint stale (> `lifecycle.stale_sprint_sessions` sessions without progress) | Step 3 stale detection |
 
 **Post-activity protocol:** after each activity completes, the orchestrator updates `.gse/plan.yaml` per the Sprint Plan Maintenance protocol (workflow transition, coherence evaluation, alerts by mode). See the orchestrator document for the full protocol.
@@ -1248,7 +1249,7 @@ Evaluate states in order — the first matching row wins.
 - **Step 2.6 — Dashboard Refresh** — after the preflight passes, regenerate `docs/dashboard.html` via `python3 "$(cat ~/.gse-one)/tools/dashboard.py"` so the current session starts from a fresh view. Silent unless it is the first generation (deferred pedagogy per HUG Step 5.5 — Dashboard Initialization).
 - **Step 2.8 — Coach Workflow Overview (post-recovery)** — invoke the coach sub-agent with `moment: /gse:go after recovery check` per the Coach Invocation contract (`gse-one/src/agents/coach.md`) and design §5.17 to surface axes 2-8 (workflow overview) at the start of a resumed session. May return zero proposals (silent) or one Inform note.
 
-Progression is defined as any TASK status change (`planned` → `in-progress`, `in-progress` → `review`, etc.) OR any `workflow.active` transition in `plan.yaml`. A session where neither happens counts as a session without progress, incrementing `sessions_without_progress` in `status.yaml` (writer: `/gse:go` Step 4 — Stale Sprint Detection and `/gse:resume` Step 6 — Finalize, per v0.52.0).
+Progression is defined as any TASK status change (`planned` → `in-progress`, `in-progress` → `review`, etc.) OR any `workflow.active` transition in `plan.yaml`. A session where neither happens counts as a session without progress, incrementing `sessions_without_progress` in `status.yaml` (writer: `/gse:go` Step 4 — Stale Sprint Detection and `/gse:resume` Step 6 — Finalize, per v0.52.0). The comparison source is `status.yaml → task_status_snapshot` (map TASK-id → status), refreshed by the same two writers at the end of their detection step.
 
 **Step 3 — Stale sprint detection (Gate):**
 ```
@@ -1265,11 +1266,11 @@ If any activity fails:
 2. Report error with agent's assessment
 3. Gate: retry / skip (if skippable) / pause / discuss
 4. Never silently continue
-```
+````
 
 ### 5.15 `/gse:deliver` — Deploy & Recovery Extensions
 
-```markdown
+````markdown
 ### Deploy Step (added after Step 4 — Tag Release)
 
 If `git.post_tag_hook` is configured:
@@ -1286,26 +1287,34 @@ If `git.post_tag_hook` is configured:
 
 ### Safety Backup (added as Step 0 — before any merge)
 
-Before EVERY destructive git operation:
+Before EVERY destructive git operation (three tag classes — see deliver.md Step 0 — Safety: Backup Tags):
 ```bash
+# Class 1 — before each merge into the integration branch:
 git tag gse-backup/sprint-NN-pre-merge-<feat> $(git rev-parse gse/sprint-NN/integration)
+# Class 2 — before each feature branch deletion (Step 5 cleanup):
+git tag gse-backup/sprint-NN-<feat>-deleted $(git rev-parse gse/sprint-NN/feat/<name>)
+# Class 3 — before the merge into main (Step 3):
+git tag gse-backup/sprint-NN-pre-main-merge $(git rev-parse main)
 ```
 
 Recovery if something goes wrong:
 ```bash
-# Branch recovery:
+# Branch recovery (from class 2):
 git checkout -b gse/sprint-NN/feat/<name> gse-backup/sprint-NN-<feat>-deleted
 
-# Merge reversal:
-git reset --hard gse-backup/sprint-NN-pre-merge-<feat>
+# Merge reversal (from class 1 — checkout the target branch first, per spec §10.6):
+git checkout gse/sprint-NN/integration && git reset --hard gse-backup/sprint-NN-pre-merge-<feat>
+
+# Main-merge reversal (from class 3):
+git checkout main && git reset --hard gse-backup/sprint-NN-pre-main-merge
 ```
 
 Cleanup: delete backup tags older than `git.backup_retention_days` during deliver.
-```
+````
 
 **Test-Specific Guardrails (spec §9.3.1).** `/gse:deliver` Step 1.5 enforces three guardrails before any merge:
 
-**Guardrail 1 — Unexecuted tests (Hard).** Reads `test_evidence.status` on each TASK that implements a must-priority REQ (per §12.3 Backlog schema). If any status is in `{absent, fail, skipped}`, delivery is blocked and a Gate is presented with four options: (1) Run tests now inline via `/gse:tests --run` (recommended default), (2) Deliver partial (only passing REQs, requires Gate confirmation), (3) Reclassify TASK as spike/deferred (requires DEC-), (4) Discuss. Aligns the delivery gate with the canonical test run (spec §6.3 — Test Execution and Evidence) so the `test_evidence` field actually feeds enforcement. Complements the Activity Execution Fidelity Invariant §14.3 — which forces `/gse:produce` to execute the canonical test run in the first place; this guardrail catches the residual cases where evidence is nevertheless absent at delivery time.
+**Guardrail 1 — Unexecuted tests (Hard).** Reads `test_evidence.status` on each TASK that implements a must-priority REQ (per spec §12.3 — Backlog schema). If any status is in `{absent, fail, skipped}`, delivery is blocked and a Gate is presented with four options: (1) Run tests now inline via `/gse:tests --run` (recommended default), (2) Deliver partial (only passing REQs, requires Gate confirmation), (3) Reclassify TASK as spike/deferred (requires DEC-), (4) Discuss. Aligns the delivery gate with the canonical test run (spec §6.3 — Test Execution and Evidence) so the `test_evidence` field actually feeds enforcement. Complements the Activity Execution Fidelity Invariant §14.3 — which forces `/gse:produce` to execute the canonical test run in the first place; this guardrail catches the residual cases where evidence is nevertheless absent at delivery time.
 
 **Guardrail 2 — Unexecuted test strategy (Hard).** Cross-checks `docs/sprints/sprint-{NN}/test-strategy.md` against `docs/sprints/sprint-{NN}/test-reports/` to detect declared test levels that have no `TCP-` campaign covering them. A level is *declared* when the strategy's H2 section (`## Unit Tests`, `## Integration Tests`, `## E2E Tests`, `## Policy Tests`) contains at least one `### TST-NNN` entry; it is *covered* when at least one TCP- campaign executed at least one TST- at that level (via the authoritative TST `level:` frontmatter field). If any declared level has no coverage, delivery is blocked and a Gate is presented with four options: (1) Run the missing level now via `/gse:tests --run --level <level>` (recommended default), (2) Deliver partial with the uncovered level rolled to next sprint (requires DEC-), (3) Reclassify the level as deferred for this sprint (requires DEC-), (4) Discuss. Catches the "pyramid gap" failure mode: a sprint that declares E2E tests in strategy but never actually runs any.
 
@@ -1320,16 +1329,19 @@ current_sprint: 3
 current_phase: LC02
 # plan status lives in .gse/plan.yaml (active | completed | abandoned)
 
-activity_history:
+activity_history:                      # entries: { activity, completed_at, sprint, notes }
   - activity: collect
     completed_at: "2026-04-08T09:15:00Z"
     sprint: 3
+    notes: ""
   - activity: assess
     completed_at: "2026-04-08T09:30:00Z"
     sprint: 3
+    notes: ""
   - activity: plan
     completed_at: "2026-04-08T10:00:00Z"
     sprint: 3
+    notes: ""
 
 health:
   score: 6.7
@@ -1350,11 +1362,18 @@ health:
 consecutive_acceptances: 2
 pushback_dismissed: 0
 
+# P16 root-cause discipline (REQUIRED per spec §12.4.1; transversal counter — see §5.13 prose)
+fix_attempts_on_current_symptom: 0
+
+# Scope reconciliation anchor (set at activity start by produce/task; see §5.13 prose)
+activity_start_sha: ""
+
 last_activity: /gse:produce
 last_activity_timestamp: "2026-04-11T09:15:00Z"
 
 # Stale sprint detection (complexity/session-based, not calendar-based)
 sessions_without_progress: 0
+task_status_snapshot: {}
 
 # Review findings counter (used by hooks)
 review_findings_open: 0
@@ -1384,6 +1403,7 @@ The spec-level *Sprint Freeze* guardrail materializes as follows:
 - `/gse:produce` (transitions TASK `planned` → `in-progress` → `review`)
 - `/gse:review` (transitions TASK `review` → `reviewed` if no HIGH/MEDIUM findings, else `review` → `fixing`)
 - `/gse:fix` (transitions TASK `fixing` → `done`)
+- `/gse:reqs`, `/gse:design`, `/gse:preview`, `/gse:tests` (write sprint artefacts into `docs/sprints/sprint-{NN}/` — producing new artefacts for a closed sprint violates closure immutability)
 
 **Activities exempt from the Sprint Freeze preflight** (three categories — *closed-sprint consumers* operate on a sprint that is already frozen, e.g. post-delivery capitalization; *non-mutating activities* do not transition TASK state; *transition performers* are the activity that effects the freeze transition itself, and consulting a guard they are about to set would be self-defeating):
 
@@ -1724,7 +1744,7 @@ _Optional section. Lists ambiguities to resolve in downstream activities, each t
 - `/gse:plan --strategic` uses the backlog items seeded during Intent Capture (which carry `traces.derives_from: [INT-001]`).
 - `/gse:reqs` reads the intent artefact to cross-check that all user-stated goals are covered by at least one REQ. Requirements get `traces.derives_from: [INT-001, ...]`.
 
-**Pivot / re-capture command:** out of scope for v0.28 — will be added later as `/gse:intent --pivot` or similar. For now, if the user wants to replace the intent, they manually archive `docs/intent.md` and re-run `/gse:go` on a greenfield-looking project (or use `/gse:hug --update` to reset the first-project flag).
+**Pivot / re-capture command:** out of scope for v0.28 — will be added later as a dedicated intent-pivot command (name TBD). For now, if the user wants to replace the intent, they manually archive `docs/intent.md` and re-run `/gse:go` on a greenfield-looking project (or use `/gse:hug --update` to reset the first-project flag).
 
 **Exempt / skip conditions:**
 - Existing project (non-greenfield) → no Intent Capture; inferred implicit from existing artefacts.
@@ -1830,7 +1850,7 @@ For each resolved question, the agent:
 - A question has `resolves_in: PLAN` but no `/gse:plan` is ever called (Micro mode) → the question remains `pending` until `/gse:compound` or `/gse:deliver`, which surface pending OQs as a reminder in the release notes.
 - A question is resolved outside the agent (user edits the file manually) → the next activity-entry scan reads the updated status and respects it.
 
-**Scope-resolve as Step 0 of `/gse:plan`:** the transversal activity-entry scan IS the scope-resolve mechanism. `/gse:plan --strategic` Step 0 scans for `resolves_in: PLAN` questions; if any have `impact: scope-shaping`, the Gate explicitly frames them as "scope-shaping questions — resolve before sprint selection". No separate `/gse:scope` skill is introduced.
+**Scope-resolve as Step 0 of `/gse:plan`:** the transversal activity-entry scan IS the scope-resolve mechanism. `/gse:plan --strategic` Step 0 scans for `resolves_in: PLAN` questions; if any have `impact: scope-shaping`, the Gate explicitly frames them as "scope-shaping questions — resolve before sprint selection". No separate scope-resolve skill is introduced.
 
 **Config Application Transparency — Design Mechanics (spec P7 Config Application Transparency):**
 
@@ -1901,7 +1921,7 @@ The methodology-feedback flow operates entirely inside `/gse:compound` Axe 2 and
 | Source | What to look for |
 |--------|------------------|
 | `docs/sprints/sprint-{NN}/review.md` | Findings tagged `[METHOD-FEEDBACK]` (process-level issues, not product-level) |
-| `docs/sprints/sprint-{NN}/decisions.md` | DEC- entries with attribute `type: methodology-deviation` (the agent deviated from the methodology and logged why) |
+| `.gse/decisions.md` (the canonical decision journal, spec §11) | DEC- entries with attribute `type: methodology-deviation` (the agent deviated from the methodology and logged why) |
 | `.gse/status.yaml → activity_history[*].notes` | Free-text notes attached to activity completions |
 | Conversation context | Friction points, user explicit complaints, or recurring questions the agent encountered during the sprint (agent subjective memory) |
 
@@ -1934,11 +1954,11 @@ Written at `docs/sprints/sprint-{NN}/methodology-feedback.md` when option 1 or 3
 
 ```markdown
 ---
-artefact_type: methodology-feedback
-title: "Sprint {NN} — Methodology Feedback"
-sprint: {NN}
-created: "{YYYY-MM-DD}"
-status: exported
+gse:                                   # nested form — per the AUTHORITATIVE template plugin/templates/sprint/methodology-feedback.md
+  type: methodology-feedback
+  sprint: {NN}
+  created: "{YYYY-MM-DD}"
+  status: exported
 ---
 
 # Sprint {NN} — Methodology Feedback
@@ -2252,8 +2272,8 @@ Invoked by the orchestrator with a `moment` tag. Each axis is activated by speci
 | `activity_start` (cross-cutting — dispatched centrally by orchestrator, not per-activity)  | 1 (pedagogy) — only if `learning_goals` non-empty + cap not exhausted                       | any lifecycle activity (orchestrator-delegated)  |
 | `/gse:go` after recovery check                                                             | 2-8 (workflow overview)                                                                     | `/gse:go`                                        |
 | `/gse:pause`                                                                               | 2-8 (end-of-session check)                                                                  | `/gse:pause`                                     |
-| `/gse:compound` Axe 2 feed                                                                 | 2-8 (feeds methodology capitalization — all 7 workflow axes)                                | `/gse:compound` Axis 2 Step 2.7                  |
-| `/gse:compound` Axe 3 feed                                                                 | 1, 2 (pedagogy + profile calibration — feeds competency update + learning_goals evolution)  | `/gse:compound` Axis 3 Step 3                    |
+| `/gse:compound` Axe 2 feed                                                                 | 2-8 (feeds methodology capitalization — all 7 workflow axes)                                | `/gse:compound` Axe 2 Step 2.7                  |
+| `/gse:compound` Axe 3 feed                                                                 | 1, 2 (pedagogy + profile calibration — feeds competency update + learning_goals evolution)  | `/gse:compound` Axe 3 Step 3                    |
 | Sprint promotion (`/gse:plan --strategic`)                                                 | 3, 4, 5, 8 (retrospective cross-sprint analysis)                                            | `/gse:plan --strategic`                          |
 | `mid_sprint_stall` (when `sessions_without_progress ≥ 2`)                                  | 3 (sprint velocity), 4 (workflow health)                                                    | `/gse:go` (auto-detected)                        |
 | `gate_sequence_end` (after P16 counter transitions)                                        | 6 (engagement pattern)                                                                      | any Gate emitting activity                       |
@@ -2277,24 +2297,23 @@ Invoked by the orchestrator with a `moment` tag. Each axis is activated by speci
 - coach: skip | propose
   axis: pedagogy
   # if skip:
-  reason: "already covered (LRN-002)" | "previously declined" | "cap reached" | "no overlap" | ...
+  reason: "already covered (LRN-002)" | "previously not-interested" | "cap reached" | "no overlap" | ...
   # if propose:
   topic: "{precise formulation, 1 sentence}"
   trigger: explicit-goal | inferred-gap | gate-preamble | compound-review
-  severity: low | medium | high          # used by the orchestrator to prioritize when multiple proposals compete
-  preamble:
+  preamble_content:
     core_concept: "{1-2 sentences}"
     example: "{concrete 3-10 line example}"
     pitfall: "{common mistake + fix hint}"
   suggested_depth: quick | deep
 
-# Workflow axes outputs (axes 2-8)
+# Workflow axes outputs (axes 2-8) — field names per coach.md Output Formats (authoritative)
 - coach: advise
   axis: profile_calibration | sprint_velocity | workflow_health | quality_trends | engagement_pattern | process_deviation | sustainability
-  severity: low | medium | high          # used by the orchestrator to prioritize advice (HIGH surfaced first)
   observation: "{1-2 sentences of what the coach has noticed}"
-  evidence: ["{concrete signal 1}", "{concrete signal 2}"]
-  suggestion: "{actionable next step — may cite an existing command like /gse:hug --update}"
+  data_points: ["{concrete signal 1}", "{concrete signal 2}"]
+  recommended_action: "{actionable next step — may cite an existing command like /gse:hug --update}"
+  dismissible: true
 ```
 
 On `coach: propose` (pedagogy), the orchestrator presents the 5-option P14 Gate. On `coach: advise` (workflow), the orchestrator emits a one-line Inform note — **workflow-axis outputs are always Inform-tier** per spec §P14 — Knowledge Transfer (Coaching), they never block. The `severity` field (`low | medium | high`) prioritizes ordering when multiple blocks compete for attention, but never escalates to a Gate. A `severity: gate` escalation path was considered in earlier design iterations but is not implemented — if a specific future signal justifies blocking, it will require a dedicated spec update. Every invocation respects `coach.max_advice_per_check` (default 3 blocks returned across all workflow axes).
@@ -2308,7 +2327,7 @@ On `coach: propose` (pedagogy), the orchestrator presents the 5-option P14 Gate.
 | Learning notes | `docs/learning/LRN-*.md` | Pedagogy | Per-project, durable artefacts with traces |
 | `profile_drift_signals{}` | `.gse/status.yaml` | Profile calibration | Per-project, persistent — feeds `/gse:hug --update` proposals |
 | `workflow_observations[]` | `.gse/status.yaml` | sprint_velocity, workflow_health, quality_trends, engagement_pattern, process_deviation, sustainability | **Persistent** — cross-sprint ledger for trending. Axes like `quality_trends`, `sprint_velocity`, `sustainability` depend on history across ≥ 3 sprints. Individual observations may be summarized (not purged) at `/gse:compound`. |
-| Coaching recipes | `gse-one/plugin/agents/coach.md` Recipes section | All axes (tagged `for: pedagogy | workflow | both`) | **Edit destination:** the user-local copy in `.claude/agents/coach.md` / `.cursor/agents/coach.md` (per-project) OR the shipped template (shared defaults) |
+| Coaching recipes | `gse-one/plugin/agents/coach.md` Recipes section | All axes (tagged `for: pedagogy \| workflow \| both`) | **Edit destination:** the user-local copy in `.claude/agents/coach.md` / `.cursor/agents/coach.md` (per-project) OR the shipped template (shared defaults) |
 
 **Coaching recipes — dual maintenance:**
 
@@ -2329,6 +2348,8 @@ On `coach: propose` (pedagogy), the orchestrator presents the 5-option P14 Gate.
 **Failure modes:**
 
 - Coach sub-agent fails to return → orchestrator proceeds without preamble/advice, logs an Inform note
+- Reviewer perspective sub-agent fails to return during `/gse:review` Step 2 → the review proceeds with the remaining perspectives (N-1) plus a **mandatory** Inform note naming the missing perspective ("Review completed without the {perspective} pass — re-run `/gse:review` to cover it"); findings from the completed perspectives remain valid
+- Devil-advocate sub-agent fails during a P16 escalation (focused re-review after `fix_attempts_on_current_symptom` threshold) → **blocking**: the escalation exists precisely to break a failure loop, so the orchestrator must not silently continue; retry once, then present a Gate (retry / proceed acknowledging the missing integrity check / discuss)
 - `learning_goals` malformed → coach skips pedagogy axis with "invalid profile input" reason; orchestrator surfaces a warning; other axes continue
 - Multiple pedagogy topics match → coach picks the most contextually relevant (matching the activity's current work); sprint cap enforced
 - Workflow axis has insufficient signal (new project, empty history) → coach returns no block for that axis rather than speculating
@@ -2466,11 +2487,28 @@ The `config.yaml → deploy.app_type` key (`auto | streamlit | python | node | s
 
 **Skill/tool boundary:** the skill narrates the workflow, handles user interaction (prompts, Gate decisions, cost displays), and performs shell-based operations (ssh, apt, hcloud). The tool handles Coolify API calls, state mutation, subdomain sanitization, situation detection, and the end-to-end deploy flow (Phase 6). Each phase 1–5 calls `record-phase` at its end to guarantee idempotence. Phase 6 is consolidated into a single `deploy-app` call.
 
+**Situation detection (`detect` subcommand).** The starting phase is inferred from which keys are present in the project-local `.env`, then clamped upward past any phase already recorded in `deploy.json → phases_completed`:
+
+| `.env` keys present | Starting phase | Mode |
+|---|:-:|---|
+| `COOLIFY_URL` + `COOLIFY_API_TOKEN` + `DEPLOY_DOMAIN` | 6 | `training` if `DEPLOY_USER` set, else `app-only` |
+| `SERVER_IP` + SSH user, no Coolify pair | 3 (or 4 if `secure` phase recorded) | `partial` |
+| `HETZNER_API_TOKEN` only (no `SERVER_IP`) | 2 | `full` |
+| none of the above | 1 | `full` |
+
+The mapping is authoritatively implemented in `deploy.py detect_situation()`; this table is its documentation contract — update both together.
+
 The tools require only Python 3.9+ standard library (no external dependencies). They are hand-maintained (not regenerated from `src/`) and live permanently in `plugin/tools/`. Their presence is enforced by `python3 gse_generate.py --verify`.
 
 **Note on Coolify API versioning.** `coolify_client.py` is pinned to **Coolify v4, API `v1`** (last verified 2026-04-20). If Coolify introduces a breaking change, the client will fail visibly with an unexpected response shape or `404` on pinned endpoints. Users who hit a version-compatibility issue are encouraged to **submit a PR** at the upstream repository (https://github.com/nicolasguelfi/gensem): the fix is usually a local modification to `coolify_client.py` (new field name, new endpoint, etc.). See the README "Deployment → Coolify compatibility" section for the contribution workflow.
 
-**Preflight (Phase 6 Step 2).** `deploy.py preflight` returns a structured JSON with the detected project type, the default port, the resolved project directory, and a list of typed checks. Universal checks cover git state (repo, commits, remote, working tree cleanliness, `github.com` remote hint) and Dockerfile quality (`ARG SOURCE_COMMIT` cache-bust). Type-specific checks cover entry points (Streamlit / Python / Node), Streamlit Traefik config (`enableCORS=false`, `enableXsrfProtection=false` in `.streamlit/config.toml`), Node `start` script + Next.js build hint, and static `index.html` presence. Each check has `name`, `ok`, `level` (`info | warning | error`), `message`, and `fix_hint`. The overall status rolls up to `errors | warnings | ok` — the skill aborts on errors, Gate-decides on warnings, and proceeds silently on ok. The detected type propagates to Step 3 (Dockerfile template selection) and Step 4 (`deploy-app`), avoiding any re-detection in the skill.
+**Preflight (Phase 6 Step 2).** `deploy.py preflight` returns a structured JSON with the detected project type, the default port, the resolved project directory, and a list of typed checks. Universal checks cover git state (repo, commits, remote, working tree cleanliness, `github.com` remote hint) and Dockerfile quality (`ARG SOURCE_COMMIT` cache-bust). Type-specific checks cover entry points (Streamlit / Python — the tool's candidate lists; Node is covered by the start-script check below, not an entry-point list), Streamlit Traefik config (`enableCORS=false`, `enableXsrfProtection=false` in `.streamlit/config.toml`), Node `start` script + Next.js build hint, and static `index.html` presence. Each check has `name`, `ok`, `level` (`info | warning | error`), `message`, and `fix_hint`. The overall status rolls up to `errors | warnings | ok` — the skill aborts on errors, Gate-decides on warnings, and proceeds silently on ok. The detected type propagates to Step 3 (Dockerfile template selection) and Step 4 (`deploy-app`), avoiding any re-detection in the skill.
+
+**Private-repository route (Phase 6).** Coolify's `/applications/public` endpoint cannot clone private repos and returns HTTP 422. The sanctioned route is a Coolify GitHub App source (`COOLIFY_GITHUB_APP_UUID` in `.env`), documented end-to-end for learners in `docs/deploy/learner-private-repo-setup.md`. `deploy.py` does not yet auto-route to the private-github-app endpoint when the UUID is set (tracked enhancement — see deploy-operator.md quirk catalog row 2); meanwhile the skill directs the user to the GitHub App route, never to making the repo public (privacy regression, per deploy-operator Anti-patterns).
+
+**Sequential deploy-app rule.** `ensure_project` (lookup-or-create of the per-user Coolify project `gse-{DEPLOY_USER}`) is not atomic — the Coolify API has no atomic get-or-create, so two concurrent `deploy-app` calls for the same `DEPLOY_USER` (e.g., a WEB and an API app) can both create the project, producing identically-named duplicates. The skill therefore instructs the user to wait for each `deploy-app` to return before launching the next (deploy.md Phase 6 concurrency note; cleanup recipe in `docs/deploy/coolify-cli-cheatsheet.md`). Different learners target different `gse-{user}` projects and are unaffected.
+
+**Deployed-version verification (Phase 6 Step 6).** After Coolify reports `running:healthy`, the skill compares the deployed `SOURCE_COMMIT` (cache-bust ARG baked into the image) against the local `git rev-parse HEAD`. On MISMATCH it proposes: forced redeploy (`--redeploy`), inspection of Coolify's deployment history for a silent rollback, or a cache hard-refresh — catching the "healthy but stale" failure mode observed in real sessions.
 
 **Training tools.** Two `deploy.py` subcommands support the instructor workflow in training mode:
 
@@ -2660,9 +2698,9 @@ GSE-One implements **3 system hooks** (spec P13 — Event-Driven Behaviors) — 
 |------|-------|---------|-------|------|
 | Protect main | PreToolUse | Bash | Hard | 2 (block) |
 | Block force-push | PreToolUse | Bash | Emergency | 2 (block) |
-| Review findings on push | PostToolUse | Bash | Informational | 0 (warn) |
+| Review findings on push | PostToolUse | Bash | Soft (warn-only) | 0 (warn) |
 
-Blocking hooks (exit 2) write to **stderr** so the agent receives the feedback. Informational hooks (exit 0) write to **stdout**.
+Blocking hooks (exit 2) write to **stderr** so the agent receives the feedback. Soft warn-only hooks (exit 0) write to **stdout**.
 
 ### 7.1 Claude Code: `hooks/hooks.claude.json`
 
@@ -2825,7 +2863,7 @@ The `marketplace.json` install path is `"plugin"` (not `"dist/claude"`), reflect
 
 **Reset** — At the start of the next sprint, `/gse:plan --strategic` overwrites `.gse/plan.yaml` with a fresh plan for the new sprint. The prior sprint's `plan-summary.md` remains in its sprint directory as the durable archive.
 
-**Resilience** — `.gse/plan.yaml` is validated on write (YAML parseable). On corruption, the orchestrator restores from the latest checkpoint in `.gse/checkpoints/` and reports the error.
+**Resilience** — `.gse/plan.yaml` is validated on write (YAML parseable). On corruption, the orchestrator applies the spec §12.7 — Resilience recovery ladder (git-committed version → checkpoint-covered fields → template + session context) and reports the path used. Note: checkpoints carry no plan.yaml fields (§12.5 — Checkpoint Format) — for plan.yaml the ladder skips straight from git to template + context.
 
 **.gitignore additions** (applied by `/gse:hug` on first run):
 

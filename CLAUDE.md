@@ -23,7 +23,7 @@ The 11 agents in `src/agents/` deliberately use **4 structural archetypes**. Dif
 
 | Archetype | Agent(s) | Standard sections |
 |---|---|---|
-| **Identity** | `gse-orchestrator` | Role / Activated by / Perspective / Core Principles (P1-P16) / Skill activation / Sub-agent dispatch |
+| **Identity** | `gse-orchestrator` | Role / Activated by / Perspective / Core Principles (P1-P16) / Command Reference / Orchestration Decision Tree / Sprint Plan Maintenance |
 | **Reviewer** (output to `review.md` via `/gse:review`) | `architect`, `code-reviewer`, `security-auditor`, `requirements-analyst`, `devil-advocate`, `ux-advocate`, `test-strategist` | Role / Activated by / Perspective / Checklist / Output Format (RVW-NNN + `perspective:` + HIGH/MEDIUM/LOW) |
 | **Operational** (multi-step workflow execution) | `deploy-operator` | Role / Activated by / Perspective / Required readings / Core Principles / Anti-patterns / Output Format |
 | **Observational** (8-axis monitoring) | `coach` | Role / Activated by / Perspective / 8 axes / Invocation contract / Evaluation algorithm / Output Formats (plural) / Anti-spam / Recipes / Persistence |
@@ -43,6 +43,12 @@ Every commit to main MUST follow this full pipeline:
 6. **Push** — `git push origin main`
 
 Never skip a step. Never commit without regenerating. Never push without bumping. Never release a version without a matching CHANGELOG entry.
+
+**Exception — gitignored / `_LOCAL/` files.** The build pipeline above applies only to files that will be committed to `main`. Edits to gitignored paths (matched by `/_*/` in `.gitignore`, primarily everything under `_LOCAL/`) are local-only work artifacts and do NOT require any pipeline step: no `VERSION` bump, no `CHANGELOG.md` entry, no `gse_generate.py --verify` run, no commit. This covers scratch notes, draft documents, audit working files, exploration sandboxes, and any maintainer-only material kept under `_LOCAL/`. If such a file is later promoted into the tracked corpus (e.g., moved out of `_LOCAL/` into `gse-one/src/` or `docs/`), the promotion itself becomes a normal tracked change and re-enters the full pipeline.
+
+**Why:** Pre-release iteration, audit drafts, and maintainer notebooks live under `_LOCAL/` precisely because they must not trigger the release pipeline. Forcing a version bump for a scratch document would inflate the version history and pollute the CHANGELOG with non-shipping changes.
+
+**How to apply:** Before initiating the build pipeline (or asking the user to validate one), check whether the edited files are gitignored. If every edited file is under `_LOCAL/` (or otherwise untracked), skip the pipeline entirely and just save. If a session edits both gitignored and tracked files, run the pipeline only for the tracked files.
 
 **Distribution (since v0.62.7):** In addition to the 6-step pipeline above, distribution to end users now happens through `.github/workflows/release.yml`. On every `v*` tag push to `origin`, that workflow runs `gse_generate.py --verify` as a safety net, packages `gse-one/plugin/`, `install.py`, `VERSION`, `CHANGELOG.md`, `README.md`, and `install.sh` into a `gse-one.tar.gz` release asset, and publishes it via `gh release create`. The asset is the tarball consumed by the curl-based `install.sh` bootstrap. Pushing the tag is therefore the release act — it does not replace any step of the 6-step pipeline, but it does add an implicit post-condition: after `git push origin main`, maintainers should push the matching `vX.Y.Z` tag so the release asset is produced.
 
@@ -102,7 +108,11 @@ GSE-One skills shell out to Python tools (`dashboard.py`, `deploy.py`, `project-
 
 **Tool header convention:** each Python tool carries a `# @gse-tool <name> <version>` header on line 2.
 
-**Curl-based entry point (since v0.62.7):** end users install via a POSIX-sh bootstrap `install.sh` at the repo root, served at `https://raw.githubusercontent.com/nicolasguelfi/gensem/main/install.sh`. The bootstrap auto-detects platform and mode, resolves the release tarball, and delegates to `install.py` — it does not duplicate install logic. Shell-level env-var overrides (`GSE_PLATFORM`, `GSE_MODE`, `GSE_SCOPE`, `GSE_VERSION`, `GSE_PROJECT_DIR`) let advanced users bypass auto-detection; they are documented for end users in README's "Environment variables" section. The registry invariant (`~/.gse-one` contents) and the 6 install modes table above remain authoritative for all resolution; `install.sh` simply auto-selects one of those 6 modes at run time. Maintainers adding a new install mode update the table and `install.py` — `install.sh` inherits the change automatically through the delegation.
+**Configuration policy — project-local files, no durable env vars.** All durable configuration and state live in project-local files (`.gse/*.yaml`, `.env`, `.gse/deploy.json`) or, for the install registry only, the user-level file `~/.gse-one`. Environment variables are reserved for: (1) ephemeral invocation parameters (the `GSE_*` overrides of `install.sh` — they live only for the duration of the command), (2) platform/OS conventions (`HOME`, `LOCALAPPDATA`, `NO_COLOR`/`FORCE_COLOR`). No tool, hook, or skill may read durable methodology state from a global environment variable.
+
+**Why:** env vars are invisible state — undiagnosable from the repo, divergent across machines (the user works from several via Dropbox), and the root cause of the v0.62 hooks no-op (the fictional `CLAUDE_TOOL_INPUT` variable that silently disabled the whole deterministic guardrail layer). The audit job `tools-quality-uniformity` enforces this policy (sanctioned-list check).
+
+**Curl-based entry point (since v0.62.7):** end users install via a POSIX-sh bootstrap `install.sh` at the repo root, served at `https://raw.githubusercontent.com/nicolasguelfi/gensem/main/install.sh`. The bootstrap auto-detects the platforms present on PATH (the mode is NOT detected — it defaults to `no-plugin`, overridable via `GSE_MODE=plugin`), resolves the release tarball, and delegates to `install.py` — it does not duplicate install logic. Shell-level env-var overrides (`GSE_PLATFORM`, `GSE_MODE`, `GSE_SCOPE`, `GSE_VERSION`, `GSE_PROJECT_DIR`) let advanced users bypass auto-detection; they are documented for end users in README's "Environment variables" section. The registry invariant (`~/.gse-one` contents) and the 6 install modes table above remain authoritative for all resolution; `install.sh` simply auto-selects one of those 6 modes at run time. Maintainers adding a new install mode update the table and `install.py` — `install.sh` inherits the change automatically through the delegation.
 
 ### Versioning
 - Bump `VERSION` file, then run the generator — it propagates to both plugin.json manifests.

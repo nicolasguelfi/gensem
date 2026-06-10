@@ -5,14 +5,11 @@ This reference centralizes SSH connection patterns used by `/gse:deploy`
 
 ## Credential resolution
 
-Always read credentials in this order:
+Always read credentials in this order (matches what `deploy.py` actually honors — project-local files only, per CLAUDE.md > Tool architecture > Configuration policy):
 
-1. `.env` in project root (preferred)
-2. `.env` in parent directory
-3. Environment variables (`COOLIFY_URL`, `COOLIFY_API_TOKEN`,
-   `HETZNER_API_TOKEN`, `SSH_KEY`, `SSH_USER`, `SERVER_IP`)
-4. `.gse/deploy.json` → `server.ipv4`, `server.name`
-5. Prompt the user as a last resort
+1. `.env` in project root (the only credential source `deploy.py` reads)
+2. `.gse/deploy.json` → `server.ipv4`, `server.name` (non-secret server metadata)
+3. Prompt the user as a last resort
 
 The canonical SSH key path is `~/.ssh/gse-deploy`. The SSH key name registered
 in Hetzner is `gse-deploy`.

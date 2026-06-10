@@ -65,7 +65,7 @@ If `.gse/` exists, scan for unsaved work before proceeding:
 
 ### Step 2.5 — Dependency Vulnerability Check
 
-If `config.yaml → dependency_audit: true` (default for projects with package manifests):
+If `config.yaml → testing.dependency_audit: true` (default for projects with package manifests):
 
 1. **Detect package manager** — Look for `package-lock.json` / `yarn.lock` (npm audit), `requirements.txt` / `pyproject.toml` (pip-audit), `Cargo.lock` (cargo audit), `go.sum` (govulncheck).
 2. **Run audit** — Execute the appropriate audit command.
@@ -123,7 +123,8 @@ Evaluate states **in order** — the first matching row wins.
 | `plan.yaml.workflow.active == fix` | Start FIX — propose `/gse:fix` |
 | `plan.yaml.workflow.active == deliver` | Start DELIVER — propose `/gse:deliver` (requires REQ→TST coverage for must-priority requirements) |
 | `plan.yaml.status == completed`, no compound | Start LC03 — propose `/gse:compound` |
-| Compound done | Propose next sprint — increment sprint number, transition to LC01 (`COLLECT` > `ASSESS` > `PLAN`) |
+| Compound done, no integrate | Continue LC03 — propose `/gse:integrate` (spec §14.3: COMPOUND > INTEGRATE before the next sprint) |
+| Compound and integrate done | Propose next sprint via `/gse:plan --strategic` — the promotion rule is what increments the sprint counter and transitions to LC01 (`COLLECT` > `ASSESS` > `PLAN`) |
 
 **Post-activity protocol:** After each activity completes, the orchestrator updates `.gse/plan.yaml` per the **Sprint Plan Maintenance** protocol in the orchestrator (workflow transition, coherence evaluation, alerts by mode). See the orchestrator document for the full protocol.
 
@@ -151,12 +152,12 @@ Track the number of sessions (invocations of `/gse:go` or `/gse:resume`) where n
 
 **Persistent counter (since v0.52.0):** the count is stored in `status.yaml → sessions_without_progress`. Update it on every `/gse:go` invocation (and mirror the logic on `/gse:resume`):
 
-1. Read `status.yaml → sessions_without_progress` (default 0 if absent) and `status.yaml → activity_history[-1]` (last session's TASK status snapshot).
-2. Compare the current `backlog.yaml` TASK statuses against the last snapshot:
+1. Read `status.yaml → sessions_without_progress` (default 0 if absent) and `status.yaml → task_status_snapshot` (last session's map of TASK-id → status; treat an absent or empty snapshot as "first session" → reset the counter to 0).
+2. Compare the current `backlog.yaml` TASK statuses against that snapshot:
    - If **no TASK status changed** since the last session → increment `sessions_without_progress` by 1.
    - If **at least one TASK status changed** → reset `sessions_without_progress` to 0.
-3. Persist `status.yaml → sessions_without_progress` with the new value.
-4. The coach `mid_sprint_stall` axis (per `plugin/agents/coach.md` Invocation contract + `plugin/agents/gse-orchestrator.md` — section "Coach delegation") reads this counter and activates when `sessions_without_progress >= 2`.
+3. Persist `status.yaml → sessions_without_progress` with the new value, then refresh the snapshot: write the current map of `{TASK-id: status}` to `status.yaml → task_status_snapshot`.
+4. The coach `mid_sprint_stall` event trigger (feeds axes 3-4 — sprint velocity, workflow health; per `plugin/agents/coach.md` Invocation contract + `plugin/agents/gse-orchestrator.md` — section "Coach delegation") reads this counter and activates when `sessions_without_progress >= 2`.
 
 If the session-without-progress count reaches the configured threshold:
 

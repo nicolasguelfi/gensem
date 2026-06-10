@@ -23,7 +23,7 @@ Arguments: $ARGUMENTS
 Before executing, read:
 1. `.gse/status.yaml` — current sprint and lifecycle state
 2. `.gse/config.yaml` — git strategy, `tag_on_deliver`, `post_tag_hook`, `backup_retention_days`
-3. `.gse/backlog.yaml` — all tasks and their statuses (must all be `done` or `delivered`)
+3. `.gse/backlog.yaml` — all tasks and their statuses (must all be `done`, `reviewed`, or `delivered`)
 
 ## Workflow
 
@@ -55,7 +55,7 @@ This map is **purely informational** — it asks nothing of the user, blocks not
 
 ### Step 0 — Safety: Backup Tags
 
-Before any destructive operation, create **two classes of backup tags** per feature branch, aligned with spec §10.6 and design §5.15:
+Before any destructive operation, create **three classes of backup tags**, aligned with spec §10.6 and design §5.15:
 
 **Tag class 1 — merge reversal** (created BEFORE the merge into the integration branch):
 
@@ -79,7 +79,18 @@ This tags the **feature branch ref** at its last commit. To recreate an accident
 git checkout -b gse/sprint-{NN}/{type}/{name} gse-backup/sprint-{NN}-{type}-{name}-deleted
 ```
 
-Both tag classes are retained for 30 days by default (configurable via `config.yaml → git.backup_retention_days`). Cleanup happens at the next `/gse:deliver` (see Step 8 — Cleanup Backup Tags).
+**Tag class 3 — main-merge reversal** (created at the start of Step 3 — Merge Sprint into Main, BEFORE the merge into `main`):
+
+```bash
+git tag gse-backup/sprint-{NN}-pre-main-merge $(git rev-parse main)
+```
+
+This tags **`main`** at its state before the sprint delivery merge — the highest-stakes operation of the cycle. To undo the delivery merge:
+```bash
+git checkout main && git reset --hard gse-backup/sprint-{NN}-pre-main-merge
+```
+
+All three tag classes are retained for 30 days by default (configurable via `config.yaml → git.backup_retention_days`). Cleanup happens at the next `/gse:deliver` (see Step 8 — Cleanup Backup Tags).
 
 This ensures rollback is always possible.
 
@@ -165,9 +176,10 @@ For each feature branch (in dependency order):
    - **defer** — Keep sprint branch, do not merge yet
    - **discuss** — Explore options
 
-2. Execute the chosen strategy:
+2. Execute the chosen strategy (the class-3 backup tag from Step 0 is created first):
    ```
    git checkout main
+   git tag gse-backup/sprint-{NN}-pre-main-merge $(git rev-parse main)
    git merge --no-ff gse/sprint-{NN}/integration -m "gse(deliver): sprint S{NN} delivery"
    ```
 
@@ -221,34 +233,15 @@ Unless `--skip-cleanup` was specified:
 
 ### Step 6 — Release Notes
 
-Generate release notes at `docs/sprints/sprint-{NN}/release.md`:
+Generate release notes at `docs/sprints/sprint-{NN}/release.md` using the **authoritative template** `plugin/templates/sprint/release.md` — instantiate its `gse:` frontmatter (`type: release`, `sprint`, `version`, `tag`, `commit`, `traces.implements: [all delivered TASK IDs]`, timestamps) and fill its sections from sprint data:
 
-```markdown
-# Sprint S{NN} — Release Notes
+- **Overview** — one-paragraph summary of the sprint delivery
+- **What's New** — delivered TASKs grouped per the template's subsections (table: Task | Type | Description | Complexity)
+- **Review Summary** — findings count by severity (HIGH/MEDIUM/LOW), all-resolved flag
+- **Test Summary** — tests run / passed / failed
+- **Health Score** — before / after (from `status.yaml → health`)
 
-**Version**: v{version}
-**Date**: {date}
-**Sprint**: S{NN}
-
-## Delivered
-
-| Task | Type | Description | Complexity |
-|------|------|-------------|------------|
-| TASK-{ID} | {type} | {title} | {complexity} |
-
-## Review Summary
-- Findings: {count} ({high} HIGH, {medium} MEDIUM, {low} LOW)
-- All findings resolved: {yes/no}
-
-## Test Summary
-- Tests run: {count}
-- Passed: {count}
-- Failed: {count}
-
-## Health Score
-- Before: {score_before}
-- After: {score_after}
-```
+Do not invent an ad-hoc skeleton — the template is the single authority for structure.
 
 ### Step 7 — Post-Delivery Hook
 
@@ -258,7 +251,7 @@ If `config.yaml` field `post_tag_hook` is configured:
 2. If hook **succeeds**: report success
 3. If hook **fails**: present Gate:
    - **Retry** — Re-execute the hook
-   - **Rollback** — Remove tag, undo merge (use backup tags)
+   - **Rollback** — Remove tag, undo merge (class-3 backup tag: `git checkout main && git reset --hard gse-backup/sprint-{NN}-pre-main-merge`)
    - **Investigate** — Examine hook output and diagnose
    - **Discuss** — Explore alternatives
 
@@ -274,7 +267,7 @@ Remove backup tags older than `backup_retention_days` (default: 30):
 1. **Generate sprint plan snapshot** — Read `.gse/plan.yaml` and produce a read-only archive at `docs/sprints/sprint-{NN}/plan-summary.md` using the `plan-summary.md` template. **Inherit the artefact ID** from `plan.yaml.id` (typically `PLN-NNN`) into the snapshot's frontmatter `gse.id` field — this preserves P6 traceability across the live-plan → archive transition. The snapshot contains: goal, mode, budget (total/consumed/remaining), tasks delivered (from `backlog.yaml`), activity flow (from `workflow.completed` + `workflow.skipped` with reasons), scope changes (from `coherence.scope_changes`), coherence summary (alerts raised and whether resolved), and risks. This file is **read-only** — never read by the orchestrator, used only for human reference, COMPOUND process-deviation analysis, and sprint history.
 2. Set `plan.yaml.status: completed` and update `plan.yaml.updated` to the current timestamp.
 3. Update `status.yaml` **activity-local state only**:
-   - **Refresh all 8 health dimension scores** using the same formulas as review (final snapshot for the delivered sprint). This ensures the dashboard health radar reflects the state at delivery time.
+   - **Refresh all 8 health dimension scores** exactly as specified in `/gse:health` Step 2 — Calculate Dimensions (same canonical formulas as `/gse:review` Step 6; final snapshot for the delivered sprint), written under `health.dimensions.*` with `health.score` and `health.last_computed` updated. This ensures the dashboard health radar reflects the state at delivery time.
    - *(Cursor fields `last_activity`, `last_activity_timestamp`, and `current_phase` are maintained centrally by the orchestrator after the activity closes — see `plugin/agents/gse-orchestrator.md` — section "Sprint Plan Maintenance", and `gse-one-implementation-design.md` §10.1 — Sprint Plan Lifecycle (v0.53.0). The LC02→LC03 transition is determined by the orchestrator when `last_activity == deliver` AND `plan.yaml.status == completed` — both conditions are materialized by Step 9.2 above before Step 9.3 closes.)*
 4. Report delivery summary:
    - Tasks delivered

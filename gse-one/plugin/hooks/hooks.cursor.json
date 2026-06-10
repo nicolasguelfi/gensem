@@ -6,10 +6,10 @@
         "matcher": "Bash",
         "hooks": [
           {
-            "command": "python3 -c \"import os,subprocess,sys; t=os.environ.get('CLAUDE_TOOL_INPUT',''); c=t.startswith('git commit'); b=subprocess.run(['git','branch','--show-current'],capture_output=True,text=True).stdout.strip() if c else ''; (c and b=='main') and (print('GUARDRAIL: Direct commit to main detected. Use a feature branch.',file=sys.stderr),sys.exit(2))\""
+            "command": "python3 -c \"import sys,json,os,re,subprocess; raw=sys.stdin.read(); d=json.loads(raw) if raw.lstrip().startswith('{') else {}; t=str((d.get('tool_input') or {}).get('command') or ''); c=bool(re.search(r'(?:^|[;&|]\\s*)git\\s+(-C\\s+\\S+\\s+)?commit\\b',t)); p=os.path.join('.gse','config.yaml'); cfg=open(p).read() if c and os.path.isfile(p) else ''; off=bool(re.search(r'^\\s*protect_main:\\s*false',cfg,re.M)) or bool(re.search(r'^\\s*strategy:\\s*none',cfg,re.M)); b=subprocess.run(['git','branch','--show-current'],capture_output=True,text=True).stdout.strip() if c and not off else ''; init=bool(b=='main' and subprocess.run(['git','rev-parse','--verify','HEAD'],capture_output=True).returncode!=0); (c and not off and not init and b=='main') and (print('GUARDRAIL: Direct commit to main detected. Use a feature branch. ''(Sanctioned exceptions: hooks.protect_main: false or git.strategy: none in .gse/config.yaml; repository-initialization commit.)',file=sys.stderr),sys.exit(2))\""
           },
           {
-            "command": "python3 -c \"import os,sys; t=os.environ.get('CLAUDE_TOOL_INPUT',''); t.startswith('git push --force') and (print('EMERGENCY GUARDRAIL: Force push detected. This can cause permanent data loss. Aborting.',file=sys.stderr),sys.exit(2))\""
+            "command": "python3 -c \"import sys,json,os,re; raw=sys.stdin.read(); d=json.loads(raw) if raw.lstrip().startswith('{') else {}; t=str((d.get('tool_input') or {}).get('command') or ''); bad=bool(re.search(r'\\bgit\\s[^|;&]*\\bpush\\b[^|;&]*(\\s-f\\b|--force\\b)',t)); p=os.path.join('.gse','config.yaml'); cfg=open(p).read() if bad and os.path.isfile(p) else ''; off=bool(re.search(r'^\\s*block_force_push:\\s*false',cfg,re.M)); (bad and not off) and (print('EMERGENCY GUARDRAIL: Force push detected (-f / --force / --force-with-lease). This can cause permanent data loss. Aborting.',file=sys.stderr),sys.exit(2))\""
           }
         ]
       }
@@ -19,7 +19,7 @@
         "matcher": "Bash",
         "hooks": [
           {
-            "command": "python3 -c \"import os,re; t=os.environ.get('CLAUDE_TOOL_INPUT',''); f=os.path.join('.gse','status.yaml'); c=open(f).read() if t.startswith('git push') and os.path.isfile(f) else ''; m=re.search(r'review_findings_open:\\s*(\\d+)',c); o=int(m.group(1)) if m else 0; (o>0) and print('WARNING: '+str(o)+' open review findings')\""
+            "command": "python3 -c \"import sys,json,os,re; raw=sys.stdin.read(); d=json.loads(raw) if raw.lstrip().startswith('{') else {}; t=str((d.get('tool_input') or {}).get('command') or ''); p=os.path.join('.gse','config.yaml'); cfg=open(p).read() if os.path.isfile(p) else ''; off=bool(re.search(r'^\\s*review_findings_on_push:\\s*false',cfg,re.M)); f=os.path.join('.gse','status.yaml'); c=open(f).read() if (not off) and re.search(r'\\bgit\\s[^|;&]*\\bpush\\b',t) and os.path.isfile(f) else ''; m=re.search(r'review_findings_open:\\s*(\\d+)',c); o=int(m.group(1)) if m else 0; (o>0) and print('WARNING: '+str(o)+' open review findings')\""
           }
         ]
       },

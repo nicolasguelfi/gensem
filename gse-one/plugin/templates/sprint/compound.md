@@ -12,7 +12,7 @@ gse:
 
 # Capitalization — Sprint {sprint}
 
-## Axis 1: Production Learnings
+## Axe 1: Project Capitalization
 
 _What was learned during this sprint that improves future production._
 
@@ -34,13 +34,23 @@ _Reusable patterns, techniques, or approaches worth remembering._
 
 1. **{pattern name}** — {description and when to apply}
 
+### Best Practices Confirmed
+
+1. **{practice}** — {evidence of effectiveness}
+
+### Technical Debt
+
+| Debt item                     | Impact               | Remediation         |
+|-------------------------------|----------------------|---------------------|
+|                               |                      |                     |
+
 ### Learning Notes Generated
 
 | Note                          | Topic                | Trigger             |
 |-------------------------------|----------------------|---------------------|
 |                               |                      |                     |
 
-## Axis 2: Methodology Capitalization
+## Axe 2: Methodology Capitalization
 
 _What worked and what did not in the GSE-One methodology itself this sprint.
 Aligned with compound.md activity §2.1–§2.6 — Axe 2 (Methodology Capitalization) steps._
@@ -66,7 +76,7 @@ Aligned with compound.md activity §2.1–§2.6 — Axe 2 (Methodology Capitaliz
   - `methodology-feedback.md`: {produced | not produced}
   - `compound-tickets-draft.yaml`: {produced | not produced}
 
-## Axis 3: Competency Capitalization
+## Axe 3: Competency Capitalization
 
 _User's learning journey — update notes, competency map, propose next topics.
 Aligned with compound.md activity §3 — Axe 3 (Competency Capitalization) steps._

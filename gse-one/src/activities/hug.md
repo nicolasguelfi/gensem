@@ -135,7 +135,7 @@ Example — beginner flow (1 question at a time):
 
 Example — expert flow (all at once):
 ```
-[Step 0] → Skipped (language detected from first message)
+[Step 0] → Language question asked (always — locale-detected default preselected)
 [Step 1] → Inferences: IT=expert (from vocabulary), domain=api, team=solo
 [Step 2]  → All remaining questions in one block:
             AskUser([
@@ -187,7 +187,8 @@ Verify the project environment is ready. **This step is blocking** — do NOT me
    - If yes: run `git init`, create initial `.gitignore`, **apply the Git Identity Verification preflight** (see below), then create a **foundational commit** on `main`:
      ```bash
      git init
-     # create .gitignore with project-appropriate entries
+     # create .gitignore: seed it from the GSE-One additions template, then add project-appropriate entries
+     cat "$(cat ~/.gse-one)/templates/gitignore-additions.txt" >> .gitignore
      # [Git Identity Verification preflight — see below]
      git add .gitignore
      git commit -m "chore: initialize repository"

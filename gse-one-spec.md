@@ -496,6 +496,10 @@ GSE-One promotes human oversight for important or critical aspects of any artefa
 3. <Option C> ...
 N. Discuss — Open a discussion around this question
 
+**Excluded alternative:** <credible option deliberately not offered> — <why excluded>
+(required for choice-Gates carrying P8 consequence analysis — see P8 anti-framing rule;
+omitted for approval/navigation Gates)
+
 **Rule:** Every structured interaction pattern MUST end with a "Discuss" option as the last numbered choice. This ensures the user always has an escape hatch to request more context before deciding.
 
 **Your choice:** [1/2/3/.../N]
@@ -690,6 +694,8 @@ The consequence horizon is evaluated across all relevant dimensions (quality, co
 **Confidence on projections:** Each consequence projection is tagged with a confidence level per P15. A projection based on verified benchmarks is Verified; a projection extrapolated from general knowledge is Moderate. This prevents the user from treating speculative consequences as established facts.
 
 **No false certainty:** The agent MUST NOT present speculative consequence projections with the same tone as verified ones. If a 3-month projection is uncertain, it must say so: "3 months → if >100 concurrent users, migration required (~2 sprints of rework) [Moderate confidence — depends on actual user growth]".
+
+**Excluded-alternative disclosure (anti-framing rule):** For every choice-Gate carrying this P8 consequence analysis (architecture, technology, data decisions — not approval or navigation Gates), the agent MUST disclose at least one credible alternative it considered and deliberately did NOT offer, with the exclusion reason (P4 pattern line `**Excluded alternative:**`). Rationale: the agent frames the option menu itself; without disclosure the user picks the best of the *shown* options, not the best option — and the devil's advocate only challenges framing a posteriori at review time. The disclosure is recorded in the DEC- entry (`Excluded alternative:` field, see `plugin/templates/decisions.md`) and audited by the devil-advocate checklist. If no credible alternative was actually set aside, the line is omitted — no ritual "none" (noise discipline).
 
 ### P9 — Adaptive Communication
 All technical concepts are explained using analogies calibrated to the user's domain knowledge and mental model (as captured by HUG). The agent does not simplify — it **translates** into the user's existing conceptual framework.

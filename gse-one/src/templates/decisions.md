@@ -17,6 +17,7 @@ Each DEC-NNN entry follows this canonical structure. The `sprint:` field is REQU
 - **Decision:** <what was decided, one sentence>
 - **Context:** <why this decision was needed — the situation that prompted it>
 - **Options considered:** <if Tier=Gate: list the options presented to the user; otherwise: "not applicable (Inform/Auto tier)">
+- **Excluded alternative:** <choice-Gates with P8 consequence analysis only: the credible option deliberately NOT offered + exclusion reason (spec §P8 — anti-framing rule); omit this line otherwise>
 - **Rationale:** <why this option was chosen — link to requirements, constraints, or trade-offs>
 - **Consequences:** <P8 consequence horizons — impact on scope, time, cost, quality, security, reversibility>
 - **Traces:** derives_from: [OQ-NNN | REQ-NNN | DES-NNN | ...]   <!-- optional, list of related artefact IDs -->

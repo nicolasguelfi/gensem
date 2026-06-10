@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.69.0] - 2026-06-10
+
+### Changed
+- Changed review Step 3: devil-advocate pass MUST run in a freshly spawned sub-agent (context brief, no conversation history) — "adopt this role" ambiguity removed (backlog AI2, rescoped).
+- Changed review.md to trace the pass execution mode (`DA execution: isolated | inline-degraded`); inline fallback emits a visible Inform note.
+- Changed spec §P16, devil-advocate.md, design §5.11 with the isolation contract; model diversity kept as one-line best-effort when the spawn facility exposes model selection.
+
 ## [0.68.0] - 2026-06-10
 
 ### Added

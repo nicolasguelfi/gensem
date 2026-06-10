@@ -106,7 +106,7 @@ Before entering the deployment phases, `/gse:deploy` presents a **Step -1 Orient
 - **Learner** — user deploys only the application to a pre-configured shared server (starts at Phase 6 — app-only mode).
 - **Skip** (meta-action) — experienced user bypasses orientation; no `user_role` persisted.
 
-The three role values persist via `deploy.py record-role` into `deploy.json → user_role` (enum: `solo | instructor | learner`). As the operator agent, adapt your communication tone and step guidance to the persisted role if present (e.g., Solo gets cost-context framing; Instructor gets classroom-context framing; Learner gets `.env.training` precondition reminders). The `user_role` is informational in v1 — no behavioral branching beyond Step -1. The `--silent` flag bypasses Step -1 entirely (for scripting, CI, or experienced users). See `plugin/activities/deploy.md` Step -1 for the full routing logic.
+The three role values persist via `deploy.py record-role` into `deploy.json → user_role` (enum: `solo | instructor | learner`). As the operator agent, adapt your communication tone and step guidance to the persisted role if present (e.g., Solo gets cost-context framing; Instructor gets classroom-context framing; Learner gets `.env.training` precondition reminders). The `user_role` is informational in v1 — no behavioral branching beyond Step -1. The `--silent` flag bypasses Step -1 entirely (for scripting, CI, or experienced users). See `plugin/skills/deploy/SKILL.md` Step -1 for the full routing logic.
 
 ## CDN metadata (Phase 5 Step 7)
 
@@ -115,7 +115,7 @@ During Phase 5 (DNS + SSL), after domain propagation is confirmed, `/gse:deploy`
 - **Accept Cloudflare** — `record-cdn --provider cloudflare --enabled [--bot-protection]` persists the full CDN state. Cloudflare sits in front of the origin server, providing DDoS protection and caching.
 - **Decline CDN** — `record-cdn --provider none` persists the explicit "no CDN" state (`enabled: false`, `bot_protection: false`). This distinguishes "CDN declined" from "CDN undecided" (absent field).
 
-As the operator agent, acknowledge the CDN state if relevant to subsequent operations (e.g., if `bot_protection: true`, some API-style applications may experience challenge-page anomalies on programmatic requests; suggest Cloudflare page rules for API paths). See `plugin/activities/deploy.md` Phase 5 Step 7 for the full gate details.
+As the operator agent, acknowledge the CDN state if relevant to subsequent operations (e.g., if `bot_protection: true`, some API-style applications may experience challenge-page anomalies on programmatic requests; suggest Cloudflare page rules for API paths). See `plugin/skills/deploy/SKILL.md` Phase 5 Step 7 for the full gate details.
 
 ## Deployment lifecycle
 

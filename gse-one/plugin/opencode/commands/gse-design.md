@@ -155,7 +155,7 @@ Consequence horizon:
   - Medium-term (3 sprints): {impact}
   - Long-term (project lifetime): {impact}
 
-Reversibility: easy | moderate | difficult | irreversible
+Reversibility: High cost | Medium cost | Low cost   (the spec §11.2 — Format scale, same as recorded in Step 5)
 
 Gate: [Accept recommendation] / [Choose different option] / [Discuss]
 ```

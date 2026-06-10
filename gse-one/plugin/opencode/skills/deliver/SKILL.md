@@ -22,7 +22,7 @@ Arguments: $ARGUMENTS
 Before executing, read:
 1. `.gse/status.yaml` — current sprint and lifecycle state
 2. `.gse/config.yaml` — git strategy, `tag_on_deliver`, `post_tag_hook`, `backup_retention_days`
-3. `.gse/backlog.yaml` — all tasks and their statuses (must all be `done` or `delivered`)
+3. `.gse/backlog.yaml` — all tasks and their statuses (must all be `done`, `reviewed`, or `delivered`)
 
 ## Workflow
 

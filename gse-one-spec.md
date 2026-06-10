@@ -66,7 +66,7 @@ Everything else is handled by the agent based on your profile and project state.
 1. [Overview](#1-overview) — Coding agent architecture, agile foundations, platform mapping, GSE-One philosophy, key concepts, agent roles
 2. [Core Principles](#2-core-principles) — Foundations (P1-P3, P5-P6) | Risk & Communication (P4, P7–P11) | Infrastructure (P12–P14) | AI Integrity (P15–P16)
 3. [Activities (Commands)](#3-activities-commands) — 24 commands across 9 categories
-4. [Collect — Artefact Inventory and External Source Discovery](#4-collect)
+4. [Collect — Artefact Inventory and External Source Discovery](#4-collect--artefact-inventory-and-external-source-discovery)
 5. [Preview](#5-preview)
 6. [Testing Strategy](#6-testing-strategy) — Test pyramid, environment, evidence, coverage
 7. [Project Health Dashboard](#7-project-health-dashboard)
@@ -76,12 +76,12 @@ Everything else is handled by the agent based on your profile and project state.
 11. [Decision Journal](#11-decision-journal)
 12. [Artefact Storage Conventions](#12-artefact-storage-conventions)
 13. [Configuration & Customization](#13-configuration--customization)
-14. [Standard Activity Groups (Lifecycle Phases)](#14-standard-activity-groups)
+14. [Standard Activity Groups (Lifecycle Phases)](#14-standard-activity-groups-lifecycle-phases)
 15. [Methodology Audit](#15-methodology-audit)
 16. [Glossary](#16-glossary)
-A. [Activity Summary (Quick Reference)](#appendix-a)
-B. [Cost Assessment Grid for Maintenance Work](#appendix-b)
-C. [Maintainer Guide](#appendix-c)
+A. [Activity Summary (Quick Reference)](#appendix-a--activity-summary-quick-reference)
+B. [Cost Assessment Grid for Maintenance Work](#appendix-b--cost-assessment-grid-for-maintenance-work)
+C. [Maintainer Guide](#appendix-c--maintainer-guide)
 
 ---
 
@@ -1211,7 +1211,7 @@ Dimensions **not** in this table (e.g., `project_domain`, `team_context`, `learn
 | `/gse:backlog add <description>` | Add a new item to the pool |
 | `/gse:backlog sprint` | Show current sprint items only |
 | `/gse:backlog pool` | Show unplanned items only |
-| `/gse:backlog --type code` | Filter by artefact type (code/test/requirement/design/doc/config/import) |
+| `/gse:backlog --type code` | Filter by artefact type (code/test/requirement/design/doc/config/import/spike) |
 | `/gse:backlog sync` | Synchronize with GitHub Issues |
 
 The agent also creates backlog items **automatically** during other activities (REVIEW findings, COLLECT imports, PLAN deferrals) — `/gse:backlog` is for explicit user interaction.
@@ -1253,7 +1253,7 @@ The agent also creates backlog items **automatically** during other activities (
 | Command | Activity | Description |
 |---------|----------|-------------|
 | `/gse:compound` | **Compound** | Capitalize learnings across 3 axes: **Axe 1** (project — patterns, errors, best practices → `compound.md`), **Axe 2** (methodology — what worked/didn't in GSE-One itself → closes with a 3-option Gate: *(1) export as a local feedback document only, (2) propose GitHub tickets for upstream submission, (3) both*; quality filter capped at `compound.max_proposed_issues_per_sprint` issues per sprint, theme-grouped, deduplicated against existing issues, each validated by the user before submission), **Axe 3** (competencies — feed P14 learning notes) |
-| `/gse:integrate` | **Integrate** | Route capitalized solutions: Axe 1 → project config/rules, Axe 2 → issue on `your-org/gse-one` repo (if user accepts), Axe 3 → `docs/learning/` + competency map |
+| `/gse:integrate` | **Integrate** | Route capitalized solutions: Axe 1 → project config/rules, Axe 2 → issue on the upstream repo resolved per `config.yaml → github.upstream_repo` resolution order (design §5.16 — State Schemas) if user accepts, Axe 3 → `docs/learning/` + competency map |
 
 ### 3.10 Commands by Lifecycle Phase
 
@@ -2627,7 +2627,7 @@ github:
   enabled: false                       # auto-detected when git remote exists; if false, COMPOUND Axe 2 is skipped
   repo: ""                             # auto-detected from git remote — the project's OWN GitHub repo (for issue sync)
   upstream_repo: ""                    # optional override for COMPOUND Axe 2 methodology feedback
-                                       # Target repo resolution order (per design §5.17 — Coach & Methodology Feedback):
+                                       # Target repo resolution order (per design §5.16 — State Schemas, "Upstream repository resolution (Axe 2)"):
                                        #   (1) this field if non-empty (user override — private forks, corporate trackers)
                                        #   (2) plugin manifest default:
                                        #       - Claude/Cursor: plugin.json → repository
@@ -3076,7 +3076,7 @@ Both layers produce findings with the `AUD-` prefix (§P6) and the canonical sev
 ### 15.3 Invocation
 
 - **Manual:** `/gse:audit` invoked at any time by the user (typical: before delivery, suspected drift, periodic review).
-- **Auto-trigger** (Phase 3, deferred): the orchestrator detects pushback patterns in conversation (hybrid keyword + coach correlation — the *Methodology Audit Auto-Trigger Invariant* in `src/agents/gse-orchestrator.md`) and proposes a Gate: *Run audit now / Defer / Discuss*. Never auto-applies corrections; always asks.
+- **Auto-trigger** (Phase 3, deferred): the orchestrator detects pushback patterns in conversation (hybrid keyword + coach correlation — a *Methodology Audit Auto-Trigger Invariant* to be added to `src/agents/gse-orchestrator.md` when Phase 3 lands) and proposes a Gate: *Run audit now / Defer / Discuss*. Never auto-applies corrections; always asks.
 - **Scheduled / CI:** `project-audit.py` runs headless with exit codes graded by severity (0 = clean, 1 = LOW/MEDIUM, 2 = HIGH, 3 = CRITICAL) for integration in CI pipelines.
 
 ### 15.4 Report
@@ -3170,7 +3170,7 @@ If you are new to GSE-One, these 20 concepts form the minimum vocabulary to get 
 | **Coolify** | Self-hosted PaaS (Platform as a Service) used by `/gse:deploy` for application deployment on Hetzner servers. Includes Traefik reverse proxy and Let's Encrypt SSL. |
 | **Deploy state** | The `.gse/deploy.json` file tracking infrastructure phases, server details, Coolify configuration, and application deployment status |
 | **Pool** | Subset of the backlog containing unplanned items (`sprint: null`) — candidates for future sprints |
-| **Artefact type** | Classification of what a TASK produces: code, requirement, design, test, doc, config, or import |
+| **Artefact type** | Classification of what a TASK produces: code, requirement, design, test, doc, config, import, or spike |
 | **Mono-repo** | GSE-One assumes a single repository per project. Recommended for multi-component projects |
 | **Confidence level** | Tag on every agent assertion: Verified (factually checked), High (established knowledge, not project-verified), Moderate (reconstructed from patterns), Low (uncertain) |
 | **Verification gate** | Proof requirement for critical assertions — code must be executed, libraries must be installed, APIs must be confirmed |
@@ -3311,5 +3311,5 @@ When changing any concept, verify alignment across all layers:
 | A lifecycle phase ordering | Orchestrator decision tree, go.md decision tree, spec §14.3 — Orchestrator Decision Logic (/gse:go) |
 | A guardrail severity level | guardrails.md, orchestrator lifecycle guardrails, go.md, affected skill |
 | A principle rule number | Principle file, spec, any skill that references "(P{N})" |
-| The project layout | Orchestrator Project Layout, spec §12.1 — Directory Layout, affected skills |
-| A TASK artefact_type | Spec §P6 — Traceability (artefact_type enum at lines 549-560), task.md, produce.md, guardrails.md |
+| The project layout | Orchestrator Project Layout, spec §12.1 — Project Layout, affected skills |
+| A TASK artefact_type | Spec §P6 — Traceability (artefact_type table), task.md, produce.md, guardrails.md |

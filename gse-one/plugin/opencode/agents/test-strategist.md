@@ -21,7 +21,7 @@ Priorities:
 
 ## Test Pyramid Calibration by Domain
 
-The canonical pyramid distribution by project domain is defined in **spec §6.1** (8 domains: Web frontend, API backend, CLI tool, Data pipeline, Mobile, Library/SDK, Embedded, Scientific). Columns: Unit / Integration / E2E-Visual / Acceptance / Other. This agent reads the row matching `config.yaml → project.domain`.
+The canonical pyramid distribution by project domain is defined in **spec §6.1** (8 domains: Web frontend, API backend, CLI tool, Data pipeline, Mobile, Library/SDK, Embedded, Scientific). Columns: Unit / Integration / E2E-Visual / Acceptance / Policy / Other. This agent reads the row matching `config.yaml → project.domain`.
 
 The pyramid is a starting point — the agent adjusts based on actual project needs and presents deviations as Inform-tier decisions.
 

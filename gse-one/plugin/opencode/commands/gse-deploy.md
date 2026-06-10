@@ -118,7 +118,7 @@ This returns a JSON object with `starting_phase`, `mode` (`full | partial | app-
 | `DEPLOY_DOMAIN` | Base domain for subdomains | Domain |
 | `DEPLOY_USER` | User identity for subdomain prefix (training mode) | Identity |
 
-The detection logic (which variables map to which starting phase) is documented in `gse-one-implementation-design.md` §5.18 and authoritatively applied by the `detect` subcommand. Trust its output — do not re-derive the mapping from the table above.
+The detection logic (which variables map to which starting phase) is documented in `gse-one-implementation-design.md` §5.18 — /gse:deploy — Application Deployment Activity ("Situation detection" table) and authoritatively applied by the `detect` subcommand. Trust its output — do not re-derive the mapping from the table above.
 
 **Display the detected situation to the user:**
 - Full mode: *"No deployment configuration found. I'll guide you through the complete setup."*

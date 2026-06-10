@@ -15,7 +15,7 @@ Arguments: $ARGUMENTS
 | `--setup`          | Set up test environment and framework |
 | `--run`            | Execute the full test suite |
 | `--run <test-id>`  | Execute a specific test (e.g., `TST-005`) |
-| `--run --level <level>` | Execute only tests at a specific level (`unit` \| `integration` \| `e2e` \| `policy`) — used by `/gse:deliver` Step 1.5 Guardrail 2 to remediate uncovered declared levels (spec §9.3.1) |
+| `--run --level <level>` | Execute only tests at a specific level (`unit` \| `integration` \| `e2e` \| `visual` \| `performance` \| `policy` — the full frontmatter enum of Step 3) — used by `/gse:deliver` Step 1.5 Guardrail 2 to remediate uncovered declared levels (spec §9.3.1) |
 | `--visual`         | Run visual/screenshot tests (web/mobile projects) |
 | `--coverage`       | Generate and display code coverage report |
 | `--evidence`       | Produce test evidence package for the current sprint |
@@ -48,7 +48,7 @@ Before executing, read:
 
 For beginners: "I'll take each feature description you confirmed and turn it into a checklist of things to verify. Some checks are from the user's point of view (does the app do what you want?) and some are technical (is the code structured correctly?)."
 
-Define the test pyramid calibrated by project domain. **The canonical distribution is defined in the spec §6.1** (columns: Unit / Integration / E2E-Visual / Acceptance / Other) and covers 8 domains: Web frontend, API backend, CLI tool, Data pipeline, Mobile, Library/SDK, Embedded, Scientific. The agent reads the appropriate row from that table based on `config.yaml → project.domain`.
+Define the test pyramid calibrated by project domain. **The canonical distribution is defined in the spec §6.1** (columns: Unit / Integration / E2E-Visual / Acceptance / Policy / Other) and covers 8 domains: Web frontend, API backend, CLI tool, Data pipeline, Mobile, Library/SDK, Embedded, Scientific. The agent reads the appropriate row from that table based on `config.yaml → project.domain`.
 
 **Monorepo sub-domains:** When `config.yaml → project.sub_domains` is defined, create a separate pyramid section per sub-domain in the test strategy. For example:
 - `frontend/` (domain: web) → web pyramid from spec §6.1
@@ -209,7 +209,7 @@ Detect project language and select the appropriate test framework:
 
 Steps:
 1. Install test framework as dev dependency
-2. Create test directory structure (`tests/unit/`, `tests/integration/`, `tests/e2e/`, `tests/e2e/screenshots/` for visual evidence)
+2. Create test directory structure (`tests/unit/`, `tests/integration/`, `tests/e2e/`, `tests/e2e/screenshots/` for visual evidence, `tests/policy/` when policy tests are declared)
 3. Create test configuration file
 4. Create a sample test to verify setup works
 5. Run the sample test to confirm green

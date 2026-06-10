@@ -24,6 +24,7 @@ Before executing, read:
 2. `.gse/config.yaml` — project configuration
 3. `.gse/backlog.yaml` — all tasks and their statuses
 4. `.gse/profile.yaml` — user profile (for display preferences)
+5. `.gse/plan.yaml` — sprint goal, budget, and workflow trajectory (when present; absent in Micro mode)
 
 ## Workflow
 
@@ -161,8 +162,10 @@ If `--decisions` is specified, show recent Gate decisions:
 
 ```
 DECISIONS (last 10)
-  {timestamp} | {activity} | {gate_type} | {choice} | {rationale}
+  {Date} | {Tier} | {Type} | {Decision} | {Rationale}
 ```
+
+*(columns mirror the authoritative DEC- fields of `gse-one/src/templates/decisions.md`)*
 
 ### Step 6.5 — Open Items (pedagogical visibility)
 

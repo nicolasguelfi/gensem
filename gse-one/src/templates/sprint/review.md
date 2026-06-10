@@ -22,7 +22,7 @@ gse:
 | LOW      |       |          |           |
 | **Total**|       |          |           |
 
-_CRITICAL is reserved for the P15 "Verified but wrong" escalation at review merge time (see review.md Step 3.5). Baseline severity for all reviewer agents is HIGH / MEDIUM / LOW._
+_CRITICAL is reserved for the P15 "Verified but wrong" escalation at review merge time (see review.md Step 3 — "P15 Confidence Integration (Design 5.11)" subsection). Baseline severity for all reviewer agents is HIGH / MEDIUM / LOW._
 
 ## Requirements Findings
 

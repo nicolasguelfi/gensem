@@ -92,7 +92,7 @@ If the count is zero (all placeholders already replaced in a previous PRODUCE pa
 Read `backlog.yaml` and identify tasks for the current sprint with `status: planned`.
 
 If multiple tasks are pending:
-1. Sort by priority (P1 > P2 > P3), then by dependency order
+1. Sort by priority (must > should > could — the MoSCoW enum of `backlog.yaml`), then by dependency order
 2. Present the next task to produce with summary: ID, title, artefact_type, estimated complexity
 3. Wait for user confirmation (Gate) unless `--all` was specified
 
@@ -128,7 +128,7 @@ Emit the note ONCE per activity invocation, before the first branch/worktree cre
    ```
    git branch gse/sprint-{NN}/{type}/{name} gse/sprint-{NN}/integration
    ```
-   Where `{type}` is the artefact type (feat, fix, doc, test, refactor) and `{name}` is a slug of the task title.
+   Where the branch name is read from `plan.yaml → tasks[].branch` when present (the branch was already decided at planning time — do not re-derive it). Fallback when absent: `{type}` follows the `/gse:plan` Step 6 branch-type table (`feat`, `test`, `fix`, `docs`, `chore`) and `{name}` is a slug of the task title.
 3. Create worktree for the feature branch:
    ```
    git worktree add .worktrees/sprint-{NN}-{type}-{name} gse/sprint-{NN}/{type}/{name}

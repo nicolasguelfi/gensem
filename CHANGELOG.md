@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.66.0] - 2026-06-10
+
+### Added
+- Added `tools/counters.py` — deterministic get/incr/reset for the 3 P15/P16 integrity counters + `health` staleness backstop (backlog M2+AI3).
+- Added `status.yaml → counters_last_write` (ISO timestamp of last counter write — backstop comparison source).
+- Added backstop invocation to /gse:go and /gse:resume (Inform note at ≥ 5 transitions without counter write).
+- Added `tests/test_counters.py` (17 tests; suite now 114).
+
+### Changed
+- Changed spec §P16 (×2), adversarial-review writer contract, orchestrator, fix/review activities: counter writes route through counters.py.
+- Changed spec §P16 and coach.md to document best-effort detection semantics explicitly (Meta-2) — structured ledgers stay agent-maintained.
+
 ## [0.65.0] - 2026-06-10
 
 ### Changed

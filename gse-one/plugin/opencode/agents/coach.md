@@ -129,6 +129,8 @@ Advice messages are presented as Inform-tier — user may act, dismiss, or ignor
 
 ## Anti-spam safeguards
 
+**Authority note:** this agent is the runtime authority for proactive pedagogical triggers and their arbitration — when several entry points (P14 contextual tip, P14 proactive preamble, axis-1 proposal) compete in the same turn, the safeguards below decide. The P14 contract owns content/format rules; an explicit `/gse:learn` request bypasses arbitration entirely. See spec §P14 — Pedagogical ownership map.
+
 - Pedagogy axis: `coach.max_preambles_per_sprint` (default **3**) — hard cap per sprint
 - Workflow axes: `coach.max_advice_per_check` (default **3**) — cap per invocation point, not per sprint
 - Per-topic permanent suppress (`not-interested` response on preamble)

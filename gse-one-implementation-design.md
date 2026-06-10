@@ -2529,7 +2529,7 @@ The skill orchestrates a three-step ceremony (dry-run impact preview → Gate 1 
 
 **Testing.** The plugin ships with two levels of validation:
 
-- **Unit tests** (`gse-one/tests/test_deploy.py`, ~44 tests) covering deterministic functions: `sanitize_component`, `build_subdomain`, `_detect_type`, `preflight` aggregation, `.env` parsing, state I/O, cost hints. Uses the `unittest` stdlib module — no external test dependency. Run: `python3 -m unittest discover tests` or integrated via `python3 gse_generate.py --verify` (which runs verify + tests atomically).
+- **Unit tests** (`gse-one/tests/test_deploy.py`, ~100 tests) covering deterministic functions: `sanitize_component`, `build_subdomain`, `_detect_type`, `preflight` aggregation, `.env` parsing, state I/O, cost hints. Uses the `unittest` stdlib module — no external test dependency. Run: `python3 -m unittest discover tests` or integrated via `python3 gse_generate.py --verify` (which runs verify + tests atomically).
 - **Manual E2E checklist** (`gse-one/TESTING.md`) covering Coolify / Hetzner / SSH flows that require live infrastructure: solo full flow, partial-skip detection, training mode (instructor + N learners), destroy with dry-run, edge cases (FQDN overflow, Coolify down, DNS timeout).
 
 CI is not yet set up — listed as future work in `TESTING.md`. The test foundation is intentionally minimal to keep the contribution cost low while catching the most impactful regressions (subdomain sanitization, type detection, state schema drift, env file parsing).

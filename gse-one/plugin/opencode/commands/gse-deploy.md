@@ -510,7 +510,7 @@ The detection logic (which variables map to which starting phase) is documented 
      --user "$(python3 "$(cat ~/.gse-one)/tools/deploy.py" env-get DEPLOY_USER | python3 -c 'import json,sys; print(json.load(sys.stdin).get(\"value\") or \"\")')" \
      --domain "$(python3 "$(cat ~/.gse-one)/tools/deploy.py" env-get DEPLOY_DOMAIN | python3 -c 'import json,sys; print(json.load(sys.stdin)[\"value\"])')"
    ```
-   The tool applies the full P1 rule (sanitization, training vs solo pattern, RFC 1035 length checks). If it returns `{"ok": false, ...}`, abort and report the error to the user. On success, it returns `{project_name, deploy_user, label, subdomain, url}`.
+   The tool applies the full P1 rule (sanitization, training vs solo pattern, RFC 1035 length checks). If it returns `{"status": "error", ...}`, abort and report the error to the user. On success (`"status": "ok"`), it returns `{project_name, deploy_user, label, subdomain, url}`.
 
 2. **Preflight checks** — delegate to the tool for deterministic, typed checks:
    ```

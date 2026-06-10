@@ -239,21 +239,20 @@ def build_subdomain(
 ) -> dict:
     """Build the full subdomain per P1. Returns dict with components and FQDN.
 
-    Contract note (Meta-2 documented exception): this function returns the
-    legacy ``{"ok": bool, ...}`` shape, NOT the status-wrapped contract used
-    by the other library functions. Aligning it is a breaking contract change
-    deferred to a dedicated release (callers: _cmd_subdomain, tests).
+    Status-wrapped contract (aligned in v0.65.0 with the other library
+    functions): ``{"status": "ok", project_name, deploy_user, label,
+    subdomain, url}`` or ``{"status": "error", "error": ...}``.
     """
     project_name = sanitize_component(Path(project_dir).name)
     if not project_name:
         return {
-            "ok": False,
+            "status": "error",
             "error": "project name sanitizes to empty — pass --subdomain explicitly",
         }
     user = sanitize_component(deploy_user) if deploy_user else ""
     if deploy_user and not user:
         return {
-            "ok": False,
+            "status": "error",
             "error": "DEPLOY_USER sanitizes to empty — check the value",
         }
 
@@ -264,7 +263,7 @@ def build_subdomain(
 
     if len(label) > DNS_LABEL_MAX:
         return {
-            "ok": False,
+            "status": "error",
             "error": (
                 f"combined label too long ({len(label)} > {DNS_LABEL_MAX}): "
                 f"{label}"
@@ -273,10 +272,13 @@ def build_subdomain(
 
     fqdn = f"{label}.{domain}"
     if len(fqdn) > FQDN_MAX:
-        return {"ok": False, "error": f"FQDN too long ({len(fqdn)} > {FQDN_MAX})"}
+        return {
+            "status": "error",
+            "error": f"FQDN too long ({len(fqdn)} > {FQDN_MAX})",
+        }
 
     return {
-        "ok": True,
+        "status": "ok",
         "project_name": project_name,
         "deploy_user": user,
         "label": label,
@@ -1556,7 +1558,7 @@ def _cmd_detect(args: argparse.Namespace) -> None:
 def _cmd_subdomain(args: argparse.Namespace) -> None:
     result = build_subdomain(args.project, args.user or None, args.domain)
     _json_out(result)
-    if not result.get("ok"):
+    if result.get("status") != "ok":
         sys.exit(2)
 
 

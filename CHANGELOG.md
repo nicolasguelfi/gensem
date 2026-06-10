@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.65.0] - 2026-06-10
+
+### Changed
+- Changed `build_subdomain` to the status-wrapped contract (`{"status": "ok"|"error"}`) — last legacy `{"ok": bool}` holdout (backlog W11.3).
+- Changed `_cmd_subdomain`, 7 unit tests, and deploy.md prose to the new contract; removed the Meta-2 exception note.
+
 ## [0.64.0] - 2026-06-10
 
 *Private-repo deployments fully automated for training cohorts (backlog U4 — single `.env.training` handout covers everything).*

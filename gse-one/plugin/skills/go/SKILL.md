@@ -122,7 +122,8 @@ Evaluate states **in order** — the first matching row wins.
 | `plan.yaml.workflow.active == fix` | Start FIX — propose `/gse:fix` |
 | `plan.yaml.workflow.active == deliver` | Start DELIVER — propose `/gse:deliver` (requires REQ→TST coverage for must-priority requirements) |
 | `plan.yaml.status == completed`, no compound | Start LC03 — propose `/gse:compound` |
-| Compound done | Propose next sprint — increment sprint number, transition to LC01 (`COLLECT` > `ASSESS` > `PLAN`) |
+| Compound done, no integrate | Continue LC03 — propose `/gse:integrate` (spec §14.3: COMPOUND > INTEGRATE before the next sprint) |
+| Compound and integrate done | Propose next sprint via `/gse:plan --strategic` — the promotion rule is what increments the sprint counter and transitions to LC01 (`COLLECT` > `ASSESS` > `PLAN`) |
 
 **Post-activity protocol:** After each activity completes, the orchestrator updates `.gse/plan.yaml` per the **Sprint Plan Maintenance** protocol in the orchestrator (workflow transition, coherence evaluation, alerts by mode). See the orchestrator document for the full protocol.
 

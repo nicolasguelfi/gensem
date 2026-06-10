@@ -17,5 +17,5 @@ COPY . .
 # RUN npm run build
 
 EXPOSE 3000
-HEALTHCHECK CMD wget --no-verbose --tries=1 --spider http://localhost:$PORT/ || exit 1
+HEALTHCHECK CMD node -e "require('http').get('http://localhost:'+(process.env.PORT||3000)+'/',r=>process.exit(r.statusCode<400?0:1)).on('error',()=>process.exit(1))"
 CMD ["npm", "start"]

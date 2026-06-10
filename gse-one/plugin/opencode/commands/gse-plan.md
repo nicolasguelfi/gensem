@@ -149,13 +149,13 @@ Increment sprint number in `status.yaml`.
 | Mode | workflow.expected |
 |------|-------------------|
 | **Full** | `[collect, assess, plan, reqs, design, preview, tests, produce, review, deliver]` |
-| **Full (design skipped)** | `[collect, assess, plan, reqs, preview, tests, produce, review, deliver]` |
 | **Lightweight** | `[plan, reqs, produce, deliver]` |
 | **Micro** | (no plan.yaml is created in Micro mode) |
 
 Conditional adjustments at PLAN-time:
 - If `config.yaml → project.domain ∉ {web, mobile}`, move `preview` to `workflow.skipped` with reason `preview skipped — non-UI domain`. (PREVIEW stays in the baseline sequence per spec §14 but is explicitly skipped when not relevant.)
-- `fix` is **not** in `workflow.expected` initially; it is inserted after `review` if review produces findings (recorded when review completes).
+- `fix` is **not** in `workflow.expected` initially; it is inserted after `review` if review produces HIGH or MEDIUM findings (recorded when review completes — same threshold as spec §14 LC02 and design §10.1).
+- An activity that does not apply (e.g., `design` for a trivial structure) is moved at runtime to `workflow.skipped` with a reason — the baseline sequences above are never forked into ad-hoc variants.
 
 LC03 activities (`compound`, `integrate`) are tracked in `status.yaml`, not in this sprint's `plan.yaml`.
 

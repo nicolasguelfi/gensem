@@ -144,7 +144,7 @@ After all parallel sub-agents return:
 
 ### Step 3 — Devil's Advocate (P16)
 
-After the standard review completes, run the devil's advocate pass. This is a meta-review that challenges the AI's own work.
+After the standard review completes, **spawn the devil-advocate sub-agent** (`"$(cat ~/.gse-one)/agents/devil-advocate.md"` — adopt this role; same parallel-spawn form as the Step 2 perspectives) to run the devil's advocate pass. This is a meta-review that challenges the AI's own work.
 
 #### 3a — Hallucination Hunt
 
@@ -223,13 +223,7 @@ Persist findings to `docs/sprints/sprint-{NN}/review.md` (authoritative format i
 
 ### Step 5 — Update Health Score
 
-Compute impact on health dimensions:
-- `review_findings`: based on count and severity of findings
-- `ai_integrity`: based on `[AI-INTEGRITY]` findings
-- `test_coverage`: based on test-strategist findings
-- `design_debt`: based on architect findings
-
-Update `.gse/status.yaml` health scores.
+*(Merged into Step 6 — health dimensions are written once, by the mandatory 8-dimension update in Step 6 — Present Summary. This heading is retained to keep step numbering stable for cross-references; do not perform a separate write here.)*
 
 ### Step 6 — Present Summary
 

@@ -205,7 +205,7 @@ The detection logic (which variables map to which starting phase) is documented 
 
 7. **Verify SSH access**
    - `ssh -i ~/.ssh/gse-deploy -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10 root@<IP> "echo ok"`
-   - Retry up to 3 times with 10s wait between attempts
+   - Retry up to 3 times with 15s wait between attempts (per `references/ssh-operations.md` — the canonical SSH pattern source)
 
 8. **Persist completion**
    ```
@@ -547,14 +547,15 @@ The detection logic (which variables map to which starting phase) is documented 
      --github-repo "<user/repo>" \
      --branch "<current-branch>" \
      --type "<streamlit|python|node|static|custom>" \
-     --port <N>
+     --port <N> \
+     --health-timeout <config.yaml → deploy.health_check_timeout, default 120>
    ```
 
    **What the tool does:**
    - Ensures a Coolify project (`gse-{DEPLOY_USER}` in training, `gse` in solo) exists.
    - Ensures a `production` environment exists within that project.
    - Looks up `applications[]` in `.gse/deploy.json` by name. If a matching entry with `coolify.app_uuid` exists → triggers a redeploy (`GET /api/v1/deploy?uuid=...&force=true`). Otherwise, creates the app via `POST /api/v1/applications/public` and triggers the initial deploy.
-   - Polls the health endpoint (`/_stcore/health` for Streamlit, `/` for others) for `config.yaml → deploy.health_check_timeout` seconds (default 120).
+   - Polls the health endpoint (`/_stcore/health` for Streamlit, `/` for others) for `--health-timeout` seconds (the skill passes `config.yaml → deploy.health_check_timeout`, default 120 — the tool itself never reads config.yaml).
    - Records the application entry in `.gse/deploy.json → applications[]` with all fields (identification, source, runtime, Coolify UUIDs, resources, timestamps, status).
 
    **Return JSON:** `{"status": "healthy|unhealthy|timeout|error", "url": "...", "app_uuid": "...", "created": true|false, "http_code": N}`.

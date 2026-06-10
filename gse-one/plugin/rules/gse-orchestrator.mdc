@@ -537,7 +537,7 @@ After Step 4 (status.yaml update) and **before** announcing the next activity to
 
 | Moment (computed from Step 1-4) | Coach call required? | Axes activated |
 |---|:-:|---|
-| Activity closure where `last_activity ∈ {collect, assess, plan, reqs, design, preview, tests, produce, review, fix, deliver, compound, integrate, task, deploy}` | YES — pedagogy axis | `pedagogy` (1) + opportunistic relevant workflow axes |
+| Activity closure where `last_activity ∈ {collect, assess, plan, reqs, design, preview, tests, produce, review, fix, deliver, compound, integrate, task, deploy}` | YES — opportunistic workflow axes | relevant workflow axes (2-8). *(The pedagogy axis (1) fires at activity **start**, per the Coach delegation section and the coach Invocation contract — not at closure.)* |
 | `current_phase` transition (LC0X → LC0Y) | YES — workflow axes | `workflow_health` (4), `process_deviation` (7) |
 | Sprint close (`plan.yaml.status: completed`) | YES — sprint-close batch | `sprint_velocity` (3), `quality_trends` (5), `sustainability` (8) |
 | Mid-sprint with `sessions_without_progress ≥ 2` | YES — stall detection | `sprint_velocity` (3), `workflow_health` (4) |

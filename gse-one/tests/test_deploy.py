@@ -528,5 +528,129 @@ class RecordCdnContractTests(unittest.TestCase):
         self.assertFalse(r["cdn"]["enabled"])
 
 
+# ---------------------------------------------------------------------------
+# Application source routing + server_uuid resolution (v0.64.0 — U4)
+# ---------------------------------------------------------------------------
+
+
+class _FakeCoolifyClient:
+    """Duck-typed stand-in for CoolifyClient (only list_servers is used)."""
+
+    def __init__(self, servers=None, error=False):
+        self._servers = servers or []
+        self._error = error
+
+    def list_servers(self):
+        if self._error:
+            raise deploy.CoolifyError(500, "boom")
+        return self._servers
+
+
+class SelectAppSourceTests(unittest.TestCase):
+    def test_public_when_no_github_app_uuid(self):
+        self.assertEqual(deploy._select_app_source({}), ("public", None))
+
+    def test_private_when_github_app_uuid_set(self):
+        env = {"COOLIFY_GITHUB_APP_UUID": "abc123"}
+        self.assertEqual(
+            deploy._select_app_source(env), ("private-github-app", "abc123")
+        )
+
+    def test_blank_uuid_falls_back_to_public(self):
+        env = {"COOLIFY_GITHUB_APP_UUID": "   "}
+        self.assertEqual(deploy._select_app_source(env), ("public", None))
+
+
+class ResolveServerUuidTests(unittest.TestCase):
+    def setUp(self):
+        self.dir = Path(tempfile.mkdtemp())
+        self.addCleanup(lambda: shutil.rmtree(self.dir))
+        self._prev_cwd = os.getcwd()
+        os.chdir(self.dir)
+        self.addCleanup(lambda: os.chdir(self._prev_cwd))
+
+    def test_env_value_takes_precedence(self):
+        # Even a broken API must not be consulted when .env has the value.
+        r = deploy._resolve_server_uuid(
+            _FakeCoolifyClient(error=True), {"SERVER_UUID": "srv-1"},
+            required=True,
+        )
+        self.assertEqual(r, {"status": "ok", "server_uuid": "srv-1"})
+
+    def test_sole_server_resolved_and_persisted(self):
+        client = _FakeCoolifyClient(servers=[{"uuid": "srv-9", "name": "m"}])
+        r = deploy._resolve_server_uuid(client, {}, required=True)
+        self.assertEqual(r["status"], "ok")
+        self.assertEqual(r["server_uuid"], "srv-9")
+        self.assertEqual(deploy.parse_env().get("SERVER_UUID"), "srv-9")
+
+    def test_multiple_servers_required_is_error(self):
+        client = _FakeCoolifyClient(
+            servers=[{"uuid": "a", "name": "s1"}, {"uuid": "b", "name": "s2"}]
+        )
+        r = deploy._resolve_server_uuid(client, {}, required=True)
+        self.assertEqual(r["status"], "error")
+        self.assertIn("SERVER_UUID", r["error"])
+        self.assertIn("s1=a", r["error"])
+
+    def test_multiple_servers_optional_returns_none(self):
+        client = _FakeCoolifyClient(servers=[{"uuid": "a"}, {"uuid": "b"}])
+        r = deploy._resolve_server_uuid(client, {}, required=False)
+        self.assertEqual(r, {"status": "ok", "server_uuid": None})
+
+    def test_api_error_optional_returns_none(self):
+        r = deploy._resolve_server_uuid(
+            _FakeCoolifyClient(error=True), {}, required=False
+        )
+        self.assertEqual(r, {"status": "ok", "server_uuid": None})
+
+    def test_api_error_required_is_error(self):
+        r = deploy._resolve_server_uuid(
+            _FakeCoolifyClient(error=True), {}, required=True
+        )
+        self.assertEqual(r["status"], "error")
+
+
+class TrainingInitOptionalKeysTests(unittest.TestCase):
+    BASE = (
+        "COOLIFY_URL=https://coolify.example.com\n"
+        "COOLIFY_API_TOKEN=tok\n"
+        "DEPLOY_DOMAIN=example.com\n"
+    )
+
+    def setUp(self):
+        self.dir = Path(tempfile.mkdtemp())
+        self.addCleanup(lambda: shutil.rmtree(self.dir))
+        self._prev_cwd = os.getcwd()
+        os.chdir(self.dir)
+        self.addCleanup(lambda: os.chdir(self._prev_cwd))
+
+    def test_handout_without_optional_keys(self):
+        Path(".env").write_text(self.BASE, encoding="utf-8")
+        r = deploy.training_init(".env.training")
+        self.assertEqual(r["status"], "ok")
+        self.assertEqual(r["optional_keys"], [])
+        text = Path(".env.training").read_text(encoding="utf-8")
+        self.assertNotIn("SERVER_UUID", text)
+        self.assertNotIn("COOLIFY_GITHUB_APP_UUID", text)
+
+    def test_handout_includes_optional_keys_when_present(self):
+        Path(".env").write_text(
+            self.BASE + "SERVER_UUID=srv-1\nCOOLIFY_GITHUB_APP_UUID=gh-2\n",
+            encoding="utf-8",
+        )
+        r = deploy.training_init(".env.training")
+        self.assertEqual(r["status"], "ok")
+        self.assertEqual(
+            sorted(r["optional_keys"]),
+            ["COOLIFY_GITHUB_APP_UUID", "SERVER_UUID"],
+        )
+        text = Path(".env.training").read_text(encoding="utf-8")
+        self.assertIn("SERVER_UUID=srv-1", text)
+        self.assertIn("COOLIFY_GITHUB_APP_UUID=gh-2", text)
+        # Hetzner/SSH secrets must stay instructor-only.
+        self.assertNotIn("HETZNER_API_TOKEN", text)
+
+
 if __name__ == "__main__":
     unittest.main()

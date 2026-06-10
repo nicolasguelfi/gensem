@@ -267,6 +267,19 @@ class CoolifyClient:
         return self.create_environment(project_uuid, name)
 
     # -------------------------------------------------------------------
+    # Servers
+    # -------------------------------------------------------------------
+
+    def list_servers(self) -> list[dict]:
+        """Return raw server records visible to the token (GET /servers).
+
+        Used to auto-resolve `server_uuid` at application creation (recent
+        Coolify versions require it; the private-github-app endpoint always
+        does)."""
+        data = self._request("GET", "/servers")
+        return data if isinstance(data, list) else []
+
+    # -------------------------------------------------------------------
     # Applications
     # -------------------------------------------------------------------
 
@@ -302,12 +315,67 @@ class CoolifyClient:
         fqdn: str,
         dockerfile_location: str = "./Dockerfile",
         build_pack: str = "dockerfile",
+        server_uuid: Optional[str] = None,
     ) -> CoolifyApplication:
         """Create a public-repository application.
 
-        For private repositories, use the Coolify dashboard to configure
-        a GitHub App source first, then call this method with that source.
+        `server_uuid` is optional for backward compatibility with older
+        Coolify versions; recent versions require it (HTTP 422 mentioning
+        `server_uuid` otherwise). For private repositories, use
+        `create_private_github_app_application` instead.
         """
+        payload = self._app_payload(
+            project_uuid, environment_name, name, git_repository,
+            git_branch, ports_exposes, fqdn, dockerfile_location,
+            build_pack, server_uuid,
+        )
+        return self._post_application("/applications/public", payload, name)
+
+    def create_private_github_app_application(
+        self,
+        project_uuid: str,
+        environment_name: str,
+        name: str,
+        git_repository: str,
+        git_branch: str,
+        ports_exposes: str,
+        fqdn: str,
+        github_app_uuid: str,
+        server_uuid: str,
+        dockerfile_location: str = "./Dockerfile",
+        build_pack: str = "dockerfile",
+    ) -> CoolifyApplication:
+        """Create an application from a private repository via a GitHub App.
+
+        Requires a Coolify GitHub App source (`github_app_uuid`) installed
+        on the repo owner's GitHub account, and an explicit `server_uuid` —
+        both are mandatory on this endpoint. `git_repository` uses the
+        `owner/repo` form.
+        """
+        payload = self._app_payload(
+            project_uuid, environment_name, name, git_repository,
+            git_branch, ports_exposes, fqdn, dockerfile_location,
+            build_pack, server_uuid,
+        )
+        payload["github_app_uuid"] = github_app_uuid
+        return self._post_application(
+            "/applications/private-github-app", payload, name
+        )
+
+    @staticmethod
+    def _app_payload(
+        project_uuid: str,
+        environment_name: str,
+        name: str,
+        git_repository: str,
+        git_branch: str,
+        ports_exposes: str,
+        fqdn: str,
+        dockerfile_location: str,
+        build_pack: str,
+        server_uuid: Optional[str],
+    ) -> dict:
+        """Shared payload for the application-creation endpoints."""
         payload = {
             "project_uuid": project_uuid,
             "environment_name": environment_name,
@@ -319,7 +387,15 @@ class CoolifyClient:
             "domains": fqdn,
             "dockerfile_location": dockerfile_location,
         }
-        data = self._request("POST", "/applications/public", json_body=payload)
+        if server_uuid:
+            payload["server_uuid"] = server_uuid
+        return payload
+
+    def _post_application(
+        self, endpoint: str, payload: dict, name: str
+    ) -> CoolifyApplication:
+        """POST an application-creation payload and normalize the response."""
+        data = self._request("POST", endpoint, json_body=payload)
         uuid = data.get("uuid") if isinstance(data, dict) else None
         if not uuid:
             raise CoolifyError(

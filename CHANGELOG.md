@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.64.0] - 2026-06-10
+
+*Private-repo deployments fully automated for training cohorts (backlog U4 — single `.env.training` handout covers everything).*
+
+### Added
+- Added `create_private_github_app_application` + `list_servers` to coolify_client.py; deploy.py auto-routes private repos when `COOLIFY_GITHUB_APP_UUID` is set.
+- Added `server_uuid` auto-resolution (`.env SERVER_UUID`, else sole `GET /servers`, persisted) — fixes HTTP 422 on recent Coolify.
+- Added `SERVER_UUID` + `COOLIFY_GITHUB_APP_UUID` to the `.env.training` handout when present in the instructor's `.env`.
+- Added 11 unit tests: source routing, server-uuid resolution, handout optional keys (97 total).
+
+### Changed
+- Changed `.gse/deploy.json` applications schema: new `source_type` and `coolify.server_uuid` fields (pre-release, no migration).
+- Changed deploy docs (deploy.md, deploy-operator.md quirk rows, learner-private-repo-setup.md, design §5.18, hetzner endpoints reference) to reflect the implemented routing.
+
 ## [0.63.0] - 2026-06-10
 
 *Full treatment of the 2026-06-10 methodology audit (16 errors, 103 warnings, 20 recommendations) + repaired audit system. Details: `docs/post-audit-reports/2026-06-10-audit-v0.62.8-treatment.md`.*

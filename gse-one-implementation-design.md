@@ -2348,6 +2348,8 @@ On `coach: propose` (pedagogy), the orchestrator presents the 5-option P14 Gate.
 **Failure modes:**
 
 - Coach sub-agent fails to return → orchestrator proceeds without preamble/advice, logs an Inform note
+- Reviewer perspective sub-agent fails to return during `/gse:review` Step 2 → the review proceeds with the remaining perspectives (N-1) plus a **mandatory** Inform note naming the missing perspective ("Review completed without the {perspective} pass — re-run `/gse:review` to cover it"); findings from the completed perspectives remain valid
+- Devil-advocate sub-agent fails during a P16 escalation (focused re-review after `fix_attempts_on_current_symptom` threshold) → **blocking**: the escalation exists precisely to break a failure loop, so the orchestrator must not silently continue; retry once, then present a Gate (retry / proceed acknowledging the missing integrity check / discuss)
 - `learning_goals` malformed → coach skips pedagogy axis with "invalid profile input" reason; orchestrator surfaces a warning; other axes continue
 - Multiple pedagogy topics match → coach picks the most contextually relevant (matching the activity's current work); sprint cap enforced
 - Workflow axis has insufficient signal (new project, empty history) → coach returns no block for that axis rather than speculating

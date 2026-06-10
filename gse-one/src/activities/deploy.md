@@ -74,14 +74,16 @@ Wait for confirmation → proceed to Step 0.
 ```
 python3 "$(cat ~/.gse-one)/tools/deploy.py" record-role instructor
 ```
-Say: *"I'll walk you through the full 6-phase setup (same as Solo mode), then help you generate a `.env.training` file with `--training-init` to distribute to your learners. At the end of the course, run `/gse:deploy --training-reap --all` to clean up all learner apps. Ready to start the server setup?"*
+Say: *"I'll walk you through the full 6-phase setup (same as Solo mode), then help you generate a `.env.training` file with `--training-init` to distribute to your learners. Heads-up: the token in that file gives learners write access to ALL apps on the shared server — we'll use a course-dedicated token you revoke at the end. At the end of the course, run `/gse:deploy --training-reap --all` to clean up all learner apps (then revoke the token). Ready to start the server setup?"*
 Wait for confirmation → proceed to Step 0.
 
-**(3) Learner** — Two precondition checks:
+**(3) Learner** — Three precondition checks:
 1. Ask: *"Have you copied the `.env.training` file your instructor sent you into your project directory as `.env`? (y/n)"*
    - If no: *"Please do that first (`cp .env.training .env` in your project). Then re-run `/gse:deploy`."* → Exit.
 2. Ask: *"Have you set `DEPLOY_USER` to your learner ID in the `.env` file? (y/n)"*
    - If no: *"Open `.env` in your editor, set `DEPLOY_USER=<your-learner-id>`, save, and re-run `/gse:deploy`."* → Exit.
+3. Ask: *"Is your project pushed to a GitHub repository? (y/n)"* (Coolify clones from GitHub — an unpushed project fails at deploy time.)
+   - If no: *"Push it first: create a repo (`gh repo create` or the GitHub UI), then `git push -u origin <branch>`. A public repo is simplest for the course; for a private repo, follow `docs/deploy/learner-private-repo-setup.md` BEFORE deploying. Then re-run `/gse:deploy`."* → Exit.
 3. Persist role:
    ```
    python3 "$(cat ~/.gse-one)/tools/deploy.py" record-role learner
@@ -698,8 +700,9 @@ When invoked with `--training-init`:
    python3 "$(cat ~/.gse-one)/tools/deploy.py" training-init [--output .env.training]
    ```
 3. The tool generates `.env.training` containing `COOLIFY_URL`, `COOLIFY_API_TOKEN`, `DEPLOY_DOMAIN`, and a `DEPLOY_USER=learnerXX` placeholder. It **excludes** `HETZNER_API_TOKEN`, `SERVER_IP`, SSH keys. A security warning is embedded as a comment.
-4. Display the output path to the instructor and remind them:
-   *"Distribute .env.training to your learners. They copy it to their project as .env and set DEPLOY_USER. Consider generating a dedicated Coolify token for the course; revoke it when the course ends."*
+4. **Mandatory token step — before distributing anything:** instruct the instructor to generate a **dedicated Coolify API token for the course** (Coolify UI → Keys & Tokens) and re-run `--training-init` with it in `.env` if the current token is their personal one. State the risk explicitly: *"The token embedded in `.env.training` gives every learner WRITE access to ALL applications on the shared Coolify server — any learner can modify or delete other learners' apps (or yours). Use a course-dedicated token, and revoke it in the Coolify UI as soon as the course ends (`--training-reap` cleans the apps, not the token)."*
+5. Display the output path to the instructor and remind them:
+   *"Distribute .env.training to your learners. They copy it to their project as .env and set DEPLOY_USER."*
 
 ### --training-reap Option (Instructor-only)
 

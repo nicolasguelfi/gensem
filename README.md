@@ -40,7 +40,9 @@ GSE-One is an AI engineering companion that brings structured software developme
 
 ## Quick install (curl | sh)
 
-One command installs GSE-One on every coding agent it detects (Claude Code, Cursor, opencode) — no clone, no `cd`, no prompts.
+One command installs GSE-One on every coding agent it detects (Claude Code, Cursor, opencode) — no clone, no prompts.
+
+**Run it from inside your project folder** (create one first if needed) — the installer targets the current directory:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/nicolasguelfi/gensem/main/install.sh | sh
@@ -56,6 +58,17 @@ curl -fsSL https://raw.githubusercontent.com/nicolasguelfi/gensem/main/install.s
 The script auto-detects which of Claude Code, Cursor, and opencode are on your PATH and installs on all of them **inside the current directory** (no-plugin mode). It creates a `.claude/`, `.cursor/`, or `.opencode/` subfolder per detected platform and writes a registry marker `~/.gse-one` pointing at the chosen platform dir — nothing is installed globally by default. To install as a user-scope plugin instead, set `GSE_MODE=plugin` explicitly. Once finished, open your coding agent and type `/gse-go` (no-plugin mode) or `/gse:go` (plugin mode on Claude Code).
 
 **Requirements:** `curl`, `tar`, and `python3 ≥ 3.8` on PATH. macOS and Linux are supported out of the box; Windows users should use WSL or the [Manual install](#manual-install-maintainers-forks-windows-without-wsl) path.
+
+### Your first session
+
+You only need four commands to start — the agent profiles you, proposes each next step, and explains as it goes; you never need the other 20 commands up front:
+
+- `/gse-go` (or `/gse:go` in plugin mode) — the single entry point: onboarding on first run, then "what's next" forever after
+- `/gse-status` — where am I? (sprint, tasks, open items)
+- `/gse-health` — 8-dimension project health with a generated dashboard
+- `/gse-pause` — checkpoint the session safely before stepping away
+
+The full quickstart lives in the spec: `gse-one-spec.md` §0 — Getting Started ("Your First 20 Minutes").
 
 ---
 

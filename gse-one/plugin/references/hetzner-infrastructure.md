@@ -148,6 +148,8 @@ Credentials (tokens, SSH keys) never live in the state file; they live in
 | List applications | GET | `/api/v1/applications` |
 | Get application | GET | `/api/v1/applications/{uuid}` |
 | Create application (public repo) | POST | `/api/v1/applications/public` |
+| Create application (private repo, GitHub App) | POST | `/api/v1/applications/private-github-app` |
+| List servers (server_uuid resolution) | GET | `/api/v1/servers` |
 | Update application | PATCH | `/api/v1/applications/{uuid}` |
 | Delete application | DELETE | `/api/v1/applications/{uuid}` |
 | Rebuild (full) | POST | `/api/v1/applications/{uuid}/start` |

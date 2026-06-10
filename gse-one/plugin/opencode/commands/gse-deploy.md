@@ -558,7 +558,7 @@ The detection logic (which variables map to which starting phase) is documented 
    **What the tool does:**
    - Ensures a Coolify project (`gse-{DEPLOY_USER}` in training, `gse` in solo) exists.
    - Ensures a `production` environment exists within that project.
-   - Looks up `applications[]` in `.gse/deploy.json` by name. If a matching entry with `coolify.app_uuid` exists → triggers a redeploy (`GET /api/v1/deploy?uuid=...&force=true`). Otherwise, creates the app via `POST /api/v1/applications/public` and triggers the initial deploy.
+   - Looks up `applications[]` in `.gse/deploy.json` by name. If a matching entry with `coolify.app_uuid` exists → triggers a redeploy (`GET /api/v1/deploy?uuid=...&force=true`). Otherwise, creates the app via `POST /api/v1/applications/public` — or `POST /api/v1/applications/private-github-app` when `COOLIFY_GITHUB_APP_UUID` is set in `.env` — resolving and sending `server_uuid` (from `.env SERVER_UUID`, else the sole server returned by `GET /api/v1/servers`, persisted back to `.env`), then triggers the initial deploy.
    - Polls the health endpoint (`/_stcore/health` for Streamlit, `/` for others) for `--health-timeout` seconds (the skill passes `config.yaml → deploy.health_check_timeout`, default 120 — the tool itself never reads config.yaml).
    - Records the application entry in `.gse/deploy.json → applications[]` with all fields (identification, source, runtime, Coolify UUIDs, resources, timestamps, status).
 
@@ -569,7 +569,7 @@ The detection logic (which variables map to which starting phase) is documented 
    >
    > *Solo users (no trainer) can create their own Coolify GitHub App source via Coolify UI → Sources → GitHub App, then follow the same install + env-set flow. See the trainer-side section of `docs/deploy/learner-private-repo-setup.md`.*
 
-   **Note — as of v0.62.3, `deploy.py` does not yet auto-route to the Coolify `/applications/private-github-app` endpoint when `COOLIFY_GITHUB_APP_UUID` is set.** The variable is documented and the troubleshooting path is guided, but full end-to-end automation for private repos is scheduled for a follow-up release. Until then, after setting the variable the user may still need the trainer to create the Coolify application manually via the Coolify UI — warn the user accordingly if the retry still fails.
+   **Note — since v0.64.0, `deploy.py` auto-routes to the Coolify `/applications/private-github-app` endpoint when `COOLIFY_GITHUB_APP_UUID` is set.** After `env-set`, re-running `deploy-app` completes end-to-end (the tool also resolves and sends the required `server_uuid`). If the retry still fails, verify the GitHub App is actually installed on the user's GitHub account with access to the repo (see `docs/deploy/learner-private-repo-setup.md`).
 
 5. **Report**
    - If `status == "healthy"`: *"Your project is live at: https://{subdomain}"*
@@ -701,7 +701,7 @@ When invoked with `--training-init`:
    ```
    python3 "$(cat ~/.gse-one)/tools/deploy.py" training-init [--output .env.training]
    ```
-3. The tool generates `.env.training` containing `COOLIFY_URL`, `COOLIFY_API_TOKEN`, `DEPLOY_DOMAIN`, and a `DEPLOY_USER=learnerXX` placeholder. It **excludes** `HETZNER_API_TOKEN`, `SERVER_IP`, SSH keys. A security warning is embedded as a comment.
+3. The tool generates `.env.training` containing `COOLIFY_URL`, `COOLIFY_API_TOKEN`, `DEPLOY_DOMAIN`, and a `DEPLOY_USER=learnerXX` placeholder — plus `SERVER_UUID` and `COOLIFY_GITHUB_APP_UUID` when present in the instructor's `.env` (so the single handout also covers recent Coolify versions and learners with private repos; remind the instructor to set both before generating if the cohort needs them). It **excludes** `HETZNER_API_TOKEN`, `SERVER_IP`, SSH keys. A security warning is embedded as a comment.
 4. **Mandatory token step — before distributing anything:** instruct the instructor to generate a **dedicated Coolify API token for the course** (Coolify UI → Keys & Tokens) and re-run `--training-init` with it in `.env` if the current token is their personal one. State the risk explicitly: *"The token embedded in `.env.training` gives every learner WRITE access to ALL applications on the shared Coolify server — any learner can modify or delete other learners' apps (or yours). Use a course-dedicated token, and revoke it in the Coolify UI as soon as the course ends (`--training-reap` cleans the apps, not the token)."*
 5. Display the output path to the instructor and remind them:
    *"Distribute .env.training to your learners. They copy it to their project as .env and set DEPLOY_USER."*

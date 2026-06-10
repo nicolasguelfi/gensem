@@ -562,6 +562,63 @@ def poll_health(url: str, timeout_seconds: int = 120) -> dict:
 # ---------------------------------------------------------------------------
 
 
+def _select_app_source(env: dict) -> tuple:
+    """Pick the Coolify application-creation route from project-local .env.
+
+    Returns ("private-github-app", <uuid>) when COOLIFY_GITHUB_APP_UUID is
+    set (private repo via a pre-configured GitHub App source), else
+    ("public", None).
+    """
+    uuid = (env.get("COOLIFY_GITHUB_APP_UUID") or "").strip()
+    if uuid:
+        return "private-github-app", uuid
+    return "public", None
+
+
+def _resolve_server_uuid(
+    client: CoolifyClient, env: dict, required: bool
+) -> dict:
+    """Resolve the Coolify server UUID for app creation (status-wrapped).
+
+    Resolution order: SERVER_UUID in .env (project-local config, set by hand
+    or distributed via .env.training) → sole server returned by GET /servers
+    (persisted back to .env to avoid re-querying) → when `required` (the
+    private-github-app endpoint mandates the field) an error listing the
+    candidates, else None (older Coolify /public accepts the omission).
+    """
+    explicit = (env.get("SERVER_UUID") or "").strip()
+    if explicit:
+        return {"status": "ok", "server_uuid": explicit}
+    try:
+        servers = client.list_servers()
+    except CoolifyError as e:
+        if required:
+            return {
+                "status": "error",
+                "error": (
+                    f"could not list servers to resolve server_uuid: {e}"
+                ),
+            }
+        return {"status": "ok", "server_uuid": None}
+    if len(servers) == 1 and servers[0].get("uuid"):
+        uuid = str(servers[0]["uuid"])
+        set_env("SERVER_UUID", uuid)
+        return {"status": "ok", "server_uuid": uuid}
+    if required:
+        listing = ", ".join(
+            f"{s.get('name', '?')}={s.get('uuid', '?')}" for s in servers
+        ) or "none visible to this token"
+        return {
+            "status": "error",
+            "error": (
+                f"cannot auto-resolve server_uuid ({len(servers)} servers: "
+                f"{listing}). Set it explicitly: deploy.py env-set "
+                "SERVER_UUID <uuid>"
+            ),
+        }
+    return {"status": "ok", "server_uuid": None}
+
+
 def deploy_app(
     name: str,
     project_name: str,
@@ -604,14 +661,28 @@ def deploy_app(
         state = load_state()
         existing = _find_application(state, name)
 
+        source_type, github_app_uuid = _select_app_source(env)
+        server_uuid = (env.get("SERVER_UUID") or "").strip() or None
+
         if existing and existing.get("coolify", {}).get("app_uuid"):
             app_uuid = existing["coolify"]["app_uuid"]
+            server_uuid = (
+                existing.get("coolify", {}).get("server_uuid") or server_uuid
+            )
+            source_type = existing.get("source_type") or source_type
             # Redeploy path
             client.trigger_deploy(app_uuid, force=True)
             created = False
         else:
-            # Create new application
-            app = client.create_application(
+            # Create new application — route per .env: private repos go
+            # through the Coolify GitHub App source when configured
+            resolved = _resolve_server_uuid(
+                client, env, required=source_type == "private-github-app"
+            )
+            if resolved["status"] != "ok":
+                return {"status": "error", "error": resolved["error"]}
+            server_uuid = resolved["server_uuid"]
+            common = dict(
                 project_uuid=project.uuid,
                 environment_name="production",
                 name=name,
@@ -620,6 +691,16 @@ def deploy_app(
                 ports_exposes=str(port),
                 fqdn=f"https://{subdomain}",
             )
+            if source_type == "private-github-app":
+                app = client.create_private_github_app_application(
+                    github_app_uuid=github_app_uuid,
+                    server_uuid=server_uuid,
+                    **common,
+                )
+            else:
+                app = client.create_application(
+                    server_uuid=server_uuid, **common
+                )
             app_uuid = app.uuid
             client.trigger_deploy(app_uuid, force=False)
             created = True
@@ -641,10 +722,12 @@ def deploy_app(
             "branch": branch,
             "type": type_,
             "port": port,
+            "source_type": source_type,
             "coolify": {
                 "project_uuid": project.uuid,
                 "environment_uuid": env_obj.uuid,
                 "app_uuid": app_uuid,
+                "server_uuid": server_uuid,
             },
             "resources": {"memory_limit": memory, "cpu_limit": cpu},
             "created_at": (existing or {}).get("created_at") or now,
@@ -1257,8 +1340,10 @@ def training_init(output_path: str = ".env.training") -> dict:
     """Generate a redacted .env.training for distribution to learners.
 
     Includes COOLIFY_URL / COOLIFY_API_TOKEN / DEPLOY_DOMAIN and a DEPLOY_USER
-    placeholder. Excludes HETZNER_API_TOKEN, SERVER_IP, SSH_USER, SSH_KEY
-    (instructor-only secrets).
+    placeholder, plus SERVER_UUID and COOLIFY_GITHUB_APP_UUID when present in
+    the instructor's .env (so the single handout also covers recent Coolify
+    versions and private GitHub repos). Excludes HETZNER_API_TOKEN, SERVER_IP,
+    SSH_USER, SSH_KEY (instructor-only secrets).
     """
     env = parse_env()
     required = ["COOLIFY_URL", "COOLIFY_API_TOKEN", "DEPLOY_DOMAIN"]
@@ -1269,6 +1354,25 @@ def training_init(output_path: str = ".env.training") -> dict:
             "error": f"missing required keys in .env: {missing}",
         }
     domain = env["DEPLOY_DOMAIN"]
+    optional_keys = []
+    optional = ""
+    if env.get("SERVER_UUID"):
+        optional_keys.append("SERVER_UUID")
+        optional += (
+            "\n# Target Coolify server (recent Coolify versions require it\n"
+            "# at application creation).\n"
+            f"SERVER_UUID={env['SERVER_UUID']}\n"
+        )
+    if env.get("COOLIFY_GITHUB_APP_UUID"):
+        optional_keys.append("COOLIFY_GITHUB_APP_UUID")
+        optional += (
+            "\n# Private GitHub repos: pre-configured Coolify GitHub App\n"
+            "# source. Install the App on your GitHub account first (ask\n"
+            "# your instructor for the install link), then deploy normally\n"
+            "# — deploy.py routes private repos through this source\n"
+            "# automatically.\n"
+            f"COOLIFY_GITHUB_APP_UUID={env['COOLIFY_GITHUB_APP_UUID']}\n"
+        )
     content = (
         "# GSE-One Deploy — Training Configuration\n"
         f"# Generated by /gse:deploy --training-init on {_now()}\n"
@@ -1283,6 +1387,7 @@ def training_init(output_path: str = ".env.training") -> dict:
         f"COOLIFY_URL={env['COOLIFY_URL']}\n"
         f"COOLIFY_API_TOKEN={env['COOLIFY_API_TOKEN']}\n"
         f"DEPLOY_DOMAIN={domain}\n"
+        f"{optional}"
         "\n"
         "# === SET YOUR LEARNER ID BELOW ===\n"
         f"# Your apps will be deployed at: {{project-name}}-{{DEPLOY_USER}}.{domain}\n"
@@ -1295,6 +1400,7 @@ def training_init(output_path: str = ".env.training") -> dict:
         "status": "ok",
         "path": output_path,
         "domain": domain,
+        "optional_keys": optional_keys,
         "learners_can_deploy_at": f"{{project}}-{{DEPLOY_USER}}.{domain}",
     }
 

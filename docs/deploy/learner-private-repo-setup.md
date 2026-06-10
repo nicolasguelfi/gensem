@@ -157,7 +157,7 @@ Prompt your orchestrator:
 
 The orchestrator will read `.env` via `deploy.py env-get` and display the value. Compare against `<SOURCE-UUID>` — no leading/trailing whitespace, no quotes, no accidentally-copied surrounding URL fragment.
 
-If none of the above resolves the 422, send your trainer the exact error message (screenshot or copy-paste of the orchestrator chat around the failure). The trainer may need to fall back to creating the Coolify application via the UI manually — this is an acknowledged gap in v0.62.3 (see section E below).
+If none of the above resolves the 422, send your trainer the exact error message (screenshot or copy-paste of the orchestrator chat around the failure) — since v0.64.0 the deployment is fully automated once the App installation and the UUID are correct (see section E below), so a persistent 422 points to one of the causes above rather than a tooling gap.
 
 Happy deploying!
 
@@ -186,8 +186,8 @@ If you want per-learner isolation, you could create multiple GitHub Apps (one pe
 
 ---
 
-## E. Future improvement — deploy.py auto-detection
+## E. Implementation status — deploy.py auto-detection
 
-As of GSE-One v0.62.3, the Python tool `deploy.py` **does not yet** dispatch to the Coolify `/applications/private-github-app` endpoint when `COOLIFY_GITHUB_APP_UUID` is set. The agent-level guidance in `src/agents/deploy-operator.md` + `src/activities/deploy.md` documents the troubleshooting flow, but the automated deployment for private repos is not end-to-end yet. A follow-up release will implement the Python side (new `create_private_github_app_application` method in `coolify_client.py` + routing in `deploy_app()`).
+Since GSE-One v0.64.0, `deploy.py` dispatches to the Coolify `/applications/private-github-app` endpoint automatically when `COOLIFY_GITHUB_APP_UUID` is set (implemented as `create_private_github_app_application` in `coolify_client.py` + routing in `deploy_app()`, with `server_uuid` auto-resolution). The flow in this document is therefore end-to-end: once the learner has installed the App and set the UUID, re-running `deploy-app` completes the deployment with no manual Coolify UI step.
 
-Until then, this document provides the documented manual-unblock path. Track the follow-up as part of Scope B in the internal issue tracker (or see the `deploy-operator.md` anti-pattern note on private repos for pointers).
+Trainer tip: set `COOLIFY_GITHUB_APP_UUID` (and `SERVER_UUID` if several servers are visible) in your own `.env` **before** running `/gse:deploy --training-init` — both keys are then embedded in the distributed `.env.training`, and learners skip the `env-set` step entirely.

@@ -1077,6 +1077,8 @@ The pushback mechanism is calibrated:
 - **Expert**: triggers after 8 consecutive acceptances (less intrusive)
 - If the user selects "Everything looks good" twice in a row, the agent respects this and does not trigger again for the rest of the sprint. **Beginner exception** (`it_expertise: beginner`): the suppression window is the next **3 Gates** only — not the whole sprint — and the coach emits one Inform note when suppression activates (beginners are the population most prone to rubber-stamping; silencing the main critical-thinking safeguard for a full sprint costs them the most).
 
+These calibration constants (and the root-cause thresholds below) are falsifiable, not dogma: each sprint archives outcome metrics (`plan-summary.md → ## Outcome Metrics`, written by `/gse:deliver`) and `/gse:compound` Axe 2 confronts the thresholds with the observed data, raising a methodology ticket when contradicted.
+
 #### Root-Cause Discipline before patching
 
 When applying a fix to a reported defect — either during `/gse:fix` processing a review finding, or in response to a user-reported bug arriving during any other activity (PRODUCE, post-DELIVER, etc.) — the agent MUST follow a 4-step protocol before modifying any file. The protocol protects against *unsystematic debugging*: applying speculative patches in rapid succession without first identifying the actual root cause.

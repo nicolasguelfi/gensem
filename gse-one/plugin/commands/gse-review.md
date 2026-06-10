@@ -251,17 +251,7 @@ If findings with severity HIGH or MEDIUM exist:
 
 > **State transition note (v0.53.0):** `status.yaml` cursor fields (`last_activity`, `last_activity_timestamp`) are maintained centrally by the orchestrator after the activity closes — see `plugin/agents/gse-orchestrator.md` — section "Sprint Plan Maintenance", and `gse-one-implementation-design.md` §10.1 — Sprint Plan Lifecycle. Activity-local state (TASK statuses, health scores) remains authored here.
 
-**Update health scores in `status.yaml`** (MANDATORY after every review). Compute and write the 8 health dimensions using the formulas from the spec:
-- `test_pass_rate`: (passing tests / total tests) × 10
-- `review_findings`: 10 − (open HIGH × 1.5 + MEDIUM × 0.8 + LOW × 0.3), floor 0
-- `design_debt`: 10 − (design HIGH × 2.0 + MEDIUM × 1.0 + LOW × 0.5), floor 0
-- `requirements_coverage`: (traced requirements / total requirements) × 10
-- `complexity_ratio`: (remaining budget / total budget) × 10
-- `git_hygiene`: 10 if on correct branches, no stale branches, no uncommitted; deduct for issues
-- `ai_integrity`: 10 − (unverified assertions × 1.5 + hallucination findings × 2.0), floor 0
-- `delivery_velocity`: (delivered tasks / planned tasks) × 10
-
-Write these values at the top level of `status.yaml` (e.g., `test_pass_rate: 9`). These values are read by the dashboard to populate the health radar chart. Without them, the radar shows empty.
+**Update health scores in `status.yaml`** (MANDATORY after every review). Compute the 8 health dimensions (`requirements_coverage`, `test_pass_rate`, `design_debt`, `review_findings`, `complexity_budget`, `traceability`, `git_hygiene`, `ai_integrity`) exactly as specified in `/gse:health` Step 2 — Calculate Dimensions — the canonical formula source in the distributed plugin (mirrors spec §7.1 — Dimension computation). Write them under the canonical nested path `status.yaml → health.dimensions.<dimension>`, then update `health.score` (mean of enabled dimensions) and `health.last_computed` (ISO 8601). These values are read by the dashboard to populate the health radar chart. Without them, the radar shows empty.
 
 **Update `status.yaml.review_findings_open`** — set this counter to the total count of HIGH + MEDIUM findings currently unresolved across all sprint `review.md` files (i.e., findings without `status: fixed`). This counter is consumed by the git-push hook (spec §6 System Hooks, design §15 Hooks Design) which warns the user before pushing a branch with open findings. The counter is decremented by `/gse:fix` Step 6 when findings are resolved. If all findings are resolved (clean review or post-FIX), set to 0.
 

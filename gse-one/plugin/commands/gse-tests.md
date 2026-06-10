@@ -236,8 +236,10 @@ gse:
   updated: "{YYYY-MM-DD}"
   traces:
     derives_from: []                   # e.g., [TASK-005] — task being tested
-    implements: [REQ-{NNN}]            # requirements + design elements validated
-    decided_by: []                     # e.g., [DEC-007] — shaping decisions (esp. for policy tests)
+    validates: [REQ-{NNN}]             # REQ acceptance criteria validated (validation tests)
+    implements: []                     # e.g., [DES-003] — design elements verified (verification tests)
+    enforces: []                       # e.g., [DEC-007, design-section-ref] — rules enforced (policy tests)
+    decided_by: []                     # e.g., [DEC-007] — shaping decisions
 ---
 ```
 

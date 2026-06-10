@@ -59,7 +59,7 @@ Focus: does each TST- spec encode the right scenario?
 - [ ] **Scenario exactness** — Each TST- Given/When/Then matches the source REQ acceptance criterion (no interpretation drift)
 - [ ] **No tautological specs** — A TST- spec never merely restates the REQ title; it specifies observable conditions to check
 - [ ] **Boundary coverage** — Empty, zero, max, negative, and error-path scenarios are present for every logically-bounded input
-- [ ] **Trace coherence** — `traces.validates` and `traces.tests` fields point at existing REQ-/DES-/SRC- IDs; bidirectional link is preserved
+- [ ] **Trace coherence** — `traces.validates`, `traces.implements` and `traces.enforces` fields point at existing REQ-/DES-/DEC- IDs; bidirectional link is preserved
 - [ ] **Quality-gap TSTs** — Every TST- carrying `quality_gap: true` names the ISO 25010 dimension it closes and a measurable assertion
 - [ ] **Pyramid placement** — Each TST- declares a `level` consistent with the strategy's pyramid plan
 

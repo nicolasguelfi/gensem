@@ -572,7 +572,10 @@ Each TASK carries an `artefact_type` indicating what kind of deliverable it prod
 | Link type | Meaning | Example |
 |-----------|---------|---------|
 | `derives_from` | "I come from..." | REQ derives from TASK, DES derives from REQ |
-| `implements` | "I realize/validate..." | Code implements DES, test validates REQ |
+| `implements` | "I realize..." | Code implements DES; a sprint tests doc covers [REQ, DES] (doc-level rollup) |
+| `validates` | "I validate..." | TST validates a REQ acceptance criterion (validation tests) |
+| `enforces` | "I enforce..." | Policy TST enforces a DEC or a design structural rule |
+| `tested_by` | "I am verified by..." | REQ/DES points back at its TST (inverse link, see §12.2 — Frontmatter) |
 | `decided_by` | "This choice is justified by..." | DES justified by DEC |
 | `related_to` | "Related to..." | Catch-all for informational links |
 

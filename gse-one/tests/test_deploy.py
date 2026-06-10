@@ -73,7 +73,7 @@ class SanitizeComponentTests(unittest.TestCase):
 class BuildSubdomainTests(unittest.TestCase):
     def test_solo_mode(self):
         r = deploy.build_subdomain("/tmp/my-blog", None, "example.com")
-        self.assertTrue(r["ok"])
+        self.assertEqual(r["status"], "ok")
         self.assertEqual(r["subdomain"], "my-blog.example.com")
         self.assertEqual(r["deploy_user"], "")
 
@@ -81,7 +81,7 @@ class BuildSubdomainTests(unittest.TestCase):
         r = deploy.build_subdomain(
             "/tmp/todo-app", "alice", "training.example.com"
         )
-        self.assertTrue(r["ok"])
+        self.assertEqual(r["status"], "ok")
         self.assertEqual(
             r["subdomain"], "todo-app-alice.training.example.com"
         )
@@ -89,22 +89,22 @@ class BuildSubdomainTests(unittest.TestCase):
 
     def test_project_sanitization(self):
         r = deploy.build_subdomain("/tmp/My_Cool_App", None, "example.com")
-        self.assertTrue(r["ok"])
+        self.assertEqual(r["status"], "ok")
         self.assertEqual(r["project_name"], "my-cool-app")
 
     def test_user_sanitization(self):
         r = deploy.build_subdomain("/tmp/app", "Alice", "example.com")
-        self.assertTrue(r["ok"])
+        self.assertEqual(r["status"], "ok")
         self.assertEqual(r["deploy_user"], "alice")
 
     def test_empty_project_fails(self):
         r = deploy.build_subdomain("/tmp/@@@", None, "example.com")
-        self.assertFalse(r["ok"])
+        self.assertEqual(r["status"], "error")
         self.assertIn("error", r)
 
     def test_empty_user_with_value_fails(self):
         r = deploy.build_subdomain("/tmp/app", "@@@", "example.com")
-        self.assertFalse(r["ok"])
+        self.assertEqual(r["status"], "error")
 
     def test_url_format(self):
         r = deploy.build_subdomain("/tmp/app", None, "example.com")

@@ -1,0 +1,48 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import sys,json,os,re,subprocess; raw=sys.stdin.read(); d=json.loads(raw) if raw.lstrip().startswith('{') else {}; t=str((d.get('tool_input') or {}).get('command') or ''); c=bool(re.search(r'(?:^|[;&|]\\s*)git\\s+(-C\\s+\\S+\\s+)?commit\\b',t)); p=os.path.join('.gse','config.yaml'); cfg=open(p).read() if c and os.path.isfile(p) else ''; off=bool(re.search(r'^\\s*protect_main:\\s*false',cfg,re.M)) or bool(re.search(r'^\\s*strategy:\\s*none',cfg,re.M)); b=subprocess.run(['git','branch','--show-current'],capture_output=True,text=True).stdout.strip() if c and not off else ''; init=bool(b=='main' and subprocess.run(['git','rev-parse','--verify','HEAD'],capture_output=True).returncode!=0); (c and not off and not init and b=='main') and (print('GUARDRAIL: Direct commit to main detected. Use a feature branch. ''(Sanctioned exceptions: hooks.protect_main: false or git.strategy: none in .gse/config.yaml; repository-initialization commit.)',file=sys.stderr),sys.exit(2))\""
+          },
+          {
+            "type": "command",
+            "command": "python3 -c \"import sys,json,os,re; raw=sys.stdin.read(); d=json.loads(raw) if raw.lstrip().startswith('{') else {}; t=str((d.get('tool_input') or {}).get('command') or ''); bad=bool(re.search(r'\\bgit\\s[^|;&]*\\bpush\\b[^|;&]*(\\s-f\\b|--force\\b)',t)); p=os.path.join('.gse','config.yaml'); cfg=open(p).read() if bad and os.path.isfile(p) else ''; off=bool(re.search(r'^\\s*block_force_push:\\s*false',cfg,re.M)); (bad and not off) and (print('EMERGENCY GUARDRAIL: Force push detected (-f / --force / --force-with-lease). This can cause permanent data loss. Aborting.',file=sys.stderr),sys.exit(2))\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import sys,json,os,re; raw=sys.stdin.read(); d=json.loads(raw) if raw.lstrip().startswith('{') else {}; t=str((d.get('tool_input') or {}).get('command') or ''); p=os.path.join('.gse','config.yaml'); cfg=open(p).read() if os.path.isfile(p) else ''; off=bool(re.search(r'^\\s*review_findings_on_push:\\s*false',cfg,re.M)); f=os.path.join('.gse','status.yaml'); c=open(f).read() if (not off) and re.search(r'\\bgit\\s[^|;&]*\\bpush\\b',t) and os.path.isfile(f) else ''; m=re.search(r'review_findings_open:\\s*(\\d+)',c); o=int(m.group(1)) if m else 0; (o>0) and print('WARNING: '+str(o)+' open review findings')\""
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import os,subprocess,datetime,json; r=os.path.expanduser('~/.gse-one'); p=open(r).read().strip() if os.path.isfile(r) else ''; t=os.path.join(p,'tools','dashboard.py') if p else ''; res=subprocess.run(['python3',t,'--if-stale'],capture_output=True,text=True) if os.path.isfile(t) else None; (res and res.returncode!=0) and os.makedirs('.gse',exist_ok=True) or None; (res and res.returncode!=0) and open(os.path.join('.gse','.dashboard-error.yaml'),'w').write('timestamp: \\\"'+datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')+'\\\"\\nmessage: '+json.dumps('dashboard.py exited with code '+str(res.returncode))+'\\ntraceback: |\\n  '+(res.stderr or '(no stderr)').replace(chr(10),chr(10)+'  '))\""
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import os,subprocess,datetime,json; r=os.path.expanduser('~/.gse-one'); p=open(r).read().strip() if os.path.isfile(r) else ''; t=os.path.join(p,'tools','dashboard.py') if p else ''; res=subprocess.run(['python3',t,'--if-stale'],capture_output=True,text=True) if os.path.isfile(t) else None; (res and res.returncode!=0) and os.makedirs('.gse',exist_ok=True) or None; (res and res.returncode!=0) and open(os.path.join('.gse','.dashboard-error.yaml'),'w').write('timestamp: \\\"'+datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')+'\\\"\\nmessage: '+json.dumps('dashboard.py exited with code '+str(res.returncode))+'\\ntraceback: |\\n  '+(res.stderr or '(no stderr)').replace(chr(10),chr(10)+'  '))\""
+          }
+        ]
+      }
+    ]
+  }
+}

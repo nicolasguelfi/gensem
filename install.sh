@@ -8,7 +8,7 @@
 #   curl -fsSL https://raw.githubusercontent.com/nicolasguelfi/gensem/main/install.sh | sh -s -- upgrade
 #
 # Env overrides:
-#   GSE_PLATFORM   claude|cursor|opencode|all|both   (default: auto-detect)
+#   GSE_PLATFORM   claude|cursor|opencode|codex|gemini|all|both   (default: auto-detect)
 #   GSE_MODE       plugin|no-plugin                  (default: no-plugin)
 #   GSE_SCOPE      project|local|user                (default: user)
 #   GSE_VERSION    vX.Y.Z|latest                     (default: latest)
@@ -81,6 +81,8 @@ detect_platform_flag() {
     command -v claude   >/dev/null 2>&1 && found="$found claude"
     command -v cursor   >/dev/null 2>&1 && found="$found cursor"
     command -v opencode >/dev/null 2>&1 && found="$found opencode"
+    command -v codex    >/dev/null 2>&1 && found="$found codex"
+    command -v gemini   >/dev/null 2>&1 && found="$found gemini"
     count=$(printf '%s' "$found" | wc -w | tr -d ' ')
     if   [ "$count" -ge 2 ]; then printf 'all'
     elif [ "$count" -eq 1 ]; then printf '%s' "$(printf '%s' "$found" | tr -d ' ')"
@@ -168,7 +170,7 @@ prepare() {
 
 subcmd_install() {
     prepare
-    [ -n "$plat_flag" ] || fail "No supported platform detected (claude, cursor, opencode). Set GSE_PLATFORM to override."
+    [ -n "$plat_flag" ] || fail "No supported platform detected (claude, cursor, opencode, codex, gemini). Set GSE_PLATFORM to override."
 
     current=$(installed_version)
     info "Target version : ${target_tag}"

@@ -1,7 +1,7 @@
 <h1 align="center">GSE-One</h1>
 <h2 align="center">Built by AI.<br>Governed by Humans.</h2>
 
-GSE-One is an AI engineering companion that brings structured software development lifecycle (SDLC) management to coding agents. It works as a plugin for **Claude Code**, **Cursor**, and **opencode**, guiding projects through requirements, design, testing, production, review, and knowledge transfer — with adaptive risk analysis and methodology guardrails.
+GSE-One is an AI engineering companion that brings structured software development lifecycle (SDLC) management to coding agents. It works as a plugin for **Claude Code**, **Cursor**, **opencode**, **Codex CLI**, and **Gemini CLI**, guiding projects through requirements, design, testing, production, review, and knowledge transfer — with adaptive risk analysis and methodology guardrails.
 
 <p align="center">
   <img src="assets/images/logo-gse-geni-with-shield-landscape_4x_slogan.png" width="700" alt="GSE-One — Built by AI, Governed by Humans">
@@ -34,13 +34,13 @@ GSE-One is an AI engineering companion that brings structured software developme
 - **Unified backlog** — single task tracking with git state per-task
 - **8-dimension health dashboard** — generated HTML with radar chart, kanban, lifecycle checklist
 - **AI integrity guardrails** — confidence levels, verification gates, devil's advocate agent
-- **Cross-platform** — one plugin, identical methodology on Claude Code, Cursor, and opencode
+- **Cross-platform** — one plugin, identical methodology on Claude Code, Cursor, opencode, Codex CLI, and Gemini CLI
 
 ---
 
 ## Quick install (curl | sh)
 
-One command installs GSE-One on every coding agent it detects (Claude Code, Cursor, opencode) — no clone, no prompts.
+One command installs GSE-One on every coding agent it detects (Claude Code, Cursor, opencode, Codex CLI, Gemini CLI) — no clone, no prompts.
 
 **Run it from inside your project folder** (create one first if needed) — the installer targets the current directory:
 
@@ -55,7 +55,7 @@ curl -fsSL https://raw.githubusercontent.com/nicolasguelfi/gensem/main/install.s
 curl -fsSL https://raw.githubusercontent.com/nicolasguelfi/gensem/main/install.sh | sh -s -- upgrade
 ```
 
-The script auto-detects which of Claude Code, Cursor, and opencode are on your PATH and installs on all of them **inside the current directory** (no-plugin mode). It creates a `.claude/`, `.cursor/`, or `.opencode/` subfolder per detected platform and writes a registry marker `~/.gse-one` pointing at the chosen platform dir — nothing is installed globally by default. To install as a user-scope plugin instead, set `GSE_MODE=plugin` explicitly. Once finished, open your coding agent and type `/gse-go` (no-plugin mode) or `/gse:go` (plugin mode on Claude Code).
+The script auto-detects which of Claude Code, Cursor, opencode, Codex CLI, and Gemini CLI are on your PATH and installs on all of them **inside the current directory** (no-plugin mode). It creates a `.claude/`, `.cursor/`, `.opencode/`, `.codex/` (+ `.agents/skills/`), or `.gemini/` subfolder per detected platform and writes a registry marker `~/.gse-one` pointing at the chosen platform dir — nothing is installed globally by default. To install as a user-scope plugin instead, set `GSE_MODE=plugin` explicitly. Once finished, open your coding agent and type `/gse-go` (no-plugin mode) or `/gse:go` (plugin mode on Claude Code).
 
 **Requirements:** `curl`, `tar`, and `python3 ≥ 3.8` on PATH. macOS and Linux are supported out of the box; Windows users should use WSL or the [Manual install](#manual-install-maintainers-forks-windows-without-wsl) path.
 
@@ -78,9 +78,9 @@ The curl installer reads five environment variables that override auto-detection
 
 | Variable | Values | Description |
 |---|---|---|
-| `GSE_PLATFORM` | `claude` \| `cursor` \| `opencode` \| `all` \| `both` | Restrict install to one platform — `both` = claude + cursor (default: every platform detected on PATH) |
-| `GSE_MODE` | `plugin` \| `no-plugin` | Install as a platform plugin or copy artifacts into a project's `.claude/` / `.cursor/` / `.opencode/` |
-| `GSE_SCOPE` | `project` \| `local` \| `user` | Claude Code plugin scope only (default: `user`); ignored by Cursor and opencode |
+| `GSE_PLATFORM` | `claude` \| `cursor` \| `opencode` \| `codex` \| `gemini` \| `all` \| `both` | Restrict install to one platform — `both` = claude + cursor, `all` = every supported platform (default: every platform detected on PATH) |
+| `GSE_MODE` | `plugin` \| `no-plugin` | Install as a platform plugin or copy artifacts into a project's `.claude/` / `.cursor/` / `.opencode/` / `.codex/` / `.gemini/` |
+| `GSE_SCOPE` | `project` \| `local` \| `user` | Claude Code plugin scope only (default: `user`); ignored by Cursor, opencode, Codex, and Gemini |
 | `GSE_VERSION` | `latest` \| `vX.Y.Z` | Release tag to install; `latest` resolves via the GitHub API (default: `latest`) |
 | `GSE_PROJECT_DIR` | path | Target directory for `no-plugin` mode (default: current working directory) |
 

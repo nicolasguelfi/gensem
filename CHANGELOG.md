@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.72.0] - 2026-06-12
+
+*Adds Codex CLI and Gemini CLI as deployment targets (5 platforms, 10 install modes).*
+
+### Added
+- Added Codex CLI support: `plugin/codex/` (24 activity skills + full-orchestrator skill, 10 sub-agent TOMLs, condensed `AGENTS.md`, `hooks/hooks.json`, `.codex-plugin/plugin.json`).
+- Added Gemini CLI support: `plugin/gemini/` (24 `/gse:<name>` command TOMLs, 10 agents, `GEMINI.md`, `hooks/hooks.json`, `gemini-extension.json`).
+- Added `src/agents/gse-orchestrator-lite.md` — condensed orchestrator (≤ 32 KiB) used as Codex `AGENTS.md`; full orchestrator ships as the loadable `gse-orchestrator` skill.
+- Added `install.py` plugin + no-plugin modes for Codex and Gemini (10 install modes total); `install.sh` auto-detects `codex` and `gemini`.
+- Added generator `build_codex()` / `build_gemini()` and `--verify` checks (AGENTS.md size cap, TOML sanity, template-brace guard, GEMINI.md body parity, hook-command parity).
+
+### Changed
+- Refactored guardrail hook commands into a shared `_guardrail_commands()` so Claude/Cursor/Codex/Gemini reuse identical logic (parity asserted by `--verify`).
+
 ## [0.71.1] - 2026-06-10
 
 ### Added

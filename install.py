@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
-"""GSE-One Installer — Cross-platform interactive installation for Claude Code, Cursor, and opencode.
+"""GSE-One Installer — Cross-platform install for Claude Code, Cursor, opencode, Codex CLI, and Gemini CLI.
 
 Usage:
     python3 install.py                        # Interactive mode
     python3 install.py --platform claude --mode plugin --scope project
     python3 install.py --platform cursor --mode plugin
     python3 install.py --platform opencode --mode plugin
-    python3 install.py --platform opencode --mode no-plugin --project-dir /path/to/project
+    python3 install.py --platform codex --mode no-plugin --project-dir /path/to/project
+    python3 install.py --platform gemini --mode plugin
     python3 install.py --platform all --mode plugin --scope user
-    python3 install.py --uninstall --platform opencode
+    python3 install.py --uninstall --platform gemini
 """
 
 import argparse
@@ -30,6 +31,20 @@ VERSION_FILE = REPO_ROOT / "VERSION"
 PLUGIN_DIR = REPO_ROOT / "gse-one" / "plugin"
 OPENCODE_PLUGIN_DIR = PLUGIN_DIR / "opencode"
 OPENCODE_GLOBAL_DIR = Path.home() / ".config" / "opencode"
+
+# Codex CLI install targets. Skills live under .agents/skills/ (Codex scan
+# path); agents are TOML under .codex/agents/; AGENTS.md is the always-on
+# context (condensed lite edition); hooks under .codex/hooks/hooks.json need
+# `codex_hooks = true` in config.toml.
+CODEX_PLUGIN_DIR = PLUGIN_DIR / "codex"
+CODEX_GLOBAL_DIR = Path.home() / ".codex"
+CODEX_SKILLS_HOME = Path.home() / ".agents" / "skills"
+
+# Gemini CLI install targets. Plugin mode = a dedicated extension dir under
+# ~/.gemini/extensions/; no-plugin mode = project .gemini/ + root GEMINI.md.
+GEMINI_PLUGIN_DIR = PLUGIN_DIR / "gemini"
+GEMINI_GLOBAL_DIR = Path.home() / ".gemini"
+GEMINI_EXT_DIR = GEMINI_GLOBAL_DIR / "extensions" / "gse-one"
 
 # Markers used to surgically patch AGENTS.md on install/uninstall
 AGENTS_MD_START = "<!-- GSE-ONE START -->"
@@ -83,7 +98,7 @@ def dim(t):     return _c("2", t)
 
 BANNER = f"""
   {bold(cyan('GSE-One Installer'))}  v{VERSION}
-  {dim('Cross-platform setup for Claude Code, Cursor, and opencode')}
+  {dim('Setup for Claude Code, Cursor, opencode, Codex CLI, and Gemini CLI')}
   {'─' * 50}
 """
 
@@ -424,6 +439,25 @@ def _check_duplicate_install(platform_name, mode, project_dir=None, env=None):
             if _has_gse_skills_in_dir(claude_skills):
                 conflicts.append((".claude/skills (auto-loaded by opencode)", str(claude_skills)))
 
+    elif platform_name == "codex":
+        if mode == "plugin":
+            local = Path(project_dir or Path.cwd()) / ".agents" / "skills"
+            if local.is_dir() and (local / "go").is_dir():
+                conflicts.append(("no-plugin (project)", str(local)))
+        elif mode == "no-plugin":
+            home_skills = CODEX_SKILLS_HOME
+            if home_skills.is_dir() and (home_skills / "go").is_dir():
+                conflicts.append(("plugin (global)", str(home_skills)))
+
+    elif platform_name == "gemini":
+        if mode == "plugin":
+            local = Path(project_dir or Path.cwd()) / ".gemini" / "commands" / "gse"
+            if local.is_dir() and any(local.glob("*.toml")):
+                conflicts.append(("no-plugin (project)", str(local.parent.parent)))
+        elif mode == "no-plugin":
+            if GEMINI_EXT_DIR.is_dir():
+                conflicts.append(("plugin (global extension)", str(GEMINI_EXT_DIR)))
+
     if conflicts:
         warn(f"Existing GSE-One installation(s) detected for {bold(platform_name)}:")
         for conflict_mode, conflict_path in conflicts:
@@ -517,6 +551,8 @@ def detect_environment():
     has_claude = command_exists("claude")
     has_cursor = _detect_cursor(os_name)
     has_opencode = _detect_opencode()
+    has_codex = _detect_codex()
+    has_gemini = _detect_gemini()
 
     home = Path.home()
     claude_dir = home / ".claude"
@@ -529,10 +565,14 @@ def detect_environment():
         "has_claude": has_claude,
         "has_cursor": has_cursor,
         "has_opencode": has_opencode,
+        "has_codex": has_codex,
+        "has_gemini": has_gemini,
         "home": home,
         "claude_dir": claude_dir,
         "cursor_dir": cursor_dir,
         "opencode_dir": opencode_dir,
+        "codex_dir": CODEX_GLOBAL_DIR,
+        "gemini_dir": GEMINI_GLOBAL_DIR,
     }
 
 
@@ -556,6 +596,16 @@ def _detect_opencode():
     return command_exists("opencode") or OPENCODE_GLOBAL_DIR.exists()
 
 
+def _detect_codex():
+    """Detect if Codex CLI is installed (CLI on PATH or ~/.codex/ dir)."""
+    return command_exists("codex") or CODEX_GLOBAL_DIR.exists()
+
+
+def _detect_gemini():
+    """Detect if Gemini CLI is installed (CLI on PATH or ~/.gemini/ dir)."""
+    return command_exists("gemini") or GEMINI_GLOBAL_DIR.exists()
+
+
 def display_environment(env):
     """Print detected environment."""
     step("Environment")
@@ -564,6 +614,8 @@ def display_environment(env):
     info(f"Claude Code CLI  : {green('found') if env['has_claude'] else yellow('not found')}")
     info(f"Cursor           : {green('found') if env['has_cursor'] else yellow('not found')}")
     info(f"opencode         : {green('found') if env['has_opencode'] else yellow('not found')}")
+    info(f"Codex CLI        : {green('found') if env['has_codex'] else yellow('not found')}")
+    info(f"Gemini CLI       : {green('found') if env['has_gemini'] else yellow('not found')}")
     info(f"Plugin source    : {PLUGIN_DIR}")
     info(f"Version          : {bold(VERSION)}")
 
@@ -1306,6 +1358,405 @@ def _strip_opencode_json_marker(target_file):
 
 
 # ---------------------------------------------------------------------------
+# Codex CLI — shared component helpers
+# ---------------------------------------------------------------------------
+
+def _codex_copy_skills(skills_target):
+    """Copy all Codex skills (24 activities + full orchestrator) into
+    skills_target/<name>/SKILL.md. Returns count."""
+    src = CODEX_PLUGIN_DIR / "skills"
+    ensure_dir(skills_target)
+    count = 0
+    for d in sorted(src.iterdir()):
+        if d.is_dir() and (d / "SKILL.md").exists():
+            copy_tree(d, Path(skills_target) / d.name)
+            count += 1
+    return count
+
+
+def _codex_copy_agents(agents_target):
+    """Copy the 10 specialized sub-agent TOML files into agents_target/. Returns count."""
+    src = CODEX_PLUGIN_DIR / "agents"
+    ensure_dir(agents_target)
+    count = 0
+    for f in sorted(src.glob("*.toml")):
+        shutil.copy2(f, Path(agents_target) / f.name)
+        count += 1
+    return count
+
+
+def _codex_copy_hooks(hooks_dir):
+    """Copy codex hooks.json into hooks_dir/hooks.json (warns on overwrite)."""
+    src = CODEX_PLUGIN_DIR / "hooks" / "hooks.json"
+    ensure_dir(hooks_dir)
+    dst = Path(hooks_dir) / "hooks.json"
+    if dst.exists():
+        warn(f"Overwriting existing {dst}")
+    shutil.copy2(src, dst)
+
+
+def _codex_enable_hooks_flag(config_toml_path):
+    """Ensure `codex_hooks = true` in a Codex config.toml — guardrails are inert
+    without it. Minimal stdlib TOML edit: set/flip the top-level key, never
+    rewrites the rest of the file."""
+    import re
+    config_toml_path = Path(config_toml_path)
+    ensure_dir(config_toml_path.parent)
+    text = config_toml_path.read_text(encoding="utf-8") if config_toml_path.exists() else ""
+    if re.search(r'(?m)^\s*codex_hooks\s*=', text):
+        new = re.sub(r'(?m)^\s*codex_hooks\s*=.*$', 'codex_hooks = true', text)
+        if new != text:
+            config_toml_path.write_text(new, encoding="utf-8")
+        ok(f"codex_hooks already present in {config_toml_path} (set true)")
+        return
+    sep = "" if (text == "" or text.endswith("\n")) else "\n"
+    config_toml_path.write_text(text + sep + "codex_hooks = true\n", encoding="utf-8")
+    ok(f"Enabled codex_hooks in {config_toml_path}")
+
+
+def _codex_remove_components(skills_target, agents_target, hooks_dir):
+    """Remove GSE-One Codex artefacts from the given target dirs. Returns count."""
+    removed = 0
+    skills_target = Path(skills_target)
+    known = list(_get_skill_names()) + ["gse-orchestrator"]
+    if skills_target.is_dir():
+        for name in known:
+            d = skills_target / name
+            if d.is_dir():
+                shutil.rmtree(d)
+                removed += 1
+    agents_target = Path(agents_target)
+    if agents_target.is_dir():
+        for f in (CODEX_PLUGIN_DIR / "agents").glob("*.toml"):
+            t = agents_target / f.name
+            if t.exists():
+                t.unlink()
+                removed += 1
+    hooks_json = Path(hooks_dir) / "hooks.json"
+    if hooks_json.exists():
+        hooks_json.unlink()
+        removed += 1
+    return removed
+
+
+def verify_codex(skills_target, agents_md_path):
+    """Post-install check. Returns (ok, detail)."""
+    skills_target = Path(skills_target)
+    n = sum(1 for d in skills_target.iterdir() if d.is_dir() and (d / "SKILL.md").exists()) \
+        if skills_target.is_dir() else 0
+    if n == 0:
+        return False, "no skills copied"
+    if not Path(agents_md_path).exists():
+        return False, "AGENTS.md missing"
+    return True, f"{n} skills, AGENTS.md present"
+
+
+# ---------------------------------------------------------------------------
+# Codex CLI — Plugin mode (global)
+# ---------------------------------------------------------------------------
+
+def install_codex_plugin(env):
+    """Install GSE-One into Codex global locations (~/.codex/, ~/.agents/skills/).
+
+    Skills → ~/.agents/skills/, sub-agents → ~/.codex/agents/, condensed
+    orchestrator → ~/.codex/AGENTS.md, hooks → ~/.codex/hooks/hooks.json with
+    `codex_hooks = true` set in ~/.codex/config.toml. Registry → side-install
+    ~/.gse-one.d/ (Codex's plugin cache path is not stable for shell
+    resolution — same rationale as the Claude plugin side-install)."""
+    step("Codex CLI — Plugin install (global)")
+
+    if not CODEX_PLUGIN_DIR.is_dir():
+        err(f"Codex artefacts not found at {CODEX_PLUGIN_DIR}")
+        err("Run: cd gse-one && python3 gse_generate.py --verify")
+        tracker.add("Codex", "plugin", "global", "-", "FAIL", "artefacts missing")
+        return False
+
+    if not _check_duplicate_install("codex", "plugin"):
+        tracker.add("Codex", "plugin", "global", "-", "FAIL", "cancelled (duplicate)")
+        return False
+
+    n_skills = _codex_copy_skills(CODEX_SKILLS_HOME)
+    n_agents = _codex_copy_agents(CODEX_GLOBAL_DIR / "agents")
+    _merge_agents_md(CODEX_GLOBAL_DIR / "AGENTS.md", CODEX_PLUGIN_DIR / "AGENTS.md")
+    _codex_copy_hooks(CODEX_GLOBAL_DIR / "hooks")
+    _codex_enable_hooks_flag(CODEX_GLOBAL_DIR / "config.toml")
+
+    # Common runtime assets at the side-install location (stable shell path).
+    _copy_common_assets(GSE_ONE_DATA_DIR)
+    ok(f"Common assets copied to {GSE_ONE_DATA_DIR}")
+    _write_registry(GSE_ONE_DATA_DIR)
+
+    is_ok, detail = verify_codex(CODEX_SKILLS_HOME, CODEX_GLOBAL_DIR / "AGENTS.md")
+    status = "OK" if is_ok else "WARN"
+    ok(f"Codex installed — {n_skills} skills, {n_agents} agents")
+    info("Skills load contextually; full methodology in ~/.codex/AGENTS.md (load `gse-orchestrator` skill for the complete text)")
+    tracker.add("Codex", "plugin", "global", str(CODEX_GLOBAL_DIR), status,
+                f"{n_skills} skills, {n_agents} agents")
+    return True
+
+
+def uninstall_codex_plugin(env):
+    """Remove GSE-One Codex artefacts from global locations."""
+    step("Codex CLI — Plugin uninstall (global)")
+    removed = _codex_remove_components(CODEX_SKILLS_HOME, CODEX_GLOBAL_DIR / "agents",
+                                       CODEX_GLOBAL_DIR / "hooks")
+    _strip_agents_md_block(CODEX_GLOBAL_DIR / "AGENTS.md")
+    _remove_common_assets(GSE_ONE_DATA_DIR)
+    if GSE_ONE_DATA_DIR.exists() and not any(GSE_ONE_DATA_DIR.iterdir()):
+        GSE_ONE_DATA_DIR.rmdir()
+    _remove_registry()
+    info("Left `codex_hooks` flag in ~/.codex/config.toml untouched (remove manually if desired)")
+    ok(f"Removed {removed} GSE-One file(s) from Codex global locations")
+    tracker.add("Codex", "uninstall", "global", str(CODEX_GLOBAL_DIR), "OK", f"{removed} files")
+    return True
+
+
+# ---------------------------------------------------------------------------
+# Codex CLI — Non-plugin mode (project)
+# ---------------------------------------------------------------------------
+
+def install_codex_no_plugin(project_dir):
+    """Install GSE-One Codex artefacts into a project.
+
+    Skills → <project>/.agents/skills/, sub-agents → <project>/.codex/agents/,
+    condensed orchestrator → <project>/AGENTS.md (root), hooks →
+    <project>/.codex/hooks/hooks.json with `codex_hooks = true` in
+    <project>/.codex/config.toml. Registry → <project>/.codex/."""
+    step("Codex CLI — Non-plugin install (project)")
+
+    if not CODEX_PLUGIN_DIR.is_dir():
+        err(f"Codex artefacts not found at {CODEX_PLUGIN_DIR}")
+        err("Run: cd gse-one && python3 gse_generate.py --verify")
+        tracker.add("Codex", "no-plugin", "project", str(project_dir), "FAIL", "artefacts missing")
+        return False
+
+    if not _check_duplicate_install("codex", "no-plugin", project_dir=project_dir):
+        tracker.add("Codex", "no-plugin", "project", str(project_dir), "FAIL", "cancelled (duplicate)")
+        return False
+
+    project_dir = Path(project_dir)
+    codex_dir = project_dir / ".codex"
+    n_skills = _codex_copy_skills(project_dir / ".agents" / "skills")
+    n_agents = _codex_copy_agents(codex_dir / "agents")
+    _merge_agents_md(project_dir / "AGENTS.md", CODEX_PLUGIN_DIR / "AGENTS.md")
+    _codex_copy_hooks(codex_dir / "hooks")
+    _codex_enable_hooks_flag(codex_dir / "config.toml")
+
+    _copy_common_assets(codex_dir)
+    ok(f"Copied common assets (tools, templates, references, VERSION) to {codex_dir}")
+    _write_registry(codex_dir)
+
+    is_ok, detail = verify_codex(project_dir / ".agents" / "skills", project_dir / "AGENTS.md")
+    status = "OK" if is_ok else "WARN"
+    ok(f"Codex artefacts installed — {n_skills} skills, {n_agents} agents")
+    info("AGENTS.md written at project root; skills under .agents/skills/")
+    tracker.add("Codex", "no-plugin", "project", str(codex_dir), status,
+                f"{n_skills} skills, {n_agents} agents")
+    return True
+
+
+def uninstall_codex_no_plugin(project_dir):
+    """Remove GSE-One Codex artefacts from a project."""
+    step("Codex CLI — Non-plugin uninstall (project)")
+    project_dir = Path(project_dir)
+    codex_dir = project_dir / ".codex"
+    removed = _codex_remove_components(project_dir / ".agents" / "skills",
+                                       codex_dir / "agents", codex_dir / "hooks")
+    _strip_agents_md_block(project_dir / "AGENTS.md")
+    _remove_common_assets(codex_dir)
+    _remove_registry()
+    info("Left `codex_hooks` flag in .codex/config.toml untouched (remove manually if desired)")
+    ok(f"Removed {removed} GSE-One file(s) from {codex_dir}")
+    tracker.add("Codex", "uninstall", "project", str(codex_dir), "OK", f"{removed} files")
+    return True
+
+
+# ---------------------------------------------------------------------------
+# Gemini CLI — shared component helpers
+# ---------------------------------------------------------------------------
+
+def _gemini_copy_commands(commands_target):
+    """Copy commands/gse/*.toml into commands_target/gse/. Returns count."""
+    src = GEMINI_PLUGIN_DIR / "commands" / "gse"
+    dst = Path(commands_target) / "gse"
+    ensure_dir(dst)
+    count = 0
+    for f in sorted(src.glob("*.toml")):
+        shutil.copy2(f, dst / f.name)
+        count += 1
+    return count
+
+
+def _gemini_copy_agents(agents_target):
+    """Copy the 10 specialized agent .md files into agents_target/. Returns count."""
+    src = GEMINI_PLUGIN_DIR / "agents"
+    ensure_dir(agents_target)
+    count = 0
+    for f in sorted(src.glob("*.md")):
+        shutil.copy2(f, Path(agents_target) / f.name)
+        count += 1
+    return count
+
+
+def _gemini_copy_hooks(hooks_dir):
+    """Copy gemini hooks.json into hooks_dir/hooks.json (warns on overwrite)."""
+    src = GEMINI_PLUGIN_DIR / "hooks" / "hooks.json"
+    ensure_dir(hooks_dir)
+    dst = Path(hooks_dir) / "hooks.json"
+    if dst.exists():
+        warn(f"Overwriting existing {dst}")
+    shutil.copy2(src, dst)
+
+
+def _gemini_remove_components(commands_target, agents_target, hooks_dir):
+    """Remove GSE-One Gemini artefacts. Returns count."""
+    removed = 0
+    gse_cmd = Path(commands_target) / "gse"
+    if gse_cmd.is_dir():
+        for f in (GEMINI_PLUGIN_DIR / "commands" / "gse").glob("*.toml"):
+            t = gse_cmd / f.name
+            if t.exists():
+                t.unlink()
+                removed += 1
+        if gse_cmd.is_dir() and not any(gse_cmd.iterdir()):
+            gse_cmd.rmdir()
+    agents_target = Path(agents_target)
+    if agents_target.is_dir():
+        for f in (GEMINI_PLUGIN_DIR / "agents").glob("*.md"):
+            t = agents_target / f.name
+            if t.exists():
+                t.unlink()
+                removed += 1
+    hooks_json = Path(hooks_dir) / "hooks.json"
+    if hooks_json.exists():
+        hooks_json.unlink()
+        removed += 1
+    return removed
+
+
+def verify_gemini(commands_target, context_md_path):
+    """Post-install check. Returns (ok, detail)."""
+    gse_cmd = Path(commands_target) / "gse"
+    n = sum(1 for _ in gse_cmd.glob("*.toml")) if gse_cmd.is_dir() else 0
+    if n == 0:
+        return False, "no commands copied"
+    if not Path(context_md_path).exists():
+        return False, "GEMINI.md missing"
+    return True, f"{n} commands, GEMINI.md present"
+
+
+# ---------------------------------------------------------------------------
+# Gemini CLI — Plugin mode (global extension)
+# ---------------------------------------------------------------------------
+
+def install_gemini_plugin(env):
+    """Install GSE-One as a Gemini extension at ~/.gemini/extensions/gse-one/.
+
+    Copies the self-contained plugin/gemini/ tree (commands, agents, GEMINI.md,
+    hooks, gemini-extension.json) and the common runtime assets. Registry →
+    the extension dir."""
+    step("Gemini CLI — Plugin install (global extension)")
+
+    if not GEMINI_PLUGIN_DIR.is_dir():
+        err(f"Gemini artefacts not found at {GEMINI_PLUGIN_DIR}")
+        err("Run: cd gse-one && python3 gse_generate.py --verify")
+        tracker.add("Gemini", "plugin", "global", "-", "FAIL", "artefacts missing")
+        return False
+
+    if not _check_duplicate_install("gemini", "plugin"):
+        tracker.add("Gemini", "plugin", "global", "-", "FAIL", "cancelled (duplicate)")
+        return False
+
+    ensure_dir(GEMINI_EXT_DIR.parent)
+    copy_tree(GEMINI_PLUGIN_DIR, GEMINI_EXT_DIR)
+    _copy_common_assets(GEMINI_EXT_DIR)
+    ok(f"Common assets copied to {GEMINI_EXT_DIR}")
+    _write_registry(GEMINI_EXT_DIR)
+
+    n_cmds = sum(1 for _ in (GEMINI_EXT_DIR / "commands" / "gse").glob("*.toml"))
+    is_ok, detail = verify_gemini(GEMINI_EXT_DIR / "commands", GEMINI_EXT_DIR / "GEMINI.md")
+    status = "OK" if is_ok else "WARN"
+    ok(f"Gemini extension installed at {GEMINI_EXT_DIR}")
+    info("Commands available as /gse:<name> (e.g., /gse:go, /gse:plan)")
+    tracker.add("Gemini", "plugin", "global", str(GEMINI_EXT_DIR), status, f"{n_cmds} commands")
+    return True
+
+
+def uninstall_gemini_plugin(env):
+    """Remove the GSE-One Gemini extension."""
+    step("Gemini CLI — Plugin uninstall (global extension)")
+    if not GEMINI_EXT_DIR.is_dir():
+        info("No GSE-One Gemini extension present — nothing to uninstall.")
+        tracker.add("Gemini", "uninstall", "global", str(GEMINI_EXT_DIR), "WARN", "not found")
+        return True
+    remove_path(GEMINI_EXT_DIR)
+    _remove_registry()
+    ok(f"Removed Gemini extension {GEMINI_EXT_DIR}")
+    tracker.add("Gemini", "uninstall", "global", str(GEMINI_EXT_DIR), "OK", "removed")
+    return True
+
+
+# ---------------------------------------------------------------------------
+# Gemini CLI — Non-plugin mode (project)
+# ---------------------------------------------------------------------------
+
+def install_gemini_no_plugin(project_dir):
+    """Install GSE-One Gemini artefacts into a project.
+
+    Commands → <project>/.gemini/commands/gse/, agents →
+    <project>/.gemini/agents/, hooks → <project>/.gemini/hooks/hooks.json,
+    context → <project>/GEMINI.md (root, surgical merge). Registry →
+    <project>/.gemini/."""
+    step("Gemini CLI — Non-plugin install (project)")
+
+    if not GEMINI_PLUGIN_DIR.is_dir():
+        err(f"Gemini artefacts not found at {GEMINI_PLUGIN_DIR}")
+        err("Run: cd gse-one && python3 gse_generate.py --verify")
+        tracker.add("Gemini", "no-plugin", "project", str(project_dir), "FAIL", "artefacts missing")
+        return False
+
+    if not _check_duplicate_install("gemini", "no-plugin", project_dir=project_dir):
+        tracker.add("Gemini", "no-plugin", "project", str(project_dir), "FAIL", "cancelled (duplicate)")
+        return False
+
+    project_dir = Path(project_dir)
+    gemini_dir = project_dir / ".gemini"
+    n_cmds = _gemini_copy_commands(gemini_dir / "commands")
+    n_agents = _gemini_copy_agents(gemini_dir / "agents")
+    _gemini_copy_hooks(gemini_dir / "hooks")
+    # GEMINI.md at project root (Gemini's worktree context convention)
+    _merge_agents_md(project_dir / "GEMINI.md", GEMINI_PLUGIN_DIR / "GEMINI.md")
+
+    _copy_common_assets(gemini_dir)
+    ok(f"Copied common assets (tools, templates, references, VERSION) to {gemini_dir}")
+    _write_registry(gemini_dir)
+
+    is_ok, detail = verify_gemini(gemini_dir / "commands", project_dir / "GEMINI.md")
+    status = "OK" if is_ok else "WARN"
+    ok(f"Gemini artefacts installed — {n_cmds} commands, {n_agents} agents")
+    info("GEMINI.md written at project root")
+    info("Commands available as /gse:<name> (e.g., /gse:go, /gse:plan)")
+    tracker.add("Gemini", "no-plugin", "project", str(gemini_dir), status,
+                f"{n_cmds} commands, {n_agents} agents")
+    return True
+
+
+def uninstall_gemini_no_plugin(project_dir):
+    """Remove GSE-One Gemini artefacts from a project."""
+    step("Gemini CLI — Non-plugin uninstall (project)")
+    project_dir = Path(project_dir)
+    gemini_dir = project_dir / ".gemini"
+    removed = _gemini_remove_components(gemini_dir / "commands", gemini_dir / "agents",
+                                        gemini_dir / "hooks")
+    _strip_agents_md_block(project_dir / "GEMINI.md")
+    _remove_common_assets(gemini_dir)
+    _remove_registry()
+    ok(f"Removed {removed} GSE-One file(s) from {gemini_dir}")
+    tracker.add("Gemini", "uninstall", "project", str(gemini_dir), "OK", f"{removed} files")
+    return True
+
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
@@ -1366,8 +1817,14 @@ def interactive_menu(env):
         platform_choices.append(("Cursor", "cursor"))
     if env["has_opencode"]:
         platform_choices.append(("opencode", "opencode"))
-    if env["has_claude"] and env["has_cursor"] and env["has_opencode"]:
-        platform_choices.append(("All three (Claude Code + Cursor + opencode)", "all"))
+    if env["has_codex"]:
+        platform_choices.append(("Codex CLI", "codex"))
+    if env["has_gemini"]:
+        platform_choices.append(("Gemini CLI", "gemini"))
+    if all(env[k] for k in ("has_claude", "has_cursor", "has_opencode", "has_codex", "has_gemini")):
+        platform_choices.append(("All five (Claude + Cursor + opencode + Codex + Gemini)", "all"))
+    elif env["has_claude"] and env["has_cursor"] and env["has_opencode"]:
+        platform_choices.append(("All three (Claude Code + Cursor + opencode)", "all3"))
     elif env["has_claude"] and env["has_cursor"]:
         platform_choices.append(("Both (Claude Code + Cursor)", "both"))
     if not env["has_claude"]:
@@ -1376,10 +1833,16 @@ def interactive_menu(env):
         platform_choices.append(("Cursor (not detected — install anyway)", "cursor"))
     if not env["has_opencode"]:
         platform_choices.append(("opencode (not detected — install anyway)", "opencode"))
+    if not env["has_codex"]:
+        platform_choices.append(("Codex CLI (not detected — install anyway)", "codex"))
+    if not env["has_gemini"]:
+        platform_choices.append(("Gemini CLI (not detected — install anyway)", "gemini"))
 
     chosen_platform = ask("Install for which platform?", platform_choices)
 
     if chosen_platform == "all":
+        platforms = ["claude", "cursor", "opencode", "codex", "gemini"]
+    elif chosen_platform == "all3":
         platforms = ["claude", "cursor", "opencode"]
     elif chosen_platform == "both":
         platforms = ["claude", "cursor"]
@@ -1433,6 +1896,34 @@ def interactive_menu(env):
             else:
                 results.append(install_opencode_plugin(env))
 
+        elif plat == "codex":
+            mode = ask(
+                "Installation mode for Codex CLI?",
+                [
+                    ("Plugin — global (~/.codex/ + ~/.agents/skills/)", "plugin"),
+                    ("Non-plugin — copy artifacts to .codex/ + .agents/ (project)", "no-plugin"),
+                ],
+            )
+            if mode == "no-plugin":
+                project_dir = _ask_project_dir()
+                results.append(install_codex_no_plugin(project_dir))
+            else:
+                results.append(install_codex_plugin(env))
+
+        elif plat == "gemini":
+            mode = ask(
+                "Installation mode for Gemini CLI?",
+                [
+                    ("Plugin — global extension (~/.gemini/extensions/gse-one/)", "plugin"),
+                    ("Non-plugin — copy artifacts to .gemini/ (project)", "no-plugin"),
+                ],
+            )
+            if mode == "no-plugin":
+                project_dir = _ask_project_dir()
+                results.append(install_gemini_no_plugin(project_dir))
+            else:
+                results.append(install_gemini_plugin(env))
+
     return all(results)
 
 
@@ -1447,6 +1938,10 @@ def interactive_uninstall(env):
             ("Cursor — non-plugin (current project)", "cursor-no-plugin"),
             ("opencode — plugin (global)", "opencode-plugin"),
             ("opencode — non-plugin (current project)", "opencode-no-plugin"),
+            ("Codex CLI — plugin (global)", "codex-plugin"),
+            ("Codex CLI — non-plugin (current project)", "codex-no-plugin"),
+            ("Gemini CLI — plugin (global extension)", "gemini-plugin"),
+            ("Gemini CLI — non-plugin (current project)", "gemini-no-plugin"),
         ],
     )
 
@@ -1462,6 +1957,14 @@ def interactive_uninstall(env):
         return uninstall_opencode_plugin(env)
     elif chosen == "opencode-no-plugin":
         return uninstall_opencode_no_plugin(_ask_project_dir())
+    elif chosen == "codex-plugin":
+        return uninstall_codex_plugin(env)
+    elif chosen == "codex-no-plugin":
+        return uninstall_codex_no_plugin(_ask_project_dir())
+    elif chosen == "gemini-plugin":
+        return uninstall_gemini_plugin(env)
+    elif chosen == "gemini-no-plugin":
+        return uninstall_gemini_no_plugin(_ask_project_dir())
 
 
 def _ask_project_dir():
@@ -1489,21 +1992,23 @@ def _ask_project_dir():
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description=f"GSE-One Installer v{VERSION} — Cross-platform setup for Claude Code, Cursor, and opencode",
+        description=f"GSE-One Installer v{VERSION} — setup for Claude Code, Cursor, opencode, Codex CLI, Gemini CLI",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""Examples:
   python3 install.py                                          # Interactive
   python3 install.py --platform claude --mode plugin --scope project
   python3 install.py --platform cursor --mode plugin
   python3 install.py --platform opencode --mode plugin
-  python3 install.py --platform opencode --mode no-plugin --project-dir /path/to/project
+  python3 install.py --platform codex --mode no-plugin --project-dir /path/to/project
+  python3 install.py --platform gemini --mode plugin
   python3 install.py --platform both --mode plugin --scope user
   python3 install.py --platform all --mode plugin --scope user
-  python3 install.py --uninstall --platform opencode --mode plugin
+  python3 install.py --uninstall --platform gemini --mode plugin
 """,
     )
-    parser.add_argument("--platform", choices=["claude", "cursor", "opencode", "both", "all"],
-                        help="Target platform ('both' = claude+cursor, 'all' = all three)")
+    parser.add_argument("--platform",
+                        choices=["claude", "cursor", "opencode", "codex", "gemini", "both", "all"],
+                        help="Target platform ('both' = claude+cursor, 'all' = all five)")
     parser.add_argument("--mode", choices=["plugin", "no-plugin"], help="Installation mode")
     parser.add_argument("--scope", choices=["project", "local", "user"], default="project",
                         help="Plugin scope for Claude Code (default: project). Ignored for Cursor/opencode.")
@@ -1537,7 +2042,7 @@ def main():
     # Non-interactive mode
     project_dir = Path(args.project_dir).resolve() if args.project_dir else Path.cwd()
     if args.platform == "all":
-        platforms = ["claude", "cursor", "opencode"]
+        platforms = ["claude", "cursor", "opencode", "codex", "gemini"]
     elif args.platform == "both":
         platforms = ["claude", "cursor"]
     else:
@@ -1556,6 +2061,12 @@ def main():
             elif plat == "opencode":
                 results.append(uninstall_opencode_plugin(env) if mode == "plugin"
                                else uninstall_opencode_no_plugin(project_dir))
+            elif plat == "codex":
+                results.append(uninstall_codex_plugin(env) if mode == "plugin"
+                               else uninstall_codex_no_plugin(project_dir))
+            elif plat == "gemini":
+                results.append(uninstall_gemini_plugin(env) if mode == "plugin"
+                               else uninstall_gemini_no_plugin(project_dir))
         else:
             if plat == "claude":
                 results.append(install_claude_plugin(args.scope) if mode == "plugin"
@@ -1566,6 +2077,12 @@ def main():
             elif plat == "opencode":
                 results.append(install_opencode_plugin(env) if mode == "plugin"
                                else install_opencode_no_plugin(project_dir))
+            elif plat == "codex":
+                results.append(install_codex_plugin(env) if mode == "plugin"
+                               else install_codex_no_plugin(project_dir))
+            elif plat == "gemini":
+                results.append(install_gemini_plugin(env) if mode == "plugin"
+                               else install_gemini_no_plugin(project_dir))
 
     tracker.display()
     sys.exit(0 if all(results) else 1)

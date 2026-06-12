@@ -334,19 +334,31 @@ def generate(clean: bool = False) -> None:
     build_opencode()
     print()
 
+    # 9. Codex CLI subtree
+    print("Codex CLI:")
+    build_codex()
+    print()
+
+    # 10. Gemini CLI subtree
+    print("Gemini CLI:")
+    build_gemini()
+    print()
+
     print(f"Plugin generated: {PLUGIN.relative_to(ROOT)}/")
     total = sum(1 for _ in PLUGIN.rglob("*") if _.is_file())
     print(f"Total files: {total}\n")
 
 
-def generate_hooks() -> None:
-    """Generate platform-specific hooks with cross-platform Python commands."""
-    # Shared hook logic (Python — works on macOS, Linux, and Windows).
-    # Transport: Claude Code / Cursor deliver the tool input as JSON on stdin
-    # ({"tool_input": {"command": ...}}) — there is NO CLAUDE_TOOL_INPUT env
-    # var (the pre-v0.63 hooks read one and therefore never fired).
-    # Config: each guard honors its project-local .gse/config.yaml -> hooks
-    # toggle (regex read — stdlib only, no PyYAML in a one-liner).
+def _guardrail_commands() -> dict:
+    """Return the four cross-platform guardrail hook commands as a dict.
+
+    Authored once and shared by every platform hook generator (Claude, Cursor,
+    Codex, Gemini) so the guardrail logic never drifts between platforms — a
+    parity check in verify() asserts the Codex/Gemini hooks reuse these exact
+    strings. Transport: each runtime delivers the tool input as JSON on stdin
+    ({"tool_input": {"command": ...}}); config toggles are read from
+    .gse/config.yaml (regex, stdlib only — no PyYAML in a one-liner).
+    """
     _read_cmd = (
         "raw=sys.stdin.read(); "
         "d=json.loads(raw) if raw.lstrip().startswith('{') else {}; "
@@ -423,6 +435,22 @@ def generate_hooks() -> None:
         "traceback: |\\n  '+(res.stderr or '(no stderr)').replace(chr(10),chr(10)+'  '))"
         "\""
     )
+
+    return {
+        "pre_commit": pre_bash_commit,
+        "pre_force": pre_bash_force,
+        "post_review": post_bash_review,
+        "post_dashboard": post_edit_dashboard,
+    }
+
+
+def generate_hooks() -> None:
+    """Generate platform-specific hooks (Claude + Cursor) from shared commands."""
+    cmds = _guardrail_commands()
+    pre_bash_commit = cmds["pre_commit"]
+    pre_bash_force = cmds["pre_force"]
+    post_bash_review = cmds["post_review"]
+    post_edit_dashboard = cmds["post_dashboard"]
 
     # Claude Code format (PascalCase events, explicit type).
     # Three separate matcher entries for Edit/Write/MultiEdit — maximum portability
@@ -752,6 +780,310 @@ def _oc_build_config_json(oc: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Codex CLI builder
+# ---------------------------------------------------------------------------
+
+# Codex AGENTS.md hard size cap (project_doc_max_bytes default). The full
+# orchestrator (~68 KB) exceeds it, so Codex carries the condensed lite edition
+# as AGENTS.md and ships the full orchestrator as a loadable skill.
+CODEX_AGENTS_MD_MAX_BYTES = 32 * 1024
+
+# Specialized agents that run read-only under Codex (reviewer/observer
+# archetypes). deploy-operator runs shell operations → default sandbox.
+CODEX_READONLY_AGENTS = {
+    "requirements-analyst", "architect", "test-strategist", "code-reviewer",
+    "security-auditor", "ux-advocate", "guardrail-enforcer", "devil-advocate",
+    "coach",
+}
+
+
+def build_codex() -> None:
+    """Assemble plugin/codex/ from the already-generated plugin/ tree + src lite."""
+    cx = PLUGIN / "codex"
+    if cx.exists():
+        shutil.rmtree(cx)
+    ensure_dir(cx)
+    _cx_build_skills(cx)
+    _cx_build_agents(cx)
+    _cx_build_agents_md(cx)
+    _cx_build_hooks(cx)
+    _cx_build_manifest(cx)
+
+
+def _cx_build_skills(cx: Path) -> None:
+    """Copy the activity SKILL.md (name: already injected) plus the FULL
+    orchestrator as a loadable skill `gse-orchestrator` (Codex AGENTS.md only
+    carries the condensed lite edition, so the full text lives here — B1)."""
+    src = PLUGIN / "skills"
+    dst = cx / "skills"
+    ensure_dir(dst)
+    count = 0
+    for skill_dir in sorted(src.iterdir()):
+        if not skill_dir.is_dir():
+            continue
+        skill_file = skill_dir / "SKILL.md"
+        if not skill_file.exists():
+            continue
+        out = dst / skill_dir.name / "SKILL.md"
+        ensure_dir(out.parent)
+        shutil.copy2(skill_file, out)
+        count += 1
+    orch = PLUGIN / "agents" / "gse-orchestrator.md"
+    if orch.exists():
+        body = extract_body(orch)
+        content = (
+            "---\n"
+            "name: gse-orchestrator\n"
+            'description: "Full GSE-One orchestrator methodology — load when you need '
+            "the complete invariant text, failure modes, and edge cases beyond the "
+            'condensed AGENTS.md summary."\n'
+            "---\n\n"
+            f"{body}\n"
+        )
+        write_file(dst / "gse-orchestrator" / "SKILL.md", content)
+        count += 1
+    print(f"  skills: {count} (incl. full orchestrator)")
+
+
+def _cx_build_agents(cx: Path) -> None:
+    """Translate the 10 specialized agents (markdown) into Codex sub-agent TOML."""
+    src = PLUGIN / "agents"
+    dst = cx / "agents"
+    ensure_dir(dst)
+    count = 0
+    for agent_file in sorted(src.glob("*.md")):
+        if agent_file.name == "gse-orchestrator.md":
+            continue
+        toml = _cx_agent_to_toml(agent_file)
+        (dst / f"{agent_file.stem}.toml").write_text(toml, encoding="utf-8")
+        count += 1
+    print(f"  agents (toml): {count}")
+
+
+def _cx_agent_to_toml(agent_file: Path) -> str:
+    """Convert an agent markdown file to a Codex sub-agent TOML definition.
+
+    name/description from frontmatter; the markdown body becomes
+    developer_instructions as a TOML multi-line *literal* string ('''…''') so
+    backticks, backslashes and quotes pass through unescaped. No agent body
+    contains ''' (asserted in verify())."""
+    content = agent_file.read_text(encoding="utf-8")
+    name = agent_file.stem
+    desc = f"GSE-One {name} agent"
+    body = content
+    if content.startswith("---"):
+        parts = content.split("---", 2)
+        if len(parts) >= 3:
+            m = re.search(r'description:\s*"(.+?)"', parts[1], re.DOTALL)
+            if m:
+                desc = m.group(1).replace('"', "'").replace("\n", " ").strip()
+            body = parts[2].strip()
+    sandbox = "read-only" if name in CODEX_READONLY_AGENTS else "workspace-write"
+    return (
+        f'name = "{name}"\n'
+        f'description = "{desc}"\n'
+        f'sandbox_mode = "{sandbox}"\n'
+        f"developer_instructions = '''\n{body}\n'''\n"
+    )
+
+
+def _cx_build_agents_md(cx: Path) -> None:
+    """Codex AGENTS.md = condensed lite orchestrator (≤ 32 KiB), wrapped in
+    GSE-ONE markers for surgical install/uninstall."""
+    lite = AGENTS_DIR / "gse-orchestrator-lite.md"
+    if not lite.exists():
+        print("  AGENTS.md: SKIPPED (gse-orchestrator-lite.md missing)")
+        return
+    body = extract_body(lite)
+    content = (
+        f"{OPENCODE_AGENTS_MD_START}\n"
+        f"<!-- gse-one-version: {VERSION} -->\n"
+        f"# GSE-One Methodology (Codex edition — condensed)\n\n"
+        f"This section is managed by GSE-One. Edit `gse-one/src/` and regenerate — "
+        f"do not hand-edit between the START/END markers. The full orchestrator is "
+        f"available as the `gse-orchestrator` skill.\n\n"
+        f"{body}\n\n"
+        f"{OPENCODE_AGENTS_MD_END}\n"
+    )
+    write_file(cx / "AGENTS.md", content)
+    size = len(content.encode("utf-8"))
+    flag = "OK" if size <= CODEX_AGENTS_MD_MAX_BYTES else "OVERSIZE!"
+    print(f"  AGENTS.md: {size} bytes ({flag}, cap {CODEX_AGENTS_MD_MAX_BYTES})")
+
+
+def _cx_build_hooks(cx: Path) -> None:
+    """codex/hooks/hooks.json reproducing the 3 guardrails from shared commands.
+    Codex requires `codex_hooks = true` in config.toml — set by the installer."""
+    cmds = _guardrail_commands()
+    hooks = {
+        "hooks": {
+            "PreToolUse": [
+                {"matcher": "Bash", "hooks": [
+                    {"type": "command", "command": cmds["pre_commit"]},
+                    {"type": "command", "command": cmds["pre_force"]},
+                ]},
+            ],
+            "PostToolUse": [
+                {"matcher": "Bash", "hooks": [
+                    {"type": "command", "command": cmds["post_review"]},
+                ]},
+                {"matcher": "Edit", "hooks": [
+                    {"type": "command", "command": cmds["post_dashboard"]},
+                ]},
+                {"matcher": "Write", "hooks": [
+                    {"type": "command", "command": cmds["post_dashboard"]},
+                ]},
+            ],
+        },
+    }
+    write_file(cx / "hooks" / "hooks.json", json.dumps(hooks, indent=2) + "\n")
+
+
+def _cx_build_manifest(cx: Path) -> None:
+    """codex/.codex-plugin/plugin.json — component pointers (relative ./ paths)."""
+    manifest = {
+        "name": "gse-one",
+        "version": VERSION,
+        "description": PLUGIN_DESCRIPTION,
+        "skills": "./skills/",
+        "agents": "./agents/",
+        "hooks": "./hooks/hooks.json",
+        "repository": UPSTREAM_REPO,
+    }
+    write_file(cx / ".codex-plugin" / "plugin.json", json.dumps(manifest, indent=2) + "\n")
+
+
+# ---------------------------------------------------------------------------
+# Gemini CLI builder
+# ---------------------------------------------------------------------------
+
+def build_gemini() -> None:
+    """Assemble plugin/gemini/ from the already-generated plugin/ tree."""
+    gm = PLUGIN / "gemini"
+    if gm.exists():
+        shutil.rmtree(gm)
+    ensure_dir(gm)
+    _gm_build_commands(gm)
+    _gm_build_agents(gm)
+    _gm_build_context(gm)
+    _gm_build_hooks(gm)
+    _gm_build_manifest(gm)
+
+
+def _gm_neutralize(body: str) -> str:
+    """Neutralize Gemini template triggers in a command prompt.
+
+    Gemini substitutes {{args}} and treats other {{…}} as template syntax. The
+    corpus has exactly one stray occurrence ({{.Names}} in a docker example).
+    Replacing `{{` with `{ {` renders near-identically and is never parsed as a
+    template. {{args}} is unused by GSE prompts (arguments are appended by
+    Gemini's default handling), so this is unconditional."""
+    return body.replace("{{", "{ {")
+
+
+def _gm_build_commands(gm: Path) -> None:
+    """Each activity → commands/gse/<name>.toml ⇒ /gse:<name>. Body becomes a
+    TOML multi-line *literal* prompt ('''…'''); no body contains ''' (verified)."""
+    dst = gm / "commands" / "gse"
+    ensure_dir(dst)
+    count = 0
+    for name in ACTIVITY_NAMES:
+        src_file = ACTIVITIES_DIR / f"{name}.md"
+        if not src_file.exists():
+            continue
+        content = src_file.read_text(encoding="utf-8")
+        desc = f"GSE-One {name} command"
+        body = content
+        if content.startswith("---"):
+            parts = content.split("---", 2)
+            if len(parts) >= 3:
+                m = re.search(r'description:\s*"(.+?)"', parts[1], re.DOTALL)
+                if m:
+                    desc = m.group(1).replace('"', "'").replace("\n", " ").strip()
+                body = parts[2].strip()
+        body = _gm_neutralize(body)
+        toml = (
+            f'description = "{desc}"\n'
+            f"prompt = '''\n{body}\n'''\n"
+        )
+        (dst / f"{name}.toml").write_text(toml, encoding="utf-8")
+        count += 1
+    print(f"  commands (toml): {count}")
+
+
+def _gm_build_agents(gm: Path) -> None:
+    """Copy the 10 specialized agents as markdown (Gemini sub-agent format)."""
+    src = PLUGIN / "agents"
+    dst = gm / "agents"
+    ensure_dir(dst)
+    count = 0
+    for agent_file in sorted(src.glob("*.md")):
+        if agent_file.name == "gse-orchestrator.md":
+            continue
+        shutil.copy2(agent_file, dst / agent_file.name)
+        count += 1
+    print(f"  agents: {count}")
+
+
+def _gm_build_context(gm: Path) -> None:
+    """GEMINI.md = FULL orchestrator body (parity with .mdc, like opencode)."""
+    mdc = PLUGIN / "rules" / "gse-orchestrator.mdc"
+    if not mdc.exists():
+        print("  GEMINI.md: SKIPPED (rules/gse-orchestrator.mdc missing)")
+        return
+    body = extract_body(mdc)
+    content = (
+        f"{OPENCODE_AGENTS_MD_START}\n"
+        f"<!-- gse-one-version: {VERSION} -->\n"
+        f"# GSE-One Methodology (Gemini edition)\n\n"
+        f"This section is managed by GSE-One. Edit `gse-one/src/` and regenerate — "
+        f"do not hand-edit between the START/END markers.\n\n"
+        f"{body}\n\n"
+        f"{OPENCODE_AGENTS_MD_END}\n"
+    )
+    write_file(gm / "GEMINI.md", content)
+
+
+def _gm_build_hooks(gm: Path) -> None:
+    """gemini/hooks/hooks.json — guardrails via Gemini tool-name matchers
+    (run_shell_command, write_file, replace)."""
+    cmds = _guardrail_commands()
+    hooks = {
+        "hooks": {
+            "PreToolUse": [
+                {"matcher": "run_shell_command", "hooks": [
+                    {"type": "command", "command": cmds["pre_commit"]},
+                    {"type": "command", "command": cmds["pre_force"]},
+                ]},
+            ],
+            "PostToolUse": [
+                {"matcher": "run_shell_command", "hooks": [
+                    {"type": "command", "command": cmds["post_review"]},
+                ]},
+                {"matcher": "write_file", "hooks": [
+                    {"type": "command", "command": cmds["post_dashboard"]},
+                ]},
+                {"matcher": "replace", "hooks": [
+                    {"type": "command", "command": cmds["post_dashboard"]},
+                ]},
+            ],
+        },
+    }
+    write_file(gm / "hooks" / "hooks.json", json.dumps(hooks, indent=2) + "\n")
+
+
+def _gm_build_manifest(gm: Path) -> None:
+    """gemini-extension.json — manifest (commands/hooks/agents live in subdirs)."""
+    manifest = {
+        "name": "gse-one",
+        "version": VERSION,
+        "description": PLUGIN_DESCRIPTION,
+        "contextFileName": "GEMINI.md",
+    }
+    write_file(gm / "gemini-extension.json", json.dumps(manifest, indent=2) + "\n")
+
+
+# ---------------------------------------------------------------------------
 # Verification
 # ---------------------------------------------------------------------------
 
@@ -937,6 +1269,87 @@ def verify() -> None:
             if needle not in ts_text:
                 errors.append(f"opencode: gse-guardrails.ts missing pattern '{needle}'")
 
+    # Codex-specific
+    cx = PLUGIN / "codex"
+    print(f"\n  Codex CLI:")
+    cx_skills = sum(1 for n in ACTIVITY_NAMES if (cx / "skills" / n / "SKILL.md").exists())
+    cx_orch_skill = (cx / "skills" / "gse-orchestrator" / "SKILL.md").exists()
+    cx_agents = sum(1 for f in SPECIALIZED_AGENTS if (cx / "agents" / f"{Path(f).stem}.toml").exists())
+    print(f"    Skills:    {cx_skills}/{len(ACTIVITY_NAMES)} (+ orchestrator={'OK' if cx_orch_skill else 'MISSING'})")
+    print(f"    Agents:    {cx_agents}/{len(SPECIALIZED_AGENTS)} (toml, specialized only)")
+    if cx_skills < len(ACTIVITY_NAMES): errors.append(f"codex: missing {len(ACTIVITY_NAMES)-cx_skills} skills")
+    if not cx_orch_skill: errors.append("codex: missing full orchestrator skill")
+    if cx_agents < len(SPECIALIZED_AGENTS): errors.append(f"codex: missing {len(SPECIALIZED_AGENTS)-cx_agents} agent toml")
+    for name, path in {
+        "AGENTS.md": cx / "AGENTS.md",
+        "hooks/hooks.json": cx / "hooks" / "hooks.json",
+        ".codex-plugin/plugin.json": cx / ".codex-plugin" / "plugin.json",
+    }.items():
+        ok_e = path.exists()
+        print(f"    {name}: {'OK' if ok_e else 'MISSING'}")
+        if not ok_e: errors.append(f"codex: missing {name}")
+    cx_md = cx / "AGENTS.md"
+    if cx_md.exists():
+        size = len(cx_md.read_text(encoding="utf-8").encode("utf-8"))
+        if size <= CODEX_AGENTS_MD_MAX_BYTES:
+            print(f"    AGENTS.md size: {size} bytes (OK <= {CODEX_AGENTS_MD_MAX_BYTES})")
+        else:
+            print(f"    AGENTS.md size: {size} bytes (OVERSIZE > {CODEX_AGENTS_MD_MAX_BYTES})")
+            errors.append(f"codex: AGENTS.md {size} bytes exceeds {CODEX_AGENTS_MD_MAX_BYTES}")
+    # Agent TOML structural sanity (no tomllib on py<3.11): balanced ''' + keys
+    bad_toml = []
+    for f in SPECIALIZED_AGENTS:
+        p = cx / "agents" / f"{Path(f).stem}.toml"
+        if p.exists():
+            txt = p.read_text(encoding="utf-8")
+            if (txt.count("'''") != 2 or "developer_instructions = '''" not in txt
+                    or not txt.startswith("name =")):
+                bad_toml.append(Path(f).stem)
+    if bad_toml:
+        errors.append(f"codex: malformed agent toml ({', '.join(bad_toml)})")
+    elif cx_agents:
+        print(f"    Agent toml: all {cx_agents} structurally valid")
+    # Hook guardrail parity with shared commands
+    cx_hooks_f = cx / "hooks" / "hooks.json"
+    if cx_hooks_f.exists():
+        shared = _guardrail_commands()
+        ht = cx_hooks_f.read_text(encoding="utf-8")
+        for key in ("pre_commit", "pre_force", "post_review", "post_dashboard"):
+            if json.dumps(shared[key])[1:-1] not in ht:
+                errors.append(f"codex: hooks.json missing/diverged guardrail '{key}'")
+
+    # Gemini-specific
+    gm = PLUGIN / "gemini"
+    print(f"\n  Gemini CLI:")
+    gm_cmds = sum(1 for n in ACTIVITY_NAMES if (gm / "commands" / "gse" / f"{n}.toml").exists())
+    gm_agents = sum(1 for f in SPECIALIZED_AGENTS if (gm / "agents" / f).exists())
+    print(f"    Commands:  {gm_cmds}/{len(ACTIVITY_NAMES)} (/gse:<name>)")
+    print(f"    Agents:    {gm_agents}/{len(SPECIALIZED_AGENTS)}")
+    if gm_cmds < len(ACTIVITY_NAMES): errors.append(f"gemini: missing {len(ACTIVITY_NAMES)-gm_cmds} commands")
+    if gm_agents < len(SPECIALIZED_AGENTS): errors.append(f"gemini: missing {len(SPECIALIZED_AGENTS)-gm_agents} agents")
+    for name, path in {
+        "GEMINI.md": gm / "GEMINI.md",
+        "hooks/hooks.json": gm / "hooks" / "hooks.json",
+        "gemini-extension.json": gm / "gemini-extension.json",
+    }.items():
+        ok_e = path.exists()
+        print(f"    {name}: {'OK' if ok_e else 'MISSING'}")
+        if not ok_e: errors.append(f"gemini: missing {name}")
+    # No raw {{ left in any command prompt (template-collision guard)
+    raw_braces = [n for n in ACTIVITY_NAMES
+                  if (gm / "commands" / "gse" / f"{n}.toml").exists()
+                  and "{{" in (gm / "commands" / "gse" / f"{n}.toml").read_text(encoding="utf-8")]
+    if raw_braces:
+        errors.append(f"gemini: un-neutralized template braces in command prompt ({', '.join(raw_braces)})")
+    elif gm_cmds:
+        print(f"    Template guard: no raw template braces in {gm_cmds} prompts")
+    # Command TOML structural sanity (balanced ''')
+    gm_bad = [n for n in ACTIVITY_NAMES
+              if (gm / "commands" / "gse" / f"{n}.toml").exists()
+              and (gm / "commands" / "gse" / f"{n}.toml").read_text(encoding="utf-8").count("'''") != 2]
+    if gm_bad:
+        errors.append(f"gemini: malformed command toml ({', '.join(gm_bad)})")
+
     # Body parity
     print("\n  Cross-platform parity:")
     if orchestrator and (PLUGIN / "rules" / "gse-orchestrator.mdc").exists():
@@ -958,6 +1371,31 @@ def verify() -> None:
             else:
                 print(f"    AGENTS.md vs .mdc body:    DIVERGENT!")
                 errors.append("opencode AGENTS.md body differs from .mdc body")
+
+        # Gemini GEMINI.md body parity (full orchestrator, like opencode)
+        gemini_md = (PLUGIN / "gemini" / "GEMINI.md")
+        if gemini_md.exists():
+            gm_text = gemini_md.read_text(encoding="utf-8")
+            gm_inside = gm_text.split(OPENCODE_AGENTS_MD_START, 1)[-1].split(OPENCODE_AGENTS_MD_END, 1)[0]
+            if mdc_body.strip() in gm_inside:
+                print(f"    GEMINI.md vs .mdc body:    IDENTICAL")
+            else:
+                print(f"    GEMINI.md vs .mdc body:    DIVERGENT!")
+                errors.append("gemini GEMINI.md body differs from .mdc body")
+
+        # Codex AGENTS.md is the CONDENSED lite edition (B1) — NOT byte-parity
+        # with the full orchestrator by design. We assert it derives from the
+        # lite source instead (its body must appear inside AGENTS.md).
+        codex_md = (PLUGIN / "codex" / "AGENTS.md")
+        lite_src = AGENTS_DIR / "gse-orchestrator-lite.md"
+        if codex_md.exists() and lite_src.exists():
+            lite_body = extract_body(lite_src).strip()
+            cx_inside = codex_md.read_text(encoding="utf-8")
+            if lite_body in cx_inside:
+                print(f"    Codex AGENTS.md vs lite:   IDENTICAL (condensed by design)")
+            else:
+                print(f"    Codex AGENTS.md vs lite:   DIVERGENT!")
+                errors.append("codex AGENTS.md body differs from gse-orchestrator-lite source")
 
     # External docs consistency — warning-level (non-blocking).
     # Build-time early alert: visible but not fatal so prose can evolve

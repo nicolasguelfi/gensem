@@ -58,7 +58,7 @@ gse-one/
 │   │   ├── devil-advocate.md
 │   │   ├── coach.md
 │   │   └── deploy-operator.md
-│   └── templates/                       # 28 templates (MANIFEST.yaml acts as self-descriptor and is not counted)
+│   └── templates/                       # 29 templates (MANIFEST.yaml included as self-descriptor)
 │
 ├── plugin/                              # Single deployable directory (Claude + Cursor + opencode)
 │   ├── .claude-plugin/plugin.json       # Claude Code manifest
@@ -66,7 +66,7 @@ gse-one/
 │   ├── skills/                          # 24 skills (shared, `name:` field included)
 │   ├── commands/                        # 24 flat /gse-<name>.md (Cursor + opencode)
 │   ├── agents/                          # 11 agents (shared, incl. orchestrator)
-│   ├── templates/                       # 30 templates (shared — MANIFEST.yaml acts as self-descriptor, excluded from count)
+│   ├── templates/                       # 29 templates (shared — MANIFEST.yaml included as self-descriptor)
 │   ├── rules/
 │   │   └── gse-orchestrator.mdc         # Cursor-only (ignored by Claude/opencode)
 │   ├── hooks/
@@ -2906,15 +2906,15 @@ The generator's `--verify` flag asserts (a) `plugin/` structure completeness —
 | Skills | 24 | — | — | 24 (regenerated with `name:` injection) | 24 activities |
 | Commands | — | — | 24 | 24 | 24 activities (reused) |
 | Agents | 11 (incl. orchestrator) | — | — | 10 specialized (excl. orchestrator) | 11 agents |
-| Templates | 30 | — | — | — | 30 templates |
+| Templates | 29 | — | — | — | 29 templates |
 | Manifest | — | 1 | 1 | 1 (`opencode.json`) | constants |
 | Rules | — | — | 1 (.mdc) | — | from orchestrator |
 | Hooks | — | 1 | 1 | 1 (`gse-guardrails.ts`) | shared constants |
 | Settings | — | 1 | — | — | — |
 | AGENTS.md | — | — | — | 1 (from orchestrator) | from orchestrator |
-| **Total** | **63** | **3** | **26** | **59** | **63 sources** |
+| **Total** | **64** | **3** | **27** | **61** | **64 sources** |
 
-Grand total: **151 files**. Generator: ~900 lines.
+Grand total: **155 files**. Generator: ~900 lines.
 
 ---
 

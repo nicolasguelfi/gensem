@@ -313,7 +313,7 @@ GSE-One delivers its methodology as a **single plugin directory** (`plugin/`) th
 | Orchestrator (identity) | `rules/gse-orchestrator.mdc` | Ignored | `alwaysApply: true` | Ignored |
 | Orchestrator (identity) | `opencode/AGENTS.md` | Ignored | Ignored | Loaded (always-on, worktree root) |
 | Commands (24) | `commands/gse-<name>.md` | Ignored | Loaded | Via `opencode/commands/` |
-| Templates (30) | `templates/*` | Loaded | Loaded | Shared via registry tools |
+| Templates (29) | `templates/*` | Loaded | Loaded | Shared via registry tools |
 | Hooks (3) | `hooks/hooks.claude.json` | Loaded | Ignored | Ignored |
 | Hooks (3) | `hooks/hooks.cursor.json` | Ignored | Loaded | Ignored |
 | Hooks (3) | `opencode/plugins/gse-guardrails.ts` | Ignored | Ignored | Native TS plugin |

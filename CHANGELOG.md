@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.81.3] - 2026-06-13
+
+*HUG completeness invariant: preference dimensions (incl. the pedagogical ones) can no longer be silently defaulted via an improvised preset.*
+
+### Changed
+- `hug.md`: added a Completeness invariant enforcing spec §14.1 — Sprint 1 vs Sprint N+1 ("HUG = Full interview, all 13 dimensions"). Every dimension not resolved by Step 1 inference MUST be an explicit numbered choice; bundled presets are not a substitute. Consent-bearing dimensions (#7 decision involvement, #10 learning goals, #11 contextual tips — §P14 Knowledge Transfer) are never inferred or preset-defaulted. Observed: a Codex onboarding preset set contextual tips ON without asking.
+
 ## [0.81.2] - 2026-06-13
 
 *HUG HCI fix: the expert "all questions in one block" cadence no longer degrades into a free-text wall on runtimes without an interactive widget.*

@@ -78,7 +78,7 @@ You are NOT a passive assistant. You are an opinionated engineering partner who:
 
 ## Command Reference
 
-24 commands under `/gse:` (Claude/Gemini: `/gse:go`; Cursor/opencode: `/gse-go`). **On Codex** there are no colon-prefixed slash commands: the activities are installed as **skills named `gse-<name>`** — invoke one from the `/` menu (type `/gse` to filter, e.g. `gse-go`, `gse-status`), or just state your intent and the matching skill loads. Do NOT tell a Codex user to type `/gse:go` (it is not a Codex command).
+24 commands under `/gse:` (Claude/Gemini: `/gse:go`; Cursor/opencode: `/gse-go`). **On Codex** activities are **skills named `gse-<name>`**, invoked the Codex way: type **`$gse`** to autocomplete a skill (e.g. `$gse-go`, `$gse-status`), or **`/skills`** to browse, or just state your intent and the matching skill loads. The `/` menu is for built-in commands only — `/gse-go` and `/gse:go` are NOT valid Codex commands.
 
 | Command | Description | Phase | Execution |
 |---|---|---|---|

@@ -3327,6 +3327,7 @@ The constants below are NOT methodological choices — they are snapshots of the
 | Cursor ≥2.4 for `AskQuestion` | spec §P4; orchestrator P4 bullet | Version gate of one platform feature | Becomes universal, gate removable |
 | Interactive tool names (`AskUserQuestion` / `AskQuestion` / `question`) | spec §P4; orchestrator P4 bullet | Vendor API naming | Renames; the abstract `AskUser` alias is the stable layer |
 | Interactive tool limit "≤4-5 options" | spec §P4 | Current widget UX caps | Larger or scrollable widgets |
+| Codex CLI / Gemini CLI expose no native interactive-question widget | spec §P4 — Human-in-the-Loop (Interactive mode); §1.1 secondary-targets note | Today's secondary-target runtimes ship no structured-question tool — every Gate / QCM (e.g. `/gse:hug` profiling, decision tiers) renders as the P4 numbered-list text fallback | A question widget is added to these CLIs → the `AskUser` alias maps to it and interactive mode becomes available there too |
 | `backlog.yaml` compaction cap "~200 lines" | spec §12 state management ×2; orchestrator Context overflow prevention | Sized to current context windows | Grows with context windows; the *compaction mechanism* stays |
 | `pip show` / `npm list` as canonical existence checks | devil-advocate checklist (×2 modes); deliver Step 1.6 | Today's dominant package managers | New ecosystems (uv, bun, …) join the list |
 | Python ≥3.9 stdlib-only tools | tools docstrings; TESTING.md; install.sh preflight (≥3.8) | Current ubiquity baseline | Floor raises as platforms drop old runtimes |

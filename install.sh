@@ -9,7 +9,7 @@
 #
 # Env overrides:
 #   GSE_PLATFORM   claude|cursor|opencode|codex|gemini|all|both   (default: auto-detect)
-#   GSE_MODE       plugin|no-plugin|local|sandbox    (default: no-plugin; 'local' = project registry, nothing under $HOME; 'sandbox' = isolated $HOME in .gse-sandbox + .gse/run launcher, codex/gemini/opencode only)
+#   GSE_MODE       plugin|no-plugin|local|sandbox    (default: no-plugin; 'local' = project registry, nothing under $HOME; 'sandbox' = isolated $HOME in .gse-sandbox + .gse-sandbox/run launcher, codex/gemini/opencode only)
 #   GSE_SCOPE      project|local|user                (default: user)
 #   GSE_VERSION    vX.Y.Z|latest                     (default: latest)
 #   GSE_PROJECT_DIR /abs/path                        (no-plugin only)

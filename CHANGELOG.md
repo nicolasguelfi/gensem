@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.79.0] - 2026-06-13
+
+*Codex runtime-UX fixes: correct skill-invocation guidance and relocate the sandbox launcher out of the GSE state dir.*
+
+### Fixed
+- Corrected the Codex invocation note in `gse-orchestrator-lite.md`: Codex skills are invoked via `$gse` autocomplete or `/skills`, not the `/` menu — `/gse-go` and `/gse:go` are not valid Codex commands.
+- Made the installer's "Next step" hint platform-aware: Codex now shows `$gse-go` (or `/skills`), Cursor/opencode `/gse-go`, Claude/Gemini `/gse:go` — instead of a hard-coded `/gse:go` invalid on three of five platforms.
+
+### Changed
+- Relocated the sandbox launcher from `<project>/.gse/run` to `<project>/.gse-sandbox/run` (+ `launch.env`), colocated with the isolated `$HOME` — no collision with the GSE state dir `.gse/`, and `rm -rf .gse-sandbox` removes everything. Launch with `sh .gse-sandbox/run`.
+- Launcher now `cd`s to the project root before exec, so the agent runs from the project regardless of invocation directory.
+
+### Added
+- Era-bound registry row (spec Appendix C): Codex / Gemini CLI expose no native interactive-question widget, so every Gate / QCM renders as the P4 text fallback.
+
 ## [0.78.0] - 2026-06-13
 
 *Codex runtime-validation fix: GSE activity skills namespaced `gse-<name>` for the Codex `/` menu.*

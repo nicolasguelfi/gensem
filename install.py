@@ -1797,6 +1797,106 @@ def uninstall_gemini_no_plugin(project_dir):
 
 
 # ---------------------------------------------------------------------------
+# Sandbox mode — HOME-isolated install + project launcher (run over many days)
+# ---------------------------------------------------------------------------
+
+# Sandbox is supported for CLI agents whose "global" install is a plain
+# file-copy that honors $HOME (so re-running the installer under HOME=<sandbox>
+# lands everything inside the project). Claude (CLI/Keychain-mediated) and
+# Cursor (GUI app) do not isolate cleanly via $HOME → use --mode local instead.
+SANDBOX_PLATFORMS = {"codex", "gemini", "opencode"}
+
+
+def _write_launcher(project_dir, platform_name, mode):
+    """Drop the generic launcher (.gse/run) + metadata (.gse/launch.env) into a
+    project. The launcher detects mode+platform at runtime and starts the agent
+    with the right environment (sets HOME inside the project for sandbox mode)."""
+    gse = Path(project_dir).resolve() / ".gse"
+    ensure_dir(gse)
+    (gse / "launch.env").write_text(f"platform={platform_name}\nmode={mode}\n", encoding="utf-8")
+    src = PLUGIN_DIR / "gse-run"
+    dst = gse / "run"
+    if not src.exists():
+        err(f"Launcher template not found at {src} — run: cd gse-one && python3 gse_generate.py")
+        return False
+    shutil.copy2(src, dst)
+    try:
+        dst.chmod(0o755)
+    except OSError:
+        pass
+    ok(f"Launcher installed: {dst}")
+    info("Start the agent any time with:  sh .gse/run   (add .gse-sandbox/ to .gitignore)")
+    return True
+
+
+def install_sandbox(platform_name, project_dir):
+    """Install GSE-One into a project-internal sandbox $HOME and drop the
+    launcher. Re-executes the normal (plugin) install under HOME=<project>/
+    .gse-sandbox, so nothing is written under the real $HOME. Idempotent on the
+    launcher; re-run to refresh the install."""
+    step(f"{platform_name} — Sandbox install (project-internal $HOME)")
+
+    if platform_name not in SANDBOX_PLATFORMS:
+        err(f"--mode sandbox is not supported for '{platform_name}'.")
+        err("Use --mode local instead (Claude is CLI/Keychain-mediated; Cursor is a GUI app).")
+        tracker.add(platform_name, "sandbox", "project", "-", "FAIL", "unsupported platform")
+        return False
+
+    if not PLUGIN_DIR.is_dir():
+        err(f"Plugin not found at {PLUGIN_DIR}")
+        tracker.add(platform_name, "sandbox", "project", "-", "FAIL", "plugin missing")
+        return False
+
+    project_dir = Path(project_dir).resolve()
+    sandbox = project_dir / ".gse-sandbox"
+    ensure_dir(sandbox)
+
+    # Re-exec the installer with HOME pointed at the sandbox: the child sees
+    # HOME=<sandbox>, so its plugin-mode install lands entirely inside it.
+    env = os.environ.copy()
+    env["HOME"] = str(sandbox)
+    env.pop("XDG_CONFIG_HOME", None)   # otherwise opencode escapes the sandbox
+    env["GSE_CHILD"] = "1"             # silence the child's banner/summary
+    info(f"Installing into project sandbox HOME: {sandbox}")
+    result = subprocess.run(
+        [sys.executable, str(Path(__file__).resolve()),
+         "--platform", platform_name, "--mode", "plugin"],
+        env=env,
+    )
+    if result.returncode != 0:
+        err(f"Sandbox install failed (exit {result.returncode})")
+        tracker.add(platform_name, "sandbox", "project", str(sandbox), "FAIL",
+                    f"install exit {result.returncode}")
+        return False
+
+    _write_launcher(project_dir, platform_name, "sandbox")
+    ok(f"{platform_name} installed in project sandbox — nothing under your real $HOME")
+    tracker.add(platform_name, "sandbox", "project", str(sandbox), "OK",
+                "HOME-isolated + .gse/run launcher")
+    return True
+
+
+def uninstall_sandbox(platform_name, project_dir):
+    """Remove the project sandbox + launcher."""
+    step(f"{platform_name} — Sandbox uninstall (project)")
+    project_dir = Path(project_dir).resolve()
+    sandbox = project_dir / ".gse-sandbox"
+    removed = 0
+    if sandbox.is_dir():
+        remove_path(sandbox)
+        removed += 1
+    gse = project_dir / ".gse"
+    for name in ("run", "launch.env"):
+        f = gse / name
+        if f.exists():
+            f.unlink()
+            removed += 1
+    ok(f"Removed sandbox + launcher ({removed} item(s)) from {project_dir}")
+    tracker.add(platform_name, "uninstall", "project", str(sandbox), "OK", f"{removed} items")
+    return True
+
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
@@ -1933,9 +2033,12 @@ def interactive_menu(env):
                     ("Plugin — global (copy to ~/.config/opencode/)", "plugin"),
                     ("Non-plugin — copy artifacts to .opencode/ (project)", "no-plugin"),
                     ("Fully local — .opencode/ + project registry, nothing under ~", "local"),
+                    ("Sandbox — isolated $HOME in .gse-sandbox/ + .gse/run launcher", "sandbox"),
                 ],
             )
-            if mode in ("no-plugin", "local"):
+            if mode == "sandbox":
+                results.append(install_sandbox("opencode", _ask_project_dir()))
+            elif mode in ("no-plugin", "local"):
                 project_dir = _ask_project_dir()
                 _maybe_local(mode, project_dir)
                 results.append(install_opencode_no_plugin(project_dir))
@@ -1949,9 +2052,12 @@ def interactive_menu(env):
                     ("Plugin — global (~/.codex/ + ~/.agents/skills/)", "plugin"),
                     ("Non-plugin — copy artifacts to .codex/ + .agents/ (project)", "no-plugin"),
                     ("Fully local — project artifacts + project registry, nothing under ~", "local"),
+                    ("Sandbox — isolated $HOME in .gse-sandbox/ + .gse/run launcher", "sandbox"),
                 ],
             )
-            if mode in ("no-plugin", "local"):
+            if mode == "sandbox":
+                results.append(install_sandbox("codex", _ask_project_dir()))
+            elif mode in ("no-plugin", "local"):
                 project_dir = _ask_project_dir()
                 _maybe_local(mode, project_dir)
                 results.append(install_codex_no_plugin(project_dir))
@@ -1965,9 +2071,12 @@ def interactive_menu(env):
                     ("Plugin — global extension (~/.gemini/extensions/gse-one/)", "plugin"),
                     ("Non-plugin — copy artifacts to .gemini/ (project)", "no-plugin"),
                     ("Fully local — .gemini/ + project registry, nothing under ~", "local"),
+                    ("Sandbox — isolated $HOME in .gse-sandbox/ + .gse/run launcher", "sandbox"),
                 ],
             )
-            if mode in ("no-plugin", "local"):
+            if mode == "sandbox":
+                results.append(install_sandbox("gemini", _ask_project_dir()))
+            elif mode in ("no-plugin", "local"):
                 project_dir = _ask_project_dir()
                 _maybe_local(mode, project_dir)
                 results.append(install_gemini_no_plugin(project_dir))
@@ -2051,6 +2160,7 @@ def parse_args():
   python3 install.py --platform opencode --mode plugin
   python3 install.py --platform codex --mode no-plugin --project-dir /path/to/project
   python3 install.py --platform codex --mode local --project-dir /path/to/project   # nothing under $HOME
+  python3 install.py --platform codex --mode sandbox --project-dir /path/to/project # isolated $HOME + .gse/run launcher
   python3 install.py --platform gemini --mode plugin
   python3 install.py --platform both --mode plugin --scope user
   python3 install.py --platform all --mode plugin --scope user
@@ -2060,9 +2170,11 @@ def parse_args():
     parser.add_argument("--platform",
                         choices=["claude", "cursor", "opencode", "codex", "gemini", "both", "all"],
                         help="Target platform ('both' = claude+cursor, 'all' = all five)")
-    parser.add_argument("--mode", choices=["plugin", "no-plugin", "local"],
-                        help="Installation mode ('local' = no-plugin + project-local "
-                             "registry at <project>/.gse/registry, nothing under $HOME)")
+    parser.add_argument("--mode", choices=["plugin", "no-plugin", "local", "sandbox"],
+                        help="Installation mode. 'local' = no-plugin + project-local "
+                             "registry (nothing under $HOME). 'sandbox' = HOME-isolated "
+                             "install inside <project>/.gse-sandbox + a .gse/run launcher "
+                             "(codex/gemini/opencode only).")
     parser.add_argument("--scope", choices=["project", "local", "user"], default="project",
                         help="Plugin scope for Claude Code (default: project). Ignored for Cursor/opencode.")
     parser.add_argument("--project-dir", type=str,
@@ -2076,10 +2188,17 @@ def parse_args():
 # ---------------------------------------------------------------------------
 
 def main():
-    print(BANNER)
+    # GSE_CHILD is set when install_sandbox re-execs us under a sandbox HOME;
+    # suppress the banner / environment table / summary so only the inner
+    # install steps show.
+    quiet = bool(os.environ.get("GSE_CHILD"))
+
+    if not quiet:
+        print(BANNER)
 
     env = detect_environment()
-    display_environment(env)
+    if not quiet:
+        display_environment(env)
     args = parse_args()
 
     # Interactive mode
@@ -2107,6 +2226,10 @@ def main():
     results = []
 
     for plat in platforms:
+        if mode == "sandbox":
+            results.append(uninstall_sandbox(plat, project_dir) if args.uninstall
+                           else install_sandbox(plat, project_dir))
+            continue
         if args.uninstall:
             if plat == "claude":
                 results.append(uninstall_claude_plugin() if mode == "plugin"
@@ -2140,7 +2263,8 @@ def main():
                 results.append(install_gemini_plugin(env) if mode == "plugin"
                                else install_gemini_no_plugin(project_dir))
 
-    tracker.display()
+    if not quiet:
+        tracker.display()
     sys.exit(0 if all(results) else 1)
 
 

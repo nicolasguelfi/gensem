@@ -88,6 +88,10 @@ python3 install.py --platform gemini --mode plugin
 # Fully local — nothing under $HOME (self-contained / committable)
 python3 install.py --platform codex --mode local --project-dir /path/to/project
 
+# Sandbox — isolated $HOME in .gse-sandbox/ + a .gse/run launcher (codex/gemini/opencode)
+python3 install.py --platform codex --mode sandbox --project-dir /path/to/project
+# then, any day:  sh .gse/run
+
 # Both Claude + Cursor
 python3 install.py --platform both --mode plugin --scope user
 

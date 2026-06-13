@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.74.0] - 2026-06-13
+
+*Adds a fully-isolated sandbox install mode with a project launcher — install once, run isolated for days.*
+
+### Added
+- Added `install.py --mode sandbox` (`GSE_MODE=sandbox`): HOME-isolated install under `<project>/.gse-sandbox/` + a generic launcher `<project>/.gse/run`. Install and run are decoupled — launch any day with `sh .gse/run`, no reinstall. Codex / Gemini / opencode only (Claude/Cursor rejected → use `--mode local`).
+- Added the generated launcher `plugin/gse-run` (POSIX sh): reads `.gse/launch.env`, auto-detects mode+platform, sets the isolated `$HOME` for sandbox mode, then execs the agent. Works from any subdirectory.
+
+### Changed
+- `install.sh` documents `GSE_MODE=sandbox` (forwarded to `install.py`, no logic change — single user entry point preserved).
+- Sandbox re-execs the normal plugin install under `HOME=<sandbox>` (child runs with `GSE_CHILD=1` to suppress its banner/summary) — no `install.py` path-logic change.
+
 ## [0.73.0] - 2026-06-13
 
 *Adds a fully project-local install mode — nothing written under `$HOME`.*

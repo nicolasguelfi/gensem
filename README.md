@@ -79,7 +79,7 @@ The curl installer reads five environment variables that override auto-detection
 | Variable | Values | Description |
 |---|---|---|
 | `GSE_PLATFORM` | `claude` \| `cursor` \| `opencode` \| `codex` \| `gemini` \| `all` \| `both` | Restrict install to one platform — `both` = claude + cursor, `all` = every supported platform (default: every platform detected on PATH) |
-| `GSE_MODE` | `plugin` \| `no-plugin` \| `local` | Plugin, or copy artifacts into a project's `.claude/` / `.cursor/` / `.opencode/` / `.codex/` / `.gemini/`. `local` = no-plugin **+ project registry at `.gse/registry`, nothing under `$HOME`** (self-contained / committable) |
+| `GSE_MODE` | `plugin` \| `no-plugin` \| `local` \| `sandbox` | Plugin, or copy artifacts into a project's `.claude/` / `.cursor/` / `.opencode/` / `.codex/` / `.gemini/`. `local` = no-plugin **+ project registry, nothing under `$HOME`** (self-contained / committable). `sandbox` = **isolated `$HOME` in `.gse-sandbox/` + a `.gse/run` launcher** to start the agent fully isolated (codex/gemini/opencode) |
 | `GSE_SCOPE` | `project` \| `local` \| `user` | Claude Code plugin scope only (default: `user`); ignored by Cursor, opencode, Codex, and Gemini |
 | `GSE_VERSION` | `latest` \| `vX.Y.Z` | Release tag to install; `latest` resolves via the GitHub API (default: `latest`) |
 | `GSE_PROJECT_DIR` | path | Target directory for `no-plugin` mode (default: current working directory) |
@@ -320,7 +320,7 @@ python3 install.py
 |--------|--------|---------|-------------|
 | *(no flags)* | — | — | **Interactive mode** — detects environment, guides step by step |
 | `--platform` | `claude` \| `cursor` \| `opencode` \| `codex` \| `gemini` \| `both` \| `all` | *(interactive)* | Target platform (`both` = claude+cursor, `all` = every supported platform) |
-| `--mode` | `plugin` \| `no-plugin` \| `local` | *(interactive)* | `plugin` (recommended), `no-plugin` (copies artifacts directly), or `local` (no-plugin + project registry, nothing under `$HOME`) |
+| `--mode` | `plugin` \| `no-plugin` \| `local` \| `sandbox` | *(interactive)* | `plugin` (recommended); `no-plugin` (copies artifacts directly); `local` (no-plugin + project registry, nothing under `$HOME`); `sandbox` (isolated `$HOME` in `.gse-sandbox/` + a `.gse/run` launcher — codex/gemini/opencode) |
 | `--scope` | `project` \| `local` \| `user` | `project` | Claude Code plugin scope only (ignored by Cursor, opencode, Codex, Gemini) |
 | `--project-dir` | path | current directory | No-plugin mode only |
 | `--uninstall` | *(flag)* | `false` | Remove GSE-One |

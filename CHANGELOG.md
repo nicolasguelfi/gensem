@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.77.0] - 2026-06-13
+
+*Audit v0.74.0 strategic recommendations (Category E) triaged: 2 adopted, 6 closed, 15 backlogged (recorded in _LOCAL/, not the corpus).*
+
+### Changed
+- Aligned README + spec Appendix C platform framing: Codex CLI / Gemini CLI marked experimental (secondary), consistent with spec §1.1.4 + design §6.6 (METH-1).
+- Added a "Why GSE-One" positioning callout to README (trustworthy delegation: governance / adaptivity / AI integrity) (METH-6).
+
 ## [0.76.0] - 2026-06-13
 
 *Audit v0.74.0 remediation — 17 coherence fixes + 3 detector false-positives eliminated at source (LOT 1–8).*

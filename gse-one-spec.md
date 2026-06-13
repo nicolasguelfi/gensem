@@ -3319,7 +3319,7 @@ This section helps anyone maintaining, extending, or debugging GSE-One understan
 
 ### Era-bound assumptions registry
 
-The constants below are NOT methodological choices — they are snapshots of the 2024-2026 platform ecosystem, embedded in the corpus because the methodology has to run on real runtimes. **Review trigger: re-validate every row at each major release of a supported platform (Claude Code, Cursor, opencode) and at each audit touching runtime integration.** A row that no longer holds is updated at its listed locations (number + name cross-references), not silently.
+The constants below are NOT methodological choices — they are snapshots of the 2024-2026 platform ecosystem, embedded in the corpus because the methodology has to run on real runtimes. **Review trigger: re-validate every row at each major release of a supported platform (Claude Code, Cursor, opencode; experimental: Codex CLI, Gemini CLI) and at each audit touching runtime integration.** A row that no longer holds is updated at its listed locations (number + name cross-references), not silently.
 
 | Era-bound constant | Where it lives | Why it is time-bound | Likely evolution |
 |---|---|---|---|

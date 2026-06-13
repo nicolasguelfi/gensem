@@ -1,5 +1,5 @@
 <!-- GSE-ONE START -->
-<!-- gse-one-version: 0.75.0 -->
+<!-- gse-one-version: 0.76.0 -->
 # GSE-One Methodology (Codex edition — condensed)
 
 This section is managed by GSE-One. Edit `gse-one/src/` and regenerate — do not hand-edit between the START/END markers. The full orchestrator is available as the `gse-orchestrator` skill.

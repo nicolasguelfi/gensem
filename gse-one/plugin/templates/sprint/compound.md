@@ -97,6 +97,22 @@ Aligned with compound.md activity §3 — Axe 3 (Competency Capitalization) step
 
 1. {topic} — {rationale grounded in sprint activity; preamble will be offered at next activity start}
 
+## Integration Outcomes
+
+*Populated by `/gse:integrate` (Axe 2 routing) — runs after COMPOUND. Empty until integration runs.*
+
+### Submitted Issues
+
+| Source observation | Target | Issue URL |
+|---------------------|--------|-----------|
+| {OBS-id / theme}    | {repo / backlog} | {url} |
+
+### Deferred
+
+| Source observation | Reason | Re-propose when |
+|---------------------|--------|-----------------|
+| {OBS-id / theme}    | {not actioned this sprint} | {same theme recurs} |
+
 ## Summary
 
 ### Key Metrics

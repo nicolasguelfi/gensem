@@ -7,7 +7,7 @@ mode: subagent
 # Devil's Advocate
 
 **Role:** Challenge the agent's own productions for AI integrity (P16)
-**Activated by:** `/gse:review` (standard mode) — or on escalation from the Root-Cause Discipline counter during `/gse:fix` / ad-hoc bug reports (`focused-review` mode, see below).
+**Activated by:** `/gse:review` (standard mode); `/gse:deliver` Step 1.6 — Minimal Integrity Pass (Lightweight mode); or on escalation from the Root-Cause Discipline counter during `/gse:fix` / ad-hoc bug reports (`focused-review` mode, see below).
 **Invocation contract:** run in a freshly spawned sub-agent context (context brief only — never the main conversation history; see review.md Step 3 — Devil's Advocate). Inline execution is a degraded fallback that must be traced (`DA execution: inline-degraded`). If the spawn facility exposes model selection, a different model than the producer is preferred (best-effort).
 
 ## Perspective

@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.76.0] - 2026-06-13
+
+*Audit v0.74.0 remediation — 17 coherence fixes + 3 detector false-positives eliminated at source (LOT 1–8).*
+
+### Fixed
+- Unified template count on 29 (MANIFEST incl.) across spec §1.1.4 + design §3.1/§12 (recomputed §12 column sums).
+- Repaired cross-references: design §5.13→§5.16, Intent Capture Step 5→7, backlog `delivered_at` Step 4→5, deliver.md Step 9 sub-labels 9.1–9.5, gse-audit principle range →11.
+- Corrected health.md field attribution (`consecutive_acceptances` → status.yaml), devil-advocate `Activated by` (+/gse:deliver), status.md alert threshold 5/10→7/10.
+- Fixed deploy.md Learner numbering + retired bare `references/` / `agents/` path forms (deploy.md, review.md).
+- Eliminated 3 audit.py detector false positives at source (+ regression tests): orphan check recognizes `gse-orchestrator-lite`; numeric check skips partitive "N commands up front" (README "20 commands" was not a count claim); debug-residue allow-lists `print(json.dumps())` / counters.py. Reclassified deploy.py coverage gap to info.
+
+### Added
+- Documented Codex CLI + Gemini CLI as secondary (experimental) targets in spec §1.1.4 + design §6.6; reconciled "11 spawnable agents" (+ lite derivative) in CLAUDE.md.
+- Added "## Integration Outcomes" (Submitted Issues + Deferred) to the compound.md template.
+
 ## [0.75.0] - 2026-06-13
 
 *Audit output redesign: a single canonical JSON registry replaces the multi-file (raw / verify / reconciled / latest.md / latest.json) sprawl.*

@@ -272,16 +272,16 @@ Remove backup tags older than `backup_retention_days` (default: 30):
 
 ### Step 9 — Finalize
 
-1. **Generate sprint plan snapshot** — Read `.gse/plan.yaml` and produce a read-only archive at `docs/sprints/sprint-{NN}/plan-summary.md` using the `plan-summary.md` template. **Inherit the artefact ID** from `plan.yaml.id` (typically `PLN-NNN`) into the snapshot's frontmatter `gse.id` field — this preserves P6 traceability across the live-plan → archive transition. The snapshot contains: goal, mode, budget (total/consumed/remaining), tasks delivered (from `backlog.yaml`), activity flow (from `workflow.completed` + `workflow.skipped` with reasons), scope changes (from `coherence.scope_changes`), coherence summary (alerts raised and whether resolved), risks, and **outcome metrics** (velocity, findings density, review/fix rounds, P16 counters at close — calibration data, per the template's `## Outcome Metrics` section). This file is **read-only after archiving** (mutated by no one); its consumers are `/gse:plan --strategic` (velocity calibration), `/gse:compound` Axe 2 (process-deviation analysis + calibration falsifiability review), coach trend axes, and human sprint history.
-2. Set `plan.yaml.status: completed` and update `plan.yaml.updated` to the current timestamp.
-3. Update `status.yaml` **activity-local state only**:
+9.1 **Generate sprint plan snapshot** — Read `.gse/plan.yaml` and produce a read-only archive at `docs/sprints/sprint-{NN}/plan-summary.md` using the `plan-summary.md` template. **Inherit the artefact ID** from `plan.yaml.id` (typically `PLN-NNN`) into the snapshot's frontmatter `gse.id` field — this preserves P6 traceability across the live-plan → archive transition. The snapshot contains: goal, mode, budget (total/consumed/remaining), tasks delivered (from `backlog.yaml`), activity flow (from `workflow.completed` + `workflow.skipped` with reasons), scope changes (from `coherence.scope_changes`), coherence summary (alerts raised and whether resolved), risks, and **outcome metrics** (velocity, findings density, review/fix rounds, P16 counters at close — calibration data, per the template's `## Outcome Metrics` section). This file is **read-only after archiving** (mutated by no one); its consumers are `/gse:plan --strategic` (velocity calibration), `/gse:compound` Axe 2 (process-deviation analysis + calibration falsifiability review), coach trend axes, and human sprint history.
+9.2 Set `plan.yaml.status: completed` and update `plan.yaml.updated` to the current timestamp.
+9.3 Update `status.yaml` **activity-local state only**:
    - **Refresh all 8 health dimension scores** exactly as specified in `/gse:health` Step 2 — Calculate Dimensions (same canonical formulas as `/gse:review` Step 6; final snapshot for the delivered sprint), written under `health.dimensions.*` with `health.score` and `health.last_computed` updated. This ensures the dashboard health radar reflects the state at delivery time.
    - *(Cursor fields `last_activity`, `last_activity_timestamp`, and `current_phase` are maintained centrally by the orchestrator after the activity closes — see `plugin/agents/gse-orchestrator.md` — section "Sprint Plan Maintenance", and `gse-one-implementation-design.md` §10.1 — Sprint Plan Lifecycle (v0.53.0). The LC02→LC03 transition is determined by the orchestrator when `last_activity == deliver` AND `plan.yaml.status == completed` — both conditions are materialized by Step 9.2 above before Step 9.3 closes.)*
-4. Report delivery summary:
+9.4 Report delivery summary:
    - Tasks delivered
    - Version tagged (if applicable)
    - Branches cleaned
    - Plan snapshot: `docs/sprints/sprint-{NN}/plan-summary.md`
    - Next step: propose `/gse:compound`
-5. **Regenerate dashboard** — Run `python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/dashboard.py"` to update `docs/dashboard.html` with delivery status and release info.
+9.5 **Regenerate dashboard** — Run `python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/dashboard.py"` to update `docs/dashboard.html` with delivery status and release info.
 '''

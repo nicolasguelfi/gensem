@@ -110,13 +110,20 @@ The number of questions asked at once is proportional to the user's IT expertise
 |---|---|---|
 | **Beginner** | **1 question at a time** — wait for response before asking the next | Avoid cognitive overload; let the user absorb each concept |
 | **Intermediate** | **2-3 questions grouped** by related theme | Comfortable enough to handle a small batch |
-| **Advanced / Expert** | **All remaining questions in one block** | Efficient; no hand-holding needed |
+| **Advanced / Expert** | **All remaining questions in one block** (interactive widget only — see "Text-fallback discipline" below for the no-widget case) | Efficient; no hand-holding needed |
 
 **Interview sequence:**
 1. **IT expertise** (always alone, always first after Step 0) — this is the cadence key
 2. **Remaining dimensions** — asked at the cadence determined by Step 2.1
 
-**Interactive mode (preferred):** When the environment provides an interactive question tool (all three supported runtimes do — see orchestrator P4 for the `AskUser` mapping table), use it to present profile questions as clickable choices instead of numbered text lists. Use `multiSelect: true` for dimensions where multiple values apply. Map "Discuss" to the automatic "Other" escape hatch. When interactive tools are unavailable or dimensions require free text (e.g., learning goals, domain background), fall back to conversational text.
+**Text-fallback discipline (no interactive widget — e.g. Codex / Gemini CLI, see spec Appendix C — Per-platform session-transcript persistence's sibling era-bound rows on the absent interactive-question widget).** When the agent falls back to text (spec §P4 — Human-in-the-Loop, "Text fallback"), the "all in one block" expert cadence MUST NOT become a single composite message with free-text fields — that maximizes keystrokes, the opposite of the intent. In text fallback, at every expertise level:
+- present each finite-option dimension as a **numbered list**, answerable by a single number;
+- group **at most ~3 dimensions per message** (even for experts), so the user replies with a short list like `2 4 1`, never a paragraph;
+- convert otherwise-free-text dimensions to **numbered inferred guesses + an "other: type…" escape** — e.g. *Domain background* offers the top inferred domains as numbered options, free text only as the explicit escape.
+
+This mirrors `go.md` Step 7 — Intent Capture, which is already keystroke-minimal.
+
+**Interactive mode (preferred):** When the environment provides an interactive question tool (all three supported runtimes do — see orchestrator P4 for the `AskUser` mapping table), use it to present profile questions as clickable choices instead of numbered text lists. Use `multiSelect: true` for dimensions where multiple values apply. Map "Discuss" to the automatic "Other" escape hatch. When interactive tools are unavailable or dimensions require free text (e.g., learning goals, domain background), fall back to the **numbered-list** format (spec §P4 — Human-in-the-Loop, "Text fallback"), following the "Text-fallback discipline" below — not a free-form conversational block.
 
 Example — beginner flow (1 question at a time):
 ```

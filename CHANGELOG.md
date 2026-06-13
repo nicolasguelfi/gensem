@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.81.2] - 2026-06-13
+
+*HUG HCI fix: the expert "all questions in one block" cadence no longer degrades into a free-text wall on runtimes without an interactive widget.*
+
+### Changed
+- `hug.md`: the Advanced/Expert "all in one block" cadence is now explicitly interactive-widget-only. Added a "Text-fallback discipline" — on Codex/Gemini (no widget) the interview stays numbered-choice, ≤3 dimensions per message, with free-text dimensions (e.g. domain background) offered as numbered inferred guesses + an "other" escape. Mirrors the keystroke-minimal Intent Capture flow (`go.md` Step 7).
+
 ## [0.81.1] - 2026-06-13
 
 ### Added

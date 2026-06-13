@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.82.0] - 2026-06-13
+
+*Two hardenings from the Codex session analysis: don't version the generated dashboard; don't fabricate state to mask a tool failure.*
+
+### Added
+- Spec §P15 — Agent Fallibility: new "State integrity under tool failure" subsection + principle rule 10 (`agent-fallibility.md`) + orchestrator P15 clause (full + Codex lite). A failing tool/generator/hook/validation is diagnosed and reported — never worked around by writing invented or out-of-enum values into state files (`status.yaml`, …). Observed: a Codex run set `current_phase: initialization` (non-enum) to force a crashing dashboard through.
+
+### Fixed
+- `gitignore-additions.txt`: ignore `docs/dashboard.html` — it is regenerated on demand by `tools/dashboard.py` (local view), so versioning it churned git history.
+
 ## [0.81.3] - 2026-06-13
 
 *HUG completeness invariant: preference dimensions (incl. the pedagogical ones) can no longer be silently defaulted via an improvised preset.*

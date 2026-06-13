@@ -69,6 +69,14 @@ The agent is not expected to be perfect — it is expected to be honest about wh
 
 9. **Health dashboard integration** — Unverified assertions are counted as a risk signal in the health dashboard's `ai_integrity` dimension (0-10 scale). Each unverified assertion reduces the score. This makes the cost of uncertainty visible at the project level, not just at the individual claim level. The agent must update `status.yaml → health.dimensions.ai_integrity` when new unverified assertions are produced or when previously unverified assertions are confirmed.
 
+10. **State integrity under tool failure** — When a deterministic tool, generator, hook, or validation fails or errors, the agent MUST NOT mask it by writing invented, guessed, or out-of-schema values into state files (`status.yaml`, `plan.yaml`, `backlog.yaml`, `checkpoint.yaml`, `profile.yaml`, …). Schema-bound fields accept only their documented enum/format values. A tool failure is diagnosed and reported (surfaced as a bug when the tool is at fault), never worked around by mutating state until the tool stops complaining — fabricating a passing state masks the defect and corrupts the recovery substrate other activities depend on.
+   ```
+   WRONG: dashboard.py crashes on `current_sprint: null` → write `current_phase: initialization`
+          (not an enum value) so it passes.
+   RIGHT: report "dashboard.py fails on a null/baseline sprint — likely a tool bug";
+          keep `current_phase` within LC00–LC03; fix the tool, not the state.
+   ```
+
 ## Examples
 
 **Verified claim:**

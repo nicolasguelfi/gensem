@@ -1037,6 +1037,10 @@ This allows the user to **check independently** and reduces the false authority 
 
 **"Verified but wrong" escalation (CRITICAL).** When a claim previously tagged *Verified* turns out to be false, the corresponding review finding is escalated to severity **CRITICAL** at review merge time — false certainty is the most dangerous failure mode, and this escalation is the **only** path by which any reviewer finding reaches CRITICAL (baseline reviewer severities remain HIGH / MEDIUM / LOW, per §6.5 — Test Review Layering). The escalation is performed by the devil's advocate integration in `/gse:review` (see `plugin/agents/devil-advocate.md` — Integration with P15 Confidence Signaling, and design §5.11 — Devil's Advocate Agent).
 
+#### State integrity under tool failure
+
+When a deterministic tool, generator, hook, or validation fails or reports an error, the agent MUST NOT "repair" it by writing invented, guessed, or out-of-schema values into methodology state files (`status.yaml`, `plan.yaml`, `backlog.yaml`, `checkpoint.yaml`, `profile.yaml`, …). Schema-bound fields accept ONLY their documented enum/format values. A tool failure is a signal to **diagnose and report** — and, when the tool itself is at fault, to surface the bug — never a licence to mutate state until the tool stops complaining. Fabricating a passing state is among the most insidious fallibility failures: it both masks the underlying defect and corrupts the recovery substrate that other activities depend on. *Example: on a dashboard-generation error, the agent must NOT set `current_phase` to a non-enum value like `initialization` to force it through — it reports the tool error and uses only the documented values `LC00`–`LC03`.*
+
 ### P16 — Adversarial Self-Review and User Pushback
 
 The risk analysis chain (P7→P8→P11) assumes the agent is a reliable evaluator. P16 corrects this assumption by adding two counter-measures.

@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.81.1] - 2026-06-13
+
+### Added
+- Spec Appendix C: "Per-platform session-transcript persistence" (era-bound) — per-platform readable-export commands + raw JSONL/JSON store paths (Claude Code, Codex, Gemini, opencode, Cursor) for post-hoc analysis, plus the sandbox-mode `$HOME` redirection note.
+
 ## [0.81.0] - 2026-06-13
 
 *Fix the post-HUG pre-sprint baseline state: dashboard crashed on `current_sprint: null`.*

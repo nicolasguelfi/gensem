@@ -3332,6 +3332,20 @@ The constants below are NOT methodological choices — they are snapshots of the
 | `pip show` / `npm list` as canonical existence checks | devil-advocate checklist (×2 modes); deliver Step 1.6 | Today's dominant package managers | New ecosystems (uv, bun, …) join the list |
 | Python ≥3.9 stdlib-only tools | tools docstrings; TESTING.md; install.sh preflight (≥3.8) | Current ubiquity baseline | Floor raises as platforms drop old runtimes |
 
+### Per-platform session-transcript persistence (era-bound)
+
+For post-hoc analysis of a session (debugging an agent run, feeding a conversation into a retrospective, or capitalizing methodology feedback), each runtime persists the discussion differently. Like the era-bound table above, these are 2024-2026 ecosystem snapshots — re-validate per platform release.
+
+| Platform | Readable export (in-session) | Raw auto-store (full transcript incl. tool calls) |
+|---|---|---|
+| Claude Code | `/export [file]` | `~/.claude/projects/<hash>/<session>.jsonl` (30-day retention via `cleanupPeriodDays`) |
+| Codex CLI | — (read the JSONL / `jq`) | `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl` |
+| Gemini CLI | `/chat save <tag>` → checkpoint JSON | `~/.gemini/tmp/<hash>/checkpoints/`; `logs.json` records prompts only (no model responses) |
+| opencode | `/export` (Markdown → `$EDITOR`); `/share` (public URL — external service) | `~/.local/share/opencode/storage/` |
+| Cursor | IDE "Export Chat" (Markdown; omits executed agent-command I/O); CLI `--output-format json` | SQLite `state.vscdb` (workspace storage) |
+
+**Sandbox-mode note:** under `sh .gse-sandbox/run` the launcher redirects `HOME` into `<project>/.gse-sandbox/`, so transcripts land inside the project (e.g. `.gse-sandbox/.codex/sessions/…`, `.gse-sandbox/.gemini/tmp/…`) and are removed with `rm -rf .gse-sandbox`. For reliable a-posteriori analysis prefer the raw JSONL stores (Claude Code, Codex) — they capture the tool calls that the Markdown exports drop; Gemini is the weakest (no built-in full-transcript export, `/chat save` checkpoint is the closest).
+
 ### File hierarchy and propagation rules
 
 ```

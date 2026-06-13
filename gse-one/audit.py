@@ -287,7 +287,9 @@ def audit_file_integrity() -> list:
     # Orphan agents
     if (SRC / "agents").exists():
         files = {p.stem for p in (SRC / "agents").glob("*.md")}
-        known = set(agents) | {"gse-orchestrator"}
+        # gse-orchestrator-lite is a deliberate condensed Codex-only derivative
+        # (generated target, see CLAUDE.md "Files to keep in sync") — not an orphan.
+        known = set(agents) | {"gse-orchestrator", "gse-orchestrator-lite"}
         orphans = files - known
         if orphans:
             findings.append(
@@ -485,7 +487,8 @@ def audit_numeric() -> list:
         (re.compile(
             r"(?:^|\s)(\d+)\s+specialized\b(?!\s+(?:templates?|files?|Dockerfiles?|rules?|settings?|categories?))",
             re.IGNORECASE), n_ag, "specialized"),
-        (re.compile(r"(?:^|\s)(\d+)\s+commands?\b", re.IGNORECASE), n_act,
+        # Negative lookahead skips partitive phrasing like "the other 20 commands up front".
+        (re.compile(r"(?:^|\s)(\d+)\s+commands?\b(?!\s+up\s+front)", re.IGNORECASE), n_act,
          "commands"),
         # Negative lookahead skips partitive phrasing like "10 principle titles"
         # (a partition — 10 out of 16 titles — not a claim of 10 principles total).
@@ -971,7 +974,7 @@ def audit_test_coverage() -> list:
         findings.append(
             Finding(
                 "test_coverage",
-                "warning",
+                "info",  # coverage observation, not a defect (audit v0.74.0 LOT 8)
                 f"{len(uncovered)}/{len(public_funcs)} public function(s) in deploy.py without matching test",
                 ", ".join(uncovered),
                 "Add tests or document why no test is needed (e.g., infra-dependent)",
@@ -1289,7 +1292,7 @@ def audit_plugin_personal() -> list:
 def audit_plugin_debug() -> list:
     """Scan plugin/ for debug residue (prints, dead branches, commented-out code)."""
     findings: list = []
-    cli_tools = {"dashboard.py", "deploy.py", "project-audit.py"}
+    cli_tools = {"dashboard.py", "deploy.py", "project-audit.py", "counters.py"}
     hits: list = []
 
     for f in PLUGIN.rglob("*.py"):
@@ -1299,7 +1302,9 @@ def audit_plugin_debug() -> list:
         text = _read_text(f)
         for i, line in enumerate(text.split("\n"), start=1):
             stripped = line.strip()
-            if not is_cli_tool and re.match(r"(print|pprint)\s*\(", stripped):
+            # `print(json.dumps(...))` is a tool stdout contract, not debug residue.
+            if (not is_cli_tool and re.match(r"(print|pprint)\s*\(", stripped)
+                    and not re.match(r"print\s*\(\s*json\.dumps", stripped)):
                 hits.append(
                     f"{f.relative_to(REPO_ROOT)}:{i}: debug print — "
                     f"{stripped[:80]}"

@@ -42,7 +42,7 @@ SPECIALIZED_PATTERN = re.compile(
 )
 
 COMMANDS_PATTERN = re.compile(
-    r"(?:^|\s)(\d+)\s+commands?\b",
+    r"(?:^|\s)(\d+)\s+commands?\b(?!\s+up\s+front)",
     re.IGNORECASE,
 )
 
@@ -82,6 +82,13 @@ class TestAuditNumericPatterns(unittest.TestCase):
         m = COMMANDS_PATTERN.search("23 commands are defined")
         self.assertIsNotNone(m)
         self.assertEqual(m.group(1), "23")
+
+    def test_commands_does_not_match_partitive_up_front(self):
+        """Regression guard (v0.76.0): 'the other 20 commands up front' is
+        partitive (README onboarding sentence), NOT a total-count claim. Before
+        the fix this leaked as 'README.md claims 20 commands — actual is 24'."""
+        m = COMMANDS_PATTERN.search("you never need the other 20 commands up front")
+        self.assertIsNone(m, "partitive '20 commands up front' leaked as a count claim")
 
     # ----- "principles" pattern -----
 
@@ -140,6 +147,28 @@ class TestAuditNumericPatterns(unittest.TestCase):
         should also NOT match. The `(?:^|\\s)` prefix handles this."""
         m = SPECIALIZED_PATTERN.search("v10 specialized")
         self.assertIsNone(m)
+
+
+class TestDetectorFalsePositives(unittest.TestCase):
+    """Regression guards for the 3 detector false positives fixed in v0.76.0
+    (audit v0.74.0 remediation, LOT 7). Each runs the live detector against the
+    real corpus and asserts the look-alike does NOT fire."""
+
+    def test_orphan_check_excludes_lite_orchestrator(self):
+        """gse-orchestrator-lite.md is a deliberate Codex-only condensed
+        derivative (generated target), not an orphan agent."""
+        findings = audit.audit_file_integrity()
+        leaked = [f for f in findings
+                  if "orphan agent" in f.title and "gse-orchestrator-lite" in (f.detail or "")]
+        self.assertEqual(leaked, [], "gse-orchestrator-lite wrongly flagged as orphan agent")
+
+    def test_debug_check_allows_tool_json_output(self):
+        """print(json.dumps(...)) inside a CLI tool (counters.py) is the tool's
+        stdout contract, not debug residue."""
+        findings = audit.audit_plugin_debug()
+        leaked = [f for f in findings
+                  if f.severity == "warning" and "counters.py" in (f.detail or "")]
+        self.assertEqual(leaked, [], "counters.py json.dumps print wrongly flagged as debug residue")
 
 
 class TestAuditFileScanExclusions(unittest.TestCase):

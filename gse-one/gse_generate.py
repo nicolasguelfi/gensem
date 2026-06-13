@@ -862,9 +862,11 @@ def build_codex() -> None:
 
 
 def _cx_build_skills(cx: Path) -> None:
-    """Copy the activity SKILL.md (name: already injected) plus the FULL
-    orchestrator as a loadable skill `gse-orchestrator` (Codex AGENTS.md only
-    carries the condensed lite edition, so the full text lives here — B1)."""
+    """Emit the activity skills with their directory AND frontmatter `name:`
+    prefixed `gse-<name>`, so Codex's `/` skill menu shows them namespaced
+    (`gse-go`, `gse-assess`, …) — filterable by typing `/gse`, no collision with
+    built-in skills. Plus the FULL orchestrator as a loadable `gse-orchestrator`
+    skill (Codex AGENTS.md carries only the condensed lite edition — B1)."""
     src = PLUGIN / "skills"
     dst = cx / "skills"
     ensure_dir(dst)
@@ -875,9 +877,13 @@ def _cx_build_skills(cx: Path) -> None:
         skill_file = skill_dir / "SKILL.md"
         if not skill_file.exists():
             continue
-        out = dst / skill_dir.name / "SKILL.md"
+        content = skill_file.read_text(encoding="utf-8")
+        # Prefix the frontmatter name (`name: go` -> `name: gse-go`); idempotent.
+        content = re.sub(r'(?m)^(name:\s*)(?!gse-)([A-Za-z0-9-]+)\s*$',
+                         r'\1gse-\2', content, count=1)
+        out = dst / f"gse-{skill_dir.name}" / "SKILL.md"
         ensure_dir(out.parent)
-        shutil.copy2(skill_file, out)
+        out.write_text(content, encoding="utf-8")
         count += 1
     orch = PLUGIN / "agents" / "gse-orchestrator.md"
     if orch.exists():
@@ -1379,7 +1385,7 @@ def verify() -> None:
     # Codex-specific
     cx = PLUGIN / "codex"
     print(f"\n  Codex CLI:")
-    cx_skills = sum(1 for n in ACTIVITY_NAMES if (cx / "skills" / n / "SKILL.md").exists())
+    cx_skills = sum(1 for n in ACTIVITY_NAMES if (cx / "skills" / f"gse-{n}" / "SKILL.md").exists())
     cx_orch_skill = (cx / "skills" / "gse-orchestrator" / "SKILL.md").exists()
     cx_agents = sum(1 for f in SPECIALIZED_AGENTS if (cx / "agents" / f"{Path(f).stem}.toml").exists())
     print(f"    Skills:    {cx_skills}/{len(ACTIVITY_NAMES)} (+ orchestrator={'OK' if cx_orch_skill else 'MISSING'})")

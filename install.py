@@ -482,11 +482,11 @@ def _check_duplicate_install(platform_name, mode, project_dir=None, env=None):
     elif platform_name == "codex":
         if mode == "plugin":
             local = Path(project_dir or Path.cwd()) / ".agents" / "skills"
-            if local.is_dir() and (local / "go").is_dir():
+            if local.is_dir() and (local / "gse-go").is_dir():
                 conflicts.append(("no-plugin (project)", str(local)))
         elif mode == "no-plugin":
             home_skills = CODEX_SKILLS_HOME
-            if home_skills.is_dir() and (home_skills / "go").is_dir():
+            if home_skills.is_dir() and (home_skills / "gse-go").is_dir():
                 conflicts.append(("plugin (global)", str(home_skills)))
 
     elif platform_name == "gemini":
@@ -1458,7 +1458,7 @@ def _codex_remove_components(skills_target, agents_target, hooks_dir):
     """Remove GSE-One Codex artefacts from the given target dirs. Returns count."""
     removed = 0
     skills_target = Path(skills_target)
-    known = list(_get_skill_names()) + ["gse-orchestrator"]
+    known = [f"gse-{n}" for n in _get_skill_names()] + ["gse-orchestrator"]
     if skills_target.is_dir():
         for name in known:
             d = skills_target / name

@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.78.0] - 2026-06-13
+
+*Codex runtime-validation fix: GSE activity skills namespaced `gse-<name>` for the Codex `/` menu.*
+
+### Fixed
+- Codex CLI: activity skills installed as `gse-<name>` (dir + frontmatter `name:`) so Codex's `/` skill menu shows them namespaced — filter via `/gse` (`gse-go`, `gse-assess`, …) — instead of bare `go`/`audit`/… that collided with built-in skills.
+- Clarified Codex invocation in `gse-orchestrator-lite.md`: on Codex, activities are `gse-*` skills via the `/` menu, not `/gse:go` (which Codex reports "Unrecognized command").
+
+### Changed
+- `_codex_remove_components` + Codex duplicate-detection updated for the `gse-` skill prefix.
+
 ## [0.77.0] - 2026-06-13
 
 *Audit v0.74.0 strategic recommendations (Category E) triaged: 2 adopted, 6 closed, 15 backlogged (recorded in _LOCAL/, not the corpus).*

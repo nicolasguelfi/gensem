@@ -19,7 +19,7 @@ This is the **gensem** repository — the source for the GSE-One plugin, an AI e
 
 ## Agent archetypes
 
-The 11 agents in `src/agents/` deliberately use **4 structural archetypes**. Differences reflect agent roles — don't force one-size-fits-all uniformity.
+The 11 spawnable agents in `src/agents/` deliberately use **4 structural archetypes** (a 12th file, `gse-orchestrator-lite.md`, is a condensed Identity-archetype derivative used only as the Codex `AGENTS.md` under its 32 KiB cap — see "Files to keep in sync" — not a distinct spawnable role). Differences reflect agent roles — don't force one-size-fits-all uniformity.
 
 | Archetype | Agent(s) | Standard sections |
 |---|---|---|
@@ -29,7 +29,7 @@ The 11 agents in `src/agents/` deliberately use **4 structural archetypes**. Dif
 | **Observational** (8-axis monitoring) | `coach` | Role / Activated by / Perspective / 8 axes / Invocation contract / Evaluation algorithm / Output Formats (plural) / Anti-spam / Recipes / Persistence |
 | **Compliance** (real-time guardrail enforcement) | `guardrail-enforcer` | Role / Activated by / Perspective / Guardrail Tiers / Decision Tier Compliance / Checklist / Output Format (GUARD-NNN + EMERGENCY/HARD/SOFT) |
 
-Common to all 11: YAML frontmatter with `name` + `description`; opening `**Role:**` + `**Activated by:**` lines; `## Perspective` section. Reviewer archetype agents output `RVW-NNN` findings with `perspective:` field (per spec §6.5) and the canonical 3-tier severity scale `HIGH / MEDIUM / LOW` (+ P15 escalation to CRITICAL). The Compliance archetype (guardrail-enforcer) uses a distinct format (`GUARD-NNN` + `EMERGENCY/HARD/SOFT` guardrail tiers) because its outputs are real-time action alerts, not artefact review findings — the tier labels carry action semantics (WARN / BLOCK / HALT) that would be lost in the severity scale.
+Common to all 11 spawnable agents: YAML frontmatter with `name` + `description`; opening `**Role:**` + `**Activated by:**` lines; `## Perspective` section. Reviewer archetype agents output `RVW-NNN` findings with `perspective:` field (per spec §6.5) and the canonical 3-tier severity scale `HIGH / MEDIUM / LOW` (+ P15 escalation to CRITICAL). The Compliance archetype (guardrail-enforcer) uses a distinct format (`GUARD-NNN` + `EMERGENCY/HARD/SOFT` guardrail tiers) because its outputs are real-time action alerts, not artefact review findings — the tier labels carry action semantics (WARN / BLOCK / HALT) that would be lost in the severity scale.
 
 ## Critical rules
 

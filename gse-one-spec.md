@@ -303,7 +303,7 @@ A plugin and a project directory deliver the same types of artifacts. The plugin
 
 #### 1.1.4 GSE-One: Mono-Plugin Architecture
 
-GSE-One delivers its methodology as a **single plugin directory** (`plugin/`) that works on Claude Code, Cursor, and opencode. Shared artifacts (skills, agents, templates) are identical across platforms. Platform-specific artifacts coexist in the same directory — each platform loads only the files it recognizes and silently ignores the rest.
+GSE-One delivers its methodology as a **single plugin directory** (`plugin/`) that works on Claude Code, Cursor, and opencode — and, as secondary targets under runtime validation (since v0.72), on Codex CLI and Gemini CLI (see "Secondary targets" at the end of this section). Shared artifacts (skills, agents, templates) are identical across platforms. Platform-specific artifacts coexist in the same directory — each platform loads only the files it recognizes and silently ignores the rest.
 
 | Artifact | Files | Claude Code | Cursor | opencode |
 |----------|-------|:-----------:|:------:|:--------:|
@@ -323,6 +323,8 @@ GSE-One delivers its methodology as a **single plugin directory** (`plugin/`) th
 | Settings | `settings.json` | Loaded | Ignored | Ignored |
 
 Note: "orchestrator" is a GSE-One convention. The orchestrator body is identical on all three platforms — only the delivery mechanism differs. On Claude Code, it is the session's default agent (`agents/gse-orchestrator.md` referenced by `settings.json`). On Cursor, it is an always-on rule (`rules/gse-orchestrator.mdc`). On opencode, it is the `AGENTS.md` body at the worktree root (or `~/.config/opencode/AGENTS.md` in plugin mode), wrapped between `<!-- GSE-ONE START -->` / `<!-- GSE-ONE END -->` markers so the installer can merge/replace surgically without disturbing user content. The installer excludes `gse-orchestrator.md` from Cursor's and opencode's `agents/` directories to avoid double-loading.
+
+**Secondary targets — Codex CLI & Gemini CLI (experimental, since v0.72).** The generator also produces deployable artifacts for two additional coding-agent CLIs, treated as *secondary targets pending runtime validation* (Meta-2 — documented-but-not-yet-promoted): **Codex CLI** receives the 24 activities as skills, a condensed `AGENTS.md` (the orchestrator lite edition, ≤ 32 KiB) plus the full orchestrator as a loadable skill, TOML sub-agents, and `hooks/hooks.json`; **Gemini CLI** receives the activities as `/gse:<name>` command TOMLs, markdown sub-agents, a `GEMINI.md` context file, and `hooks/hooks.json`. The full per-mode install/registry table is authoritative in CLAUDE.md ("Tool architecture"). These two targets are not covered by the per-mechanism tables above (interactive-question tool, hooks transport), which describe the three primary runtimes.
 
 ### 1.2 Agile Software Engineering Foundations
 

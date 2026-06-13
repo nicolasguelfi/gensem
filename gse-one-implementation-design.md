@@ -6,7 +6,7 @@
 
 ## 1. Introduction
 
-This document details the implementation design of GSE-One: how the abstract concepts defined in `gse-one-spec.md` are realized as concrete artifacts (skills, agents, templates, tools, hooks) deployed across three coding agent platforms (Claude Code, Cursor, opencode).
+This document details the implementation design of GSE-One: how the abstract concepts defined in `gse-one-spec.md` are realized as concrete artifacts (skills, agents, templates, tools, hooks) deployed across five coding agent platforms — Claude Code, Cursor, and opencode (primary), plus Codex CLI and Gemini CLI (secondary targets, under runtime validation since v0.72; see §6.6).
 
 **Scope:**
 - Repository structure and generator mechanics (§3, §11)
@@ -2689,6 +2689,15 @@ Although the `plugin/` source directory contains `agents/gse-orchestrator.md`, `
 - **opencode:** Receives `opencode/AGENTS.md` at the worktree root (or `~/.config/opencode/` in plugin mode). The installer merges surgically between `<!-- GSE-ONE START/END -->` markers, leaving any user content outside the markers untouched.
 
 All three platforms still receive the 10 specialized agents (`code-reviewer.md`, `architect.md`, etc.) for sub-agent delegation during REVIEW and other activities. On Claude Code and Cursor they live in `agents/`; on opencode they live in `opencode/agents/` with `mode: subagent` frontmatter.
+
+### 6.6 Codex CLI & Gemini CLI (secondary targets — experimental)
+
+Since v0.72 the generator also emits deployable subtrees for two additional CLIs, treated as **secondary targets pending runtime validation** (Meta-2 — documented-but-not-yet-promoted):
+
+- **Codex CLI** (`plugin/codex/`): the 24 activities as skills (`SKILL.md`); the **condensed** orchestrator as `AGENTS.md` (`gse-orchestrator-lite.md`, ≤ 32 KiB — Codex truncates `AGENTS.md` at 32 KiB) plus the **full** orchestrator as a loadable `gse-orchestrator` skill; the 10 specialized agents translated to TOML sub-agents (`.codex/agents/*.toml`); and `hooks/hooks.json` (guardrails; requires `codex_hooks = true`).
+- **Gemini CLI** (`plugin/gemini/`): the 24 activities as `/gse:<name>` command TOMLs; the 10 specialized agents as markdown; the full orchestrator as `GEMINI.md` (parity-checked like opencode `AGENTS.md`); and `hooks/hooks.json`.
+
+The body-parity contract (§6.4) extends to `plugin/gemini/GEMINI.md` (identical to the orchestrator body); `plugin/codex/AGENTS.md` is the **condensed** lite derivation (deliberately NOT byte-identical), verified to derive from `gse-orchestrator-lite.md`. The full per-mode install + registry resolution for all five platforms is authoritative in CLAUDE.md ("Tool architecture"). These two targets remain experimental until runtime-validated; remove this qualifier once validated.
 
 ---
 

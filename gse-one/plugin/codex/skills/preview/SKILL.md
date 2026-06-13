@@ -309,7 +309,7 @@ Preview: TASK-018 — Import JWT Module from SRC-001 (Import)
 
 When skipped, emit a one-line Inform note: *"UX heuristic pass skipped — no UI surface in this sprint's preview artefacts."*
 
-When applicable, invoke the `ux-advocate` sub-agent (`$(cat ~/.gse-one)/agents/ux-advocate.md` — adopt this role) to apply **UX heuristics and accessibility checks** to the generated preview artefact (wireframe, mockup, or scaffold) **before** soliciting human feedback at Step 3.
+When applicable, invoke the `ux-advocate` sub-agent (`$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/agents/ux-advocate.md` — adopt this role) to apply **UX heuristics and accessibility checks** to the generated preview artefact (wireframe, mockup, or scaffold) **before** soliciting human feedback at Step 3.
 
 The agent emits findings tagged `[UX-HEURISTIC]` covering:
 - **Nielsen's 10 heuristics** — visibility of system status, match with real world, user control, consistency, error prevention, recognition over recall, flexibility, minimalist design, error recovery, help/documentation.

@@ -29,9 +29,9 @@ Before executing, read:
 2. `.gse/deploy.json` — infrastructure state (if exists)
 3. `.env` — credentials and configuration (if exists)
 4. `.gse/profile.yaml` — user profile (apply P9 Adaptive Communication to all output)
-5. `$(cat ~/.gse-one)/agents/deploy-operator.md` — adopt this role for the entire activity
-6. `$(cat ~/.gse-one)/references/hetzner-infrastructure.md` — pricing, sizing, Coolify API (consulted on demand)
-7. `$(cat ~/.gse-one)/references/ssh-operations.md` — SSH patterns and credential resolution (consulted on demand)
+5. `$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/agents/deploy-operator.md` — adopt this role for the entire activity
+6. `$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/references/hetzner-infrastructure.md` — pricing, sizing, Coolify API (consulted on demand)
+7. `$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/references/ssh-operations.md` — SSH patterns and credential resolution (consulted on demand)
 
 ## Workflow
 
@@ -67,14 +67,14 @@ Wait for the user's answer, then route:
 
 **(1) Solo** — Persist role and brief:
 ```
-python3 "$(cat ~/.gse-one)/tools/deploy.py" record-role solo
+python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" record-role solo
 ```
 Say: *"You'll go through 6 phases: installing the hcloud CLI, creating a Hetzner server, hardening it, installing Coolify, configuring DNS/SSL, and deploying your project. I'll guide you at each step. Type 'ready' to begin."*
 Wait for confirmation → proceed to Step 0.
 
 **(2) Instructor** — Persist role and brief:
 ```
-python3 "$(cat ~/.gse-one)/tools/deploy.py" record-role instructor
+python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" record-role instructor
 ```
 Say: *"I'll walk you through the full 6-phase setup (same as Solo mode), then help you generate a `.env.training` file with `--training-init` to distribute to your learners. Heads-up: the token in that file gives learners write access to ALL apps on the shared server — we'll use a course-dedicated token you revoke at the end. At the end of the course, run `/gse:deploy --training-reap --all` to clean up all learner apps (then revoke the token). Ready to start the server setup?"*
 Wait for confirmation → proceed to Step 0.
@@ -88,7 +88,7 @@ Wait for confirmation → proceed to Step 0.
    - If no: *"Push it first: create a repo (`gh repo create` or the GitHub UI), then `git push -u origin <branch>`. A public repo is simplest for the course; for a private repo, follow `docs/deploy/learner-private-repo-setup.md` BEFORE deploying. Then re-run `/gse:deploy`."* → Exit.
 3. Persist role:
    ```
-   python3 "$(cat ~/.gse-one)/tools/deploy.py" record-role learner
+   python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" record-role learner
    ```
 4. Say: *"I'll detect your instructor's shared server from the training config and deploy your project at `{project-name}-{DEPLOY_USER}.{DEPLOY_DOMAIN}`. Expected duration: ~5 minutes."*
 5. Proceed to Step 0 (will detect app-only mode → Phase 6).
@@ -102,7 +102,7 @@ Wait for confirmation → proceed to Step 0.
 Invoke the deploy tool:
 
 ```
-python3 "$(cat ~/.gse-one)/tools/deploy.py" detect
+python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" detect
 ```
 
 This returns a JSON object with `starting_phase`, `mode` (`full | partial | app-only | training`), the presence map of `.env` variables, and the `phases_completed` map. Use the returned `starting_phase` to skip already-completed phases (idempotence is handled by the tool, not by this skill).
@@ -154,8 +154,8 @@ The detection logic (which variables map to which starting phase) is documented 
 4. **Save credentials**
    - Persist the token and domain via the deploy tool:
      ```
-     python3 "$(cat ~/.gse-one)/tools/deploy.py" env-set HETZNER_API_TOKEN <token>
-     python3 "$(cat ~/.gse-one)/tools/deploy.py" env-set DEPLOY_DOMAIN <domain>
+     python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" env-set HETZNER_API_TOKEN <token>
+     python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" env-set DEPLOY_DOMAIN <domain>
      ```
    - Check `.gitignore` contains `.env` — if not, add it and warn the user
    - If no `.gitignore` exists: Gate decision to create one
@@ -166,8 +166,8 @@ The detection logic (which variables map to which starting phase) is documented 
 
 6. **Persist completion**
    ```
-   python3 "$(cat ~/.gse-one)/tools/deploy.py" init-state
-   python3 "$(cat ~/.gse-one)/tools/deploy.py" record-phase setup
+   python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" init-state
+   python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" record-phase setup
    ```
 
 ---
@@ -213,12 +213,12 @@ The detection logic (which variables map to which starting phase) is documented 
 
 8. **Persist completion**
    ```
-   python3 "$(cat ~/.gse-one)/tools/deploy.py" record-server \
+   python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" record-server \
      --name <name> --ipv4 <IP> --id <id> --type <type> --datacenter <dc>
-   python3 "$(cat ~/.gse-one)/tools/deploy.py" env-set SERVER_IP <IP>
-   python3 "$(cat ~/.gse-one)/tools/deploy.py" env-set SSH_USER root
-   python3 "$(cat ~/.gse-one)/tools/deploy.py" env-set SSH_KEY ~/.ssh/gse-deploy
-   python3 "$(cat ~/.gse-one)/tools/deploy.py" record-phase provision
+   python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" env-set SERVER_IP <IP>
+   python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" env-set SSH_USER root
+   python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" env-set SSH_KEY ~/.ssh/gse-deploy
+   python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" record-phase provision
    ```
 
 ---
@@ -286,8 +286,8 @@ The detection logic (which variables map to which starting phase) is documented 
 
 8. **Persist completion**
    ```
-   python3 "$(cat ~/.gse-one)/tools/deploy.py" env-set SSH_USER deploy
-   python3 "$(cat ~/.gse-one)/tools/deploy.py" record-phase secure
+   python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" env-set SSH_USER deploy
+   python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" record-phase secure
    ```
 
 ---
@@ -326,8 +326,8 @@ The detection logic (which variables map to which starting phase) is documented 
 
    Then persist:
    ```
-   python3 "$(cat ~/.gse-one)/tools/deploy.py" env-set COOLIFY_URL http://<IP>:8000
-   python3 "$(cat ~/.gse-one)/tools/deploy.py" env-set COOLIFY_API_TOKEN <token>
+   python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" env-set COOLIFY_URL http://<IP>:8000
+   python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" env-set COOLIFY_API_TOKEN <token>
    ```
 
    **If the UI has changed** (Coolify iterates fast), adapt the step numbering to what the user describes. The invariants are: create account → find "API tokens" or equivalent → create token with full-access permissions → copy once. If a step path differs significantly, please consider submitting a PR to update this section (see README → Deployment → Maintaining upstream compatibility).
@@ -338,8 +338,8 @@ The detection logic (which variables map to which starting phase) is documented 
 
 5. **Persist completion**
    ```
-   python3 "$(cat ~/.gse-one)/tools/deploy.py" record-coolify --url http://<IP>:8000
-   python3 "$(cat ~/.gse-one)/tools/deploy.py" record-phase coolify
+   python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" record-coolify --url http://<IP>:8000
+   python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" record-phase coolify
    ```
 
 ---
@@ -395,7 +395,7 @@ The detection logic (which variables map to which starting phase) is documented 
 2. **Verify DNS propagation**
    Invoke the tool with a timeout of 10 minutes:
    ```
-   python3 "$(cat ~/.gse-one)/tools/deploy.py" wait-dns \
+   python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" wait-dns \
      --domain <domain> --expected-ip <server-IP> --timeout 600
    ```
    The tool polls `dig` (system resolver + `@8.8.8.8` fallback every 15s). On `resolved`, proceed. On `timeout`, it returns a hint — display it to the user and exit the skill without marking the phase complete (so the user can re-run `/gse:deploy` once propagation completes).
@@ -410,7 +410,7 @@ The detection logic (which variables map to which starting phase) is documented 
    ```
    Then update the env:
    ```
-   python3 "$(cat ~/.gse-one)/tools/deploy.py" env-set COOLIFY_URL https://coolify.<domain>
+   python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" env-set COOLIFY_URL https://coolify.<domain>
    ```
 
 4. **Verify SSL (Let's Encrypt via Traefik)**
@@ -431,8 +431,8 @@ The detection logic (which variables map to which starting phase) is documented 
 
 6. **Persist domain completion**
    ```
-   python3 "$(cat ~/.gse-one)/tools/deploy.py" record-domain --base <domain> --registrar <namecheap|gandi|ovh|cloudflare|manual>
-   python3 "$(cat ~/.gse-one)/tools/deploy.py" record-phase dns
+   python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" record-domain --base <domain> --registrar <namecheap|gandi|ovh|cloudflare|manual>
+   python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" record-phase dns
    ```
 
 7. **Propose Cloudflare CDN + DDoS + WAF (recommended for production)**
@@ -452,7 +452,7 @@ The detection logic (which variables map to which starting phase) is documented 
 
    **If the user declines:** record `--provider none` and exit this step:
    ```
-   python3 "$(cat ~/.gse-one)/tools/deploy.py" record-cdn --provider none
+   python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" record-cdn --provider none
    ```
 
    **If the user accepts:** walk them through:
@@ -491,7 +491,7 @@ The detection logic (which variables map to which starting phase) is documented 
 
    7j. Record the CDN state:
    ```
-   python3 "$(cat ~/.gse-one)/tools/deploy.py" record-cdn --provider cloudflare --enabled --bot-protection
+   python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" record-cdn --provider cloudflare --enabled --bot-protection
    ```
 
    **If Cloudflare UI has changed** (Cloudflare redesigns periodically): adapt wording to what the user sees. Invariants: DNS with proxy orange cloud on apps + grey cloud on `coolify`; SSL Full (strict); Bot Fight Mode + AI Scrapers Block. If navigation diverges significantly, please submit a PR (see README → Deployment → Maintaining upstream compatibility).
@@ -505,16 +505,16 @@ The detection logic (which variables map to which starting phase) is documented 
 1. **Determine subdomain**
    Invoke the deploy tool:
    ```
-   python3 "$(cat ~/.gse-one)/tools/deploy.py" subdomain \
+   python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" subdomain \
      --project "$PWD" \
-     --user "$(python3 "$(cat ~/.gse-one)/tools/deploy.py" env-get DEPLOY_USER | python3 -c 'import json,sys; print(json.load(sys.stdin).get(\"value\") or \"\")')" \
-     --domain "$(python3 "$(cat ~/.gse-one)/tools/deploy.py" env-get DEPLOY_DOMAIN | python3 -c 'import json,sys; print(json.load(sys.stdin)[\"value\"])')"
+     --user "$(python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" env-get DEPLOY_USER | python3 -c 'import json,sys; print(json.load(sys.stdin).get(\"value\") or \"\")')" \
+     --domain "$(python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" env-get DEPLOY_DOMAIN | python3 -c 'import json,sys; print(json.load(sys.stdin)[\"value\"])')"
    ```
    The tool applies the full P1 rule (sanitization, training vs solo pattern, RFC 1035 length checks). If it returns `{"status": "error", ...}`, abort and report the error to the user. On success (`"status": "ok"`), it returns `{project_name, deploy_user, label, subdomain, url}`.
 
 2. **Preflight checks** — delegate to the tool for deterministic, typed checks:
    ```
-   python3 "$(cat ~/.gse-one)/tools/deploy.py" preflight
+   python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" preflight
    ```
    The tool detects the project type (`streamlit | python | node | static | custom`), derives the default port, and runs a structured list of checks: git state (repo, commits, remote, github.com hint, working tree), entry points per type (Streamlit/Python/Node), Streamlit reverse-proxy config (`enableCORS=false`, `enableXsrfProtection=false`), Node `start` script + Next.js build hint, static `index.html`, and `Dockerfile` `ARG SOURCE_COMMIT`. It returns JSON with `type`, `port`, `overall` (`ok | warnings | errors`), and the full `checks` list.
 
@@ -528,11 +528,11 @@ The detection logic (which variables map to which starting phase) is documented 
 3. **Generate Dockerfile and .dockerignore** (if not present in project root)
    - Use the `type` returned by the preflight tool in Step 2 (do **not** re-detect — the tool is authoritative). If `config.yaml → deploy.app_type` is set to an explicit value (not `auto`), that value **overrides** the detected type.
    - Map the type to a template:
-     - `streamlit` → `$(cat ~/.gse-one)/templates/Dockerfile.streamlit`
-     - `python`    → `$(cat ~/.gse-one)/templates/Dockerfile.python`
-     - `node`      → `$(cat ~/.gse-one)/templates/Dockerfile.node`
-     - `static`    → `$(cat ~/.gse-one)/templates/Dockerfile.static`
-   - Copy the selected template to `./Dockerfile` in the project, and copy `$(cat ~/.gse-one)/templates/.dockerignore` to `./.dockerignore` if absent.
+     - `streamlit` → `$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/templates/Dockerfile.streamlit`
+     - `python`    → `$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/templates/Dockerfile.python`
+     - `node`      → `$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/templates/Dockerfile.node`
+     - `static`    → `$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/templates/Dockerfile.static`
+   - Copy the selected template to `./Dockerfile` in the project, and copy `$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/templates/.dockerignore` to `./.dockerignore` if absent.
    - Show the generated Dockerfile to the user for approval (Inform tier), highlighting any CMD/ENTRYPOINT line the user may need to customize (notably for Python: FastAPI/Flask/script comment block; for Node: optional `RUN npm run build`).
    - Commit both files if the user approves.
 
@@ -543,7 +543,7 @@ The detection logic (which variables map to which starting phase) is documented 
    **Concurrency note — run `deploy-app` calls sequentially, never in parallel.** When a user deploys multiple apps under the same `DEPLOY_USER` (e.g., a WEB and an API app for the same learner), each call invokes `ensure_project` on the shared Coolify project `gse-{DEPLOY_USER}`. The Coolify API exposes no atomic get-or-create for projects, so two concurrent `deploy-app` invocations can both observe "project does not exist" and both issue a `POST /projects` — producing two identically-named duplicate projects, both empty if subsequent app creation fails (e.g., the 422-private-repo branch documented below). Always instruct the user to wait for the first `deploy-app` to return (health check resolved, URL announced) before launching the next. If duplicates already exist, point the user to `docs/deploy/coolify-cli-cheatsheet.md` for the curl-based cleanup recipe.
 
    ```
-   python3 "$(cat ~/.gse-one)/tools/deploy.py" deploy-app \
+   python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" deploy-app \
      --name "<label-from-subdomain-step>" \
      --project-name "<pre-sanitization-dir-name>" \
      --deploy-user "<DEPLOY_USER or empty>" \
@@ -611,13 +611,13 @@ When invoked with `--status`:
 
 1. Invoke:
    ```
-   python3 "$(cat ~/.gse-one)/tools/deploy.py" state --human
+   python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" state --human
    ```
    This prints the full state (phases, server, Coolify, domain, applications table).
 
 2. For each application listed, run a live health check:
    ```
-   python3 "$(cat ~/.gse-one)/tools/deploy.py" app-status <app-name>
+   python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" app-status <app-name>
    ```
    and display the current status to the user.
 
@@ -629,7 +629,7 @@ When invoked with `--destroy`:
 
 1. **Dry-run first** — always surface the impact before the Gates:
    ```
-   python3 "$(cat ~/.gse-one)/tools/deploy.py" destroy --dry-run
+   python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" destroy --dry-run
    ```
    Display the result to the user:
    > **Impact of /gse:deploy --destroy:**
@@ -651,7 +651,7 @@ When invoked with `--destroy`:
 
 4. **Execute destroy** with the typed name as confirmation:
    ```
-   python3 "$(cat ~/.gse-one)/tools/deploy.py" destroy --confirm <typed-name>
+   python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" destroy --confirm <typed-name>
    ```
 
 5. **Handle the result:**
@@ -661,7 +661,7 @@ When invoked with `--destroy`:
 6. **Clean up `.env` variables** (only on `status == "ok"`):
    ```
    for key in SERVER_IP SSH_USER SSH_KEY COOLIFY_URL COOLIFY_API_TOKEN; do
-     python3 "$(cat ~/.gse-one)/tools/deploy.py" env-delete "$key"
+     python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" env-delete "$key"
    done
    ```
 
@@ -699,7 +699,7 @@ When invoked with `--training-init`:
 1. Verify `phases_completed.dns` is set (the instructor has completed Phases 1-5). If not, abort with *"Training-init requires completed infrastructure. Finish /gse:deploy first."*
 2. Invoke:
    ```
-   python3 "$(cat ~/.gse-one)/tools/deploy.py" training-init [--output .env.training]
+   python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" training-init [--output .env.training]
    ```
 3. The tool generates `.env.training` containing `COOLIFY_URL`, `COOLIFY_API_TOKEN`, `DEPLOY_DOMAIN`, and a `DEPLOY_USER=learnerXX` placeholder — plus `SERVER_UUID` and `COOLIFY_GITHUB_APP_UUID` when present in the instructor's `.env` (so the single handout also covers recent Coolify versions and learners with private repos; remind the instructor to set both before generating if the cohort needs them). It **excludes** `HETZNER_API_TOKEN`, `SERVER_IP`, SSH keys. A security warning is embedded as a comment.
 4. **Mandatory token step — before distributing anything:** instruct the instructor to generate a **dedicated Coolify API token for the course** (Coolify UI → Keys & Tokens) and re-run `--training-init` with it in `.env` if the current token is their personal one. State the risk explicitly: *"The token embedded in `.env.training` gives every learner WRITE access to ALL applications on the shared Coolify server — any learner can modify or delete other learners' apps (or yours). Use a course-dedicated token, and revoke it in the Coolify UI as soon as the course ends (`--training-reap` cleans the apps, not the token)."*
@@ -714,7 +714,7 @@ When invoked with `--training-reap`:
    *"Reap which? (1) a single learner, (2) all gse-* projects, (3) cancel"*
 2. If option 1: ask for the learner name, then run a dry-run first:
    ```
-   python3 "$(cat ~/.gse-one)/tools/deploy.py" training-reap --user <name> --dry-run
+   python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" training-reap --user <name> --dry-run
    ```
    Display the list of projects that would be deleted. If the instructor confirms (Gate), re-invoke with `--confirm <name>` to actually delete.
 3. If option 2: run `training-reap --all --dry-run`, display the list, confirm (Gate), then `--all --confirm all`.

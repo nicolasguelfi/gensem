@@ -252,14 +252,54 @@ REGISTRY_FILE = Path.home() / ".gse-one"
 GSE_ONE_DATA_DIR = Path.home() / ".gse-one.d"
 
 
+# Fully-local install mode: when set to a project Path, the registry is written
+# to <project>/.gse/registry (relative content) instead of the global
+# ~/.gse-one — so the install touches NOTHING under $HOME and the project is
+# self-contained / committable. Set by main()/menu when --mode local is chosen.
+_LOCAL_REGISTRY_PROJECT = None
+
+
 def _write_registry(plugin_path):
-    """Write the plugin path to ~/.gse-one so tools can be resolved at runtime."""
+    """Write the install-target path to the registry so tools resolve at runtime.
+
+    Global modes write the absolute path to ~/.gse-one. Local mode (when
+    _LOCAL_REGISTRY_PROJECT is set) writes a path RELATIVE to the project root
+    into <project>/.gse/registry — no $HOME file, and portable across machines
+    (resolved relative to the project root, where the agent's CWD already is)."""
+    if _LOCAL_REGISTRY_PROJECT is not None:
+        proj = Path(_LOCAL_REGISTRY_PROJECT).resolve()
+        reg = proj / ".gse" / "registry"
+        ensure_dir(reg.parent)
+        try:
+            content = str(Path(plugin_path).resolve().relative_to(proj))
+        except ValueError:
+            content = str(Path(plugin_path).resolve())  # outside project → absolute
+        reg.write_text(content + "\n", encoding="utf-8")
+        ok(f"Local registry written: {reg} → {content} (no ~/.gse-one)")
+        return
     REGISTRY_FILE.write_text(str(Path(plugin_path).resolve()) + "\n", encoding="utf-8")
     ok(f"Registry written: {REGISTRY_FILE} → {plugin_path}")
 
 
+def _maybe_local(mode, project_dir):
+    """Arm/disarm fully-local registry placement based on the chosen mode.
+
+    Sets _LOCAL_REGISTRY_PROJECT to project_dir when mode == 'local' (so
+    _write_registry / _remove_registry target <project>/.gse/registry), else
+    clears it. Returns project_dir for call-site convenience."""
+    global _LOCAL_REGISTRY_PROJECT
+    _LOCAL_REGISTRY_PROJECT = Path(project_dir) if mode == "local" else None
+    return project_dir
+
+
 def _remove_registry():
-    """Remove ~/.gse-one if it exists."""
+    """Remove the registry file (local <project>/.gse/registry or global ~/.gse-one)."""
+    if _LOCAL_REGISTRY_PROJECT is not None:
+        reg = Path(_LOCAL_REGISTRY_PROJECT) / ".gse" / "registry"
+        if reg.exists():
+            reg.unlink()
+            ok(f"Local registry removed: {reg}")
+        return
     if REGISTRY_FILE.exists():
         REGISTRY_FILE.unlink()
         ok(f"Registry removed: {REGISTRY_FILE}")
@@ -1859,10 +1899,12 @@ def interactive_menu(env):
                     ("Plugin — personal scope (gitignored)", "plugin-local"),
                     ("Plugin — global scope (all projects)", "plugin-user"),
                     ("Non-plugin — copy artifacts to .claude/", "no-plugin"),
+                    ("Fully local — .claude/ + project registry, nothing under ~", "local"),
                 ],
             )
-            if mode == "no-plugin":
+            if mode in ("no-plugin", "local"):
                 project_dir = _ask_project_dir()
+                _maybe_local(mode, project_dir)
                 results.append(install_claude_no_plugin(project_dir))
             else:
                 scope = mode.split("-")[1]
@@ -1874,10 +1916,12 @@ def interactive_menu(env):
                 [
                     ("Plugin — global (copy to ~/.cursor/plugins/)", "plugin"),
                     ("Non-plugin — copy artifacts to .cursor/", "no-plugin"),
+                    ("Fully local — .cursor/ + project registry, nothing under ~", "local"),
                 ],
             )
-            if mode == "no-plugin":
+            if mode in ("no-plugin", "local"):
                 project_dir = _ask_project_dir()
+                _maybe_local(mode, project_dir)
                 results.append(install_cursor_no_plugin(project_dir))
             else:
                 results.append(install_cursor_plugin(env))
@@ -1888,10 +1932,12 @@ def interactive_menu(env):
                 [
                     ("Plugin — global (copy to ~/.config/opencode/)", "plugin"),
                     ("Non-plugin — copy artifacts to .opencode/ (project)", "no-plugin"),
+                    ("Fully local — .opencode/ + project registry, nothing under ~", "local"),
                 ],
             )
-            if mode == "no-plugin":
+            if mode in ("no-plugin", "local"):
                 project_dir = _ask_project_dir()
+                _maybe_local(mode, project_dir)
                 results.append(install_opencode_no_plugin(project_dir))
             else:
                 results.append(install_opencode_plugin(env))
@@ -1902,10 +1948,12 @@ def interactive_menu(env):
                 [
                     ("Plugin — global (~/.codex/ + ~/.agents/skills/)", "plugin"),
                     ("Non-plugin — copy artifacts to .codex/ + .agents/ (project)", "no-plugin"),
+                    ("Fully local — project artifacts + project registry, nothing under ~", "local"),
                 ],
             )
-            if mode == "no-plugin":
+            if mode in ("no-plugin", "local"):
                 project_dir = _ask_project_dir()
+                _maybe_local(mode, project_dir)
                 results.append(install_codex_no_plugin(project_dir))
             else:
                 results.append(install_codex_plugin(env))
@@ -1916,10 +1964,12 @@ def interactive_menu(env):
                 [
                     ("Plugin — global extension (~/.gemini/extensions/gse-one/)", "plugin"),
                     ("Non-plugin — copy artifacts to .gemini/ (project)", "no-plugin"),
+                    ("Fully local — .gemini/ + project registry, nothing under ~", "local"),
                 ],
             )
-            if mode == "no-plugin":
+            if mode in ("no-plugin", "local"):
                 project_dir = _ask_project_dir()
+                _maybe_local(mode, project_dir)
                 results.append(install_gemini_no_plugin(project_dir))
             else:
                 results.append(install_gemini_plugin(env))
@@ -2000,6 +2050,7 @@ def parse_args():
   python3 install.py --platform cursor --mode plugin
   python3 install.py --platform opencode --mode plugin
   python3 install.py --platform codex --mode no-plugin --project-dir /path/to/project
+  python3 install.py --platform codex --mode local --project-dir /path/to/project   # nothing under $HOME
   python3 install.py --platform gemini --mode plugin
   python3 install.py --platform both --mode plugin --scope user
   python3 install.py --platform all --mode plugin --scope user
@@ -2009,7 +2060,9 @@ def parse_args():
     parser.add_argument("--platform",
                         choices=["claude", "cursor", "opencode", "codex", "gemini", "both", "all"],
                         help="Target platform ('both' = claude+cursor, 'all' = all five)")
-    parser.add_argument("--mode", choices=["plugin", "no-plugin"], help="Installation mode")
+    parser.add_argument("--mode", choices=["plugin", "no-plugin", "local"],
+                        help="Installation mode ('local' = no-plugin + project-local "
+                             "registry at <project>/.gse/registry, nothing under $HOME)")
     parser.add_argument("--scope", choices=["project", "local", "user"], default="project",
                         help="Plugin scope for Claude Code (default: project). Ignored for Cursor/opencode.")
     parser.add_argument("--project-dir", type=str,
@@ -2048,6 +2101,9 @@ def main():
     else:
         platforms = [args.platform]
     mode = args.mode or "plugin"
+    # Arm fully-local registry placement (no $HOME file) when mode == 'local';
+    # 'local' otherwise behaves exactly like no-plugin for routing below.
+    _maybe_local(mode, project_dir)
     results = []
 
     for plat in platforms:

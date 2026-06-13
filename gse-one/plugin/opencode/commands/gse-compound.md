@@ -249,7 +249,7 @@ After capitalization, archive the completed sprint to keep state files lean:
 
 4. **`.gse/plan.yaml` handling — explicit no-op here.** The durable archive of the sprint plan is `docs/sprints/sprint-{NN}/plan-summary.md` (produced by `/gse:deliver` Step 9.1 — inherits `gse.id: PLN-NNN` from `.gse/plan.yaml` for P6 traceability). `.gse/plan.yaml` itself is **not moved** by this step — it remains in `.gse/` with `status: completed` (sprint-freeze marker) until `/gse:plan --strategic` opens the next sprint and overwrites it with a fresh plan. During that gap between compound and next-sprint open, the sprint-freeze Hard guardrail (orchestrator) prevents write activities from mutating the frozen sprint.
 
-5. **Regenerate dashboard** — Run `python3 "$(cat ~/.gse-one)/tools/dashboard.py"` to update `docs/dashboard.html` with capitalization results, archived sprints, and updated health trends. Inform the user:
+5. **Regenerate dashboard** — Run `python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/dashboard.py"` to update `docs/dashboard.html` with capitalization results, archived sprints, and updated health trends. Inform the user:
    - For beginners: "The dashboard has been updated with the summary of this cycle. You can open it to see the full project history." (adapt wording to the user's language)
    - For intermediate/expert: "Dashboard updated with compound results and sprint history."
 

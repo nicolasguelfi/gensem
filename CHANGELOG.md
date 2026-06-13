@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.73.0] - 2026-06-13
+
+*Adds a fully project-local install mode — nothing written under `$HOME`.*
+
+### Added
+- Added `install.py --mode local` (and `GSE_MODE=local`): like no-plugin, but writes the registry to `<project>/.gse/registry` (path relative to the project root) instead of `~/.gse-one` — no `$HOME` file, project is self-contained/committable. Available for all 5 platforms.
+- Added project-local-first registry resolution: the generator rewrites every deployed incantation to `$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/…`; global modes keep working via the fallback. `--verify` asserts no bare incantation remains.
+
+### Changed
+- Dashboard hook now resolves the registry from `.gse/registry` when present, else `~/.gse-one`.
+- `_write_registry` / `_remove_registry` honor `--mode local` via `_maybe_local()`; install.sh documents `GSE_MODE=local`.
+
 ## [0.72.0] - 2026-06-12
 
 *Adds Codex CLI and Gemini CLI as deployment targets (5 platforms, 10 install modes).*

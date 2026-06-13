@@ -156,6 +156,46 @@ def extract_body(filepath: Path) -> str:
     return content
 
 
+# Registry resolution incantations.
+# Sources author the simple global form `$(cat ~/.gse-one)`; the generator
+# rewrites it in the DEPLOYED artefacts to a project-local-first form so a
+# fully project-local install mode (registry at <project>/.gse/registry, no
+# $HOME file) works, while the global modes keep working via the fallback.
+REGISTRY_GLOBAL = "cat ~/.gse-one"
+REGISTRY_RESOLVED = "[ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one"
+
+
+def _localize_registry_resolution() -> None:
+    """Rewrite `cat ~/.gse-one` → project-local-first resolution in every
+    generated text artefact under plugin/.
+
+    Run as the final generate() step so it catches skills, commands, agents,
+    AGENTS.md / GEMINI.md, the .mdc rule, Codex skills/AGENTS.md, and Gemini
+    command TOMLs uniformly — which preserves the cross-platform body parity
+    (all orchestrator copies receive the identical rewrite). Idempotent per
+    run: artefacts are rebuilt from src (plain form) on every generate, then
+    transformed once; str.replace does not re-scan its own replacement.
+
+    The Python dashboard hook resolves the registry separately (it prefers
+    .gse/registry in its own one-liner), so it carries no `cat ~/.gse-one`.
+    """
+    count = 0
+    files = 0
+    for path in sorted(PLUGIN.rglob("*")):
+        if not path.is_file():
+            continue
+        if path.suffix not in (".md", ".mdc", ".toml"):
+            continue
+        text = path.read_text(encoding="utf-8")
+        if REGISTRY_GLOBAL not in text:
+            continue
+        n = text.count(REGISTRY_GLOBAL)
+        path.write_text(text.replace(REGISTRY_GLOBAL, REGISTRY_RESOLVED), encoding="utf-8")
+        count += n
+        files += 1
+    print(f"  registry resolution: rewrote {count} incantation(s) in {files} file(s)")
+
+
 # ---------------------------------------------------------------------------
 # Generator
 # ---------------------------------------------------------------------------
@@ -344,6 +384,12 @@ def generate(clean: bool = False) -> None:
     build_gemini()
     print()
 
+    # 11. Registry resolution rewrite (project-local-first, global fallback) —
+    # MUST run last so it transforms every emitted artefact uniformly.
+    print("Registry resolution (project-local-first):")
+    _localize_registry_resolution()
+    print()
+
     print(f"Plugin generated: {PLUGIN.relative_to(ROOT)}/")
     total = sum(1 for _ in PLUGIN.rglob("*") if _.is_file())
     print(f"Total files: {total}\n")
@@ -423,7 +469,7 @@ def _guardrail_commands() -> dict:
     post_edit_dashboard = (
         "python3 -c \""
         "import os,subprocess,datetime,json; "
-        "r=os.path.expanduser('~/.gse-one'); "
+        "r='.gse/registry' if os.path.isfile('.gse/registry') else os.path.expanduser('~/.gse-one'); "
         "p=open(r).read().strip() if os.path.isfile(r) else ''; "
         "t=os.path.join(p,'tools','dashboard.py') if p else ''; "
         "res=subprocess.run(['python3',t,'--if-stale'],capture_output=True,text=True) "
@@ -1396,6 +1442,24 @@ def verify() -> None:
             else:
                 print(f"    Codex AGENTS.md vs lite:   DIVERGENT!")
                 errors.append("codex AGENTS.md body differs from gse-orchestrator-lite source")
+
+    # Registry resolution: every `cat ~/.gse-one` in deployed artefacts must be
+    # wrapped in the project-local-first form (count of bare == count of resolved,
+    # since each resolved form contains exactly one trailing bare form).
+    print("\n  Registry resolution (project-local-first):")
+    g = r = 0
+    for path in PLUGIN.rglob("*"):
+        if path.is_file() and path.suffix in (".md", ".mdc", ".toml"):
+            t = path.read_text(encoding="utf-8")
+            g += t.count(REGISTRY_GLOBAL)
+            r += t.count(REGISTRY_RESOLVED)
+    if r > 0 and g == r:
+        print(f"    OK ({r} incantation(s) localized, global fallback preserved)")
+    elif g != r:
+        print(f"    DRIFT: {g - r} bare `cat ~/.gse-one` not localized")
+        errors.append(f"registry resolution: {g - r} bare incantation(s) not localized")
+    else:
+        print(f"    (no registry incantations in artefacts)")
 
     # External docs consistency — warning-level (non-blocking).
     # Build-time early alert: visible but not fatal so prose can evolve

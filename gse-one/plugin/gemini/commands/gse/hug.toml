@@ -186,7 +186,7 @@ Verify the project environment is ready. **This step is blocking** — do NOT me
      ```bash
      git init
      # create .gitignore: seed it from the GSE-One additions template, then add project-appropriate entries
-     cat "$(cat ~/.gse-one)/templates/gitignore-additions.txt" >> .gitignore
+     cat "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/templates/gitignore-additions.txt" >> .gitignore
      # [Git Identity Verification preflight — see below]
      git add .gitignore
      git commit -m "chore: initialize repository"
@@ -227,8 +227,8 @@ Verify the project environment is ready. **This step is blocking** — do NOT me
    - If no: acknowledge and continue without git. Note that some GSE features (branching, version control guardrails) will be unavailable.
 2. **Create `.gse/` directory** — If it does not exist:
    - Create `.gse/` with subdirectories: `profiles/`, `checkpoints/`
-   - Copy `config.yaml` from the template (`$(cat ~/.gse-one)/templates/config.yaml`) with default values. Leave `lifecycle.mode` empty — `/gse:go` will fill it after Complexity Assessment (spec §14.3 — Orchestrator Decision Logic, Step 6 — Complexity Assessment).
-   - Stamp the GSE-One plugin version in `status.yaml.gse_version` by reading it from the unified version file at `$(cat ~/.gse-one)/VERSION` — a single 1-line text file present at the root of every install target (regardless of platform or plugin/no-plugin mode), written by the generator and distributed by `install.py`. This traces which plugin version created the project state — used by the dashboard header display and by future `/gse:upgrade` migration logic (spec §13.4 — Required fields, design §14.3 — Open questions #3). See CLAUDE.md "Tool architecture" for the registry model that makes this path uniformly resolvable.
+   - Copy `config.yaml` from the template (`$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/templates/config.yaml`) with default values. Leave `lifecycle.mode` empty — `/gse:go` will fill it after Complexity Assessment (spec §14.3 — Orchestrator Decision Logic, Step 6 — Complexity Assessment).
+   - Stamp the GSE-One plugin version in `status.yaml.gse_version` by reading it from the unified version file at `$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/VERSION` — a single 1-line text file present at the root of every install target (regardless of platform or plugin/no-plugin mode), written by the generator and distributed by `install.py`. This traces which plugin version created the project state — used by the dashboard header display and by future `/gse:upgrade` migration logic (spec §13.4 — Required fields, design §14.3 — Open questions #3). See CLAUDE.md "Tool architecture" for the registry model that makes this path uniformly resolvable.
    - Add to `.gitignore`: entries for `.gse/local/` (machine-specific state)
 3. **Save profile** — Write the completed profile to `.gse/profile.yaml` (or `.gse/profiles/{username}.yaml` in team mode)
 
@@ -292,12 +292,12 @@ inferred:
 
 After `.gse/` is created and profile saved:
 
-1. **Validate tool access** — Run: `cat ~/.gse-one` to verify the plugin registry exists. If the file is missing, warn the user: "GSE-One registry not found. Run `python3 install.py` again to fix."
-2. **Generate the first dashboard** — Run: `python3 "$(cat ~/.gse-one)/tools/dashboard.py"`
+1. **Validate tool access** — Run: `[ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one` to verify the plugin registry exists. If the file is missing, warn the user: "GSE-One registry not found. Run `python3 install.py` again to fix."
+2. **Generate the first dashboard** — Run: `python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/dashboard.py"`
 3. **Verify** — Check that `docs/dashboard.html` was created and is not empty.
 4. Inform the user:
    - **For beginner users:** "I've created a dashboard to track your project's progress. You can open it in your browser at any time: `docs/dashboard.html`. It updates at each step." (adapt wording to the user's language)
-   - **For intermediate/advanced users:** "Dashboard generated at `docs/dashboard.html`. Regenerated after each activity. Run `python3 \"$(cat ~/.gse-one)/tools/dashboard.py\" --watch` for live updates."
+   - **For intermediate/advanced users:** "Dashboard generated at `docs/dashboard.html`. Regenerated after each activity. Run `python3 \"$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/dashboard.py\" --watch` for live updates."
 
 ### Step 6 — Transition
 

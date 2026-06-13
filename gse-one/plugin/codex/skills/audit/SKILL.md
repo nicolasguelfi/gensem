@@ -32,8 +32,8 @@ Before executing, read:
 
 ### Step 1 — Run deterministic checks
 
-1. **Validate tool registry** — `cat ~/.gse-one` must exist and point to a valid plugin path. If not, abort with: *"GSE-One registry not found. Run `python3 install.py` to fix."*
-2. **Execute** `python3 "$(cat ~/.gse-one)/tools/project-audit.py" --json` — the deterministic audit engine produces a machine-readable list of findings on `stdout`.
+1. **Validate tool registry** — `[ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one` must exist and point to a valid plugin path. If not, abort with: *"GSE-One registry not found. Run `python3 install.py` to fix."*
+2. **Execute** `python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/project-audit.py" --json` — the deterministic audit engine produces a machine-readable list of findings on `stdout`.
 3. **Parse findings** — each finding carries: `id` (`AUD-NNN`), `severity` (`HIGH` | `MEDIUM` | `LOW`; `CRITICAL` reserved for P15 escalation), `category` (dashboard, test-evidence, format, git-state, workflow, coach, intent, backlog, open-questions, sprint-freeze, file-structure, etc.), `title`, `detail`, `evidence`, `recommendation`, `auto_fixable` (bool), `fix_command` (optional shell command).
 
 ### Step 2 — (Phase 2 placeholder) Invoke project-reviewer sub-agent
@@ -53,7 +53,7 @@ Write the audit report:
 - **If a sprint is active** (`.gse/plan.yaml → status: active`): `docs/sprints/sprint-{NN}/audit-{YYYY-MM-DDThhmm}.md`
 - **Otherwise** (greenfield, between sprints, delivered sprint frozen): `.gse/audits/audit-{YYYY-MM-DDThhmm}.md` (create `.gse/audits/` if absent)
 
-Use the template `$(cat ~/.gse-one)/templates/sprint/audit.md` (created in sub-proposition J.3). Populate:
+Use the template `$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/templates/sprint/audit.md` (created in sub-proposition J.3). Populate:
 - Metadata: sprint, date, triggering context (`manual` | `auto-trigger` | `scheduled`), version of audit engine (from the `# @gse-tool` header)
 - Summary: count of findings per severity
 - Findings list (canonical format — see **Output Format** below)
@@ -111,7 +111,7 @@ AUD-001 [HIGH] — Dashboard not regenerated since last activity
   evidence: dashboard mtime=2026-04-22T10:14, state mtime=2026-04-22T13:22
   recommendation: Regenerate the dashboard.
   auto_fixable: true
-  fix_command: python3 "$(cat ~/.gse-one)/tools/dashboard.py"
+  fix_command: python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/dashboard.py"
 
 AUD-002 [HIGH] — Must-priority REQ has no test evidence
   category: test-evidence

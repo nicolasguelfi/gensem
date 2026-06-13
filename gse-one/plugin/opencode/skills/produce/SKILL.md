@@ -323,4 +323,4 @@ Close the activity with a retrospective list of the **Inform-tier decisions** ma
 
 ### Step 6 — Regenerate Dashboard
 
-**Regenerate dashboard** — Run `python3 "$(cat ~/.gse-one)/tools/dashboard.py"` to update `docs/dashboard.html` with the final task status (done) and budget consumption. Note: the dashboard was already refreshed right after the test run (step 7 of the canonical run); this second regen captures the TASK status transition.
+**Regenerate dashboard** — Run `python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/dashboard.py"` to update `docs/dashboard.html` with the final task status (done) and budget consumption. Note: the dashboard was already refreshed right after the test run (step 7 of the canonical run); this second regen captures the TASK status transition.

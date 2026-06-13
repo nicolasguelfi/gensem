@@ -24,8 +24,8 @@ Priorities:
 
 Consult these references on demand during the activity:
 
-- `$(cat ~/.gse-one)/references/hetzner-infrastructure.md` — server types, pricing, datacenter latency, application resource profiles, Coolify API endpoints, security checklist
-- `$(cat ~/.gse-one)/references/ssh-operations.md` — SSH credential resolution, connection patterns, which user per phase, health check patterns
+- `$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/references/hetzner-infrastructure.md` — server types, pricing, datacenter latency, application resource profiles, Coolify API endpoints, security checklist
+- `$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/references/ssh-operations.md` — SSH credential resolution, connection patterns, which user per phase, health check patterns
 
 ## Core Principles
 

@@ -79,7 +79,7 @@ The curl installer reads five environment variables that override auto-detection
 | Variable | Values | Description |
 |---|---|---|
 | `GSE_PLATFORM` | `claude` \| `cursor` \| `opencode` \| `codex` \| `gemini` \| `all` \| `both` | Restrict install to one platform — `both` = claude + cursor, `all` = every supported platform (default: every platform detected on PATH) |
-| `GSE_MODE` | `plugin` \| `no-plugin` | Install as a platform plugin or copy artifacts into a project's `.claude/` / `.cursor/` / `.opencode/` / `.codex/` / `.gemini/` |
+| `GSE_MODE` | `plugin` \| `no-plugin` \| `local` | Plugin, or copy artifacts into a project's `.claude/` / `.cursor/` / `.opencode/` / `.codex/` / `.gemini/`. `local` = no-plugin **+ project registry at `.gse/registry`, nothing under `$HOME`** (self-contained / committable) |
 | `GSE_SCOPE` | `project` \| `local` \| `user` | Claude Code plugin scope only (default: `user`); ignored by Cursor, opencode, Codex, and Gemini |
 | `GSE_VERSION` | `latest` \| `vX.Y.Z` | Release tag to install; `latest` resolves via the GitHub API (default: `latest`) |
 | `GSE_PROJECT_DIR` | path | Target directory for `no-plugin` mode (default: current working directory) |

@@ -312,7 +312,7 @@ Reliability:
 
 ### Step 7.5 — Requirements Quality Pass (requirements-analyst sub-agent)
 
-Once the REQ list is drafted (Steps 1-6) and the inline Quality Checklist (Step 7) has surfaced dimension-level gaps, invoke the `requirements-analyst` sub-agent (`$(cat ~/.gse-one)/agents/requirements-analyst.md` — adopt this role) to run its **checklist against the drafted REQ entries**. This is a REQ-level audit (per-REQ) complementing Step 7's dimension-level audit.
+Once the REQ list is drafted (Steps 1-6) and the inline Quality Checklist (Step 7) has surfaced dimension-level gaps, invoke the `requirements-analyst` sub-agent (`$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/agents/requirements-analyst.md` — adopt this role) to run its **checklist against the drafted REQ entries**. This is a REQ-level audit (per-REQ) complementing Step 7's dimension-level audit.
 
 The agent returns findings tagged `[REQ-QUALITY]` covering:
 - **Completeness** — no orphan REQ without acceptance criteria, no incomplete FR/NFR pair.

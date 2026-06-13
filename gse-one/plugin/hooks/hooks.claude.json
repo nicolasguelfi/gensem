@@ -30,7 +30,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 -c \"import os,subprocess,datetime,json; r=os.path.expanduser('~/.gse-one'); p=open(r).read().strip() if os.path.isfile(r) else ''; t=os.path.join(p,'tools','dashboard.py') if p else ''; res=subprocess.run(['python3',t,'--if-stale'],capture_output=True,text=True) if os.path.isfile(t) else None; (res and res.returncode!=0) and os.makedirs('.gse',exist_ok=True) or None; (res and res.returncode!=0) and open(os.path.join('.gse','.dashboard-error.yaml'),'w').write('timestamp: \\\"'+datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')+'\\\"\\nmessage: '+json.dumps('dashboard.py exited with code '+str(res.returncode))+'\\ntraceback: |\\n  '+(res.stderr or '(no stderr)').replace(chr(10),chr(10)+'  '))\""
+            "command": "python3 -c \"import os,subprocess,datetime,json; r='.gse/registry' if os.path.isfile('.gse/registry') else os.path.expanduser('~/.gse-one'); p=open(r).read().strip() if os.path.isfile(r) else ''; t=os.path.join(p,'tools','dashboard.py') if p else ''; res=subprocess.run(['python3',t,'--if-stale'],capture_output=True,text=True) if os.path.isfile(t) else None; (res and res.returncode!=0) and os.makedirs('.gse',exist_ok=True) or None; (res and res.returncode!=0) and open(os.path.join('.gse','.dashboard-error.yaml'),'w').write('timestamp: \\\"'+datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')+'\\\"\\nmessage: '+json.dumps('dashboard.py exited with code '+str(res.returncode))+'\\ntraceback: |\\n  '+(res.stderr or '(no stderr)').replace(chr(10),chr(10)+'  '))\""
           }
         ]
       },
@@ -39,7 +39,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 -c \"import os,subprocess,datetime,json; r=os.path.expanduser('~/.gse-one'); p=open(r).read().strip() if os.path.isfile(r) else ''; t=os.path.join(p,'tools','dashboard.py') if p else ''; res=subprocess.run(['python3',t,'--if-stale'],capture_output=True,text=True) if os.path.isfile(t) else None; (res and res.returncode!=0) and os.makedirs('.gse',exist_ok=True) or None; (res and res.returncode!=0) and open(os.path.join('.gse','.dashboard-error.yaml'),'w').write('timestamp: \\\"'+datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')+'\\\"\\nmessage: '+json.dumps('dashboard.py exited with code '+str(res.returncode))+'\\ntraceback: |\\n  '+(res.stderr or '(no stderr)').replace(chr(10),chr(10)+'  '))\""
+            "command": "python3 -c \"import os,subprocess,datetime,json; r='.gse/registry' if os.path.isfile('.gse/registry') else os.path.expanduser('~/.gse-one'); p=open(r).read().strip() if os.path.isfile(r) else ''; t=os.path.join(p,'tools','dashboard.py') if p else ''; res=subprocess.run(['python3',t,'--if-stale'],capture_output=True,text=True) if os.path.isfile(t) else None; (res and res.returncode!=0) and os.makedirs('.gse',exist_ok=True) or None; (res and res.returncode!=0) and open(os.path.join('.gse','.dashboard-error.yaml'),'w').write('timestamp: \\\"'+datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')+'\\\"\\nmessage: '+json.dumps('dashboard.py exited with code '+str(res.returncode))+'\\ntraceback: |\\n  '+(res.stderr or '(no stderr)').replace(chr(10),chr(10)+'  '))\""
           }
         ]
       },
@@ -48,7 +48,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 -c \"import os,subprocess,datetime,json; r=os.path.expanduser('~/.gse-one'); p=open(r).read().strip() if os.path.isfile(r) else ''; t=os.path.join(p,'tools','dashboard.py') if p else ''; res=subprocess.run(['python3',t,'--if-stale'],capture_output=True,text=True) if os.path.isfile(t) else None; (res and res.returncode!=0) and os.makedirs('.gse',exist_ok=True) or None; (res and res.returncode!=0) and open(os.path.join('.gse','.dashboard-error.yaml'),'w').write('timestamp: \\\"'+datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')+'\\\"\\nmessage: '+json.dumps('dashboard.py exited with code '+str(res.returncode))+'\\ntraceback: |\\n  '+(res.stderr or '(no stderr)').replace(chr(10),chr(10)+'  '))\""
+            "command": "python3 -c \"import os,subprocess,datetime,json; r='.gse/registry' if os.path.isfile('.gse/registry') else os.path.expanduser('~/.gse-one'); p=open(r).read().strip() if os.path.isfile(r) else ''; t=os.path.join(p,'tools','dashboard.py') if p else ''; res=subprocess.run(['python3',t,'--if-stale'],capture_output=True,text=True) if os.path.isfile(t) else None; (res and res.returncode!=0) and os.makedirs('.gse',exist_ok=True) or None; (res and res.returncode!=0) and open(os.path.join('.gse','.dashboard-error.yaml'),'w').write('timestamp: \\\"'+datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')+'\\\"\\nmessage: '+json.dumps('dashboard.py exited with code '+str(res.returncode))+'\\ntraceback: |\\n  '+(res.stderr or '(no stderr)').replace(chr(10),chr(10)+'  '))\""
           }
         ]
       }

@@ -9,7 +9,7 @@
 #
 # Env overrides:
 #   GSE_PLATFORM   claude|cursor|opencode|codex|gemini|all|both   (default: auto-detect)
-#   GSE_MODE       plugin|no-plugin                  (default: no-plugin)
+#   GSE_MODE       plugin|no-plugin|local            (default: no-plugin; 'local' = project registry, nothing under $HOME)
 #   GSE_SCOPE      project|local|user                (default: user)
 #   GSE_VERSION    vX.Y.Z|latest                     (default: latest)
 #   GSE_PROJECT_DIR /abs/path                        (no-plugin only)

@@ -204,7 +204,7 @@ Report findings using the architect agent checklist (see `plugin/agents/architec
 
 ### Step 5.5 — Security Design Pass (security-auditor sub-agent)
 
-Once the architecture decisions (DES-NNN) are drafted and the structural Quality Checklist (Step 5) is clean, invoke the `security-auditor` sub-agent (`$(cat ~/.gse-one)/agents/security-auditor.md` — adopt this role) to perform **threat modeling at the design layer**, complementing the later code-level security review during `/gse:review`.
+Once the architecture decisions (DES-NNN) are drafted and the structural Quality Checklist (Step 5) is clean, invoke the `security-auditor` sub-agent (`$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/agents/security-auditor.md` — adopt this role) to perform **threat modeling at the design layer**, complementing the later code-level security review during `/gse:review`.
 
 The agent reviews each DES-NNN through the OWASP Top 10 + CWE lens and flags:
 - **Authentication / authorization boundaries** — where identity is checked, where privileges escalate.

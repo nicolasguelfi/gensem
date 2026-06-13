@@ -145,7 +145,7 @@ After all parallel sub-agents return:
 
 ### Step 3 — Devil's Advocate (P16)
 
-After the standard review completes, **spawn the devil-advocate sub-agent in its own fresh context** (`"$(cat ~/.gse-one)/agents/devil-advocate.md"` via the runtime's subprocess/spawn facility, with a context brief per the orchestrator's Sub-agent delegation protocol — NOT inline role adoption: the pass must not inherit the main conversation's accumulated rationalizations, or it will re-validate them). This is a meta-review that challenges the AI's own work.
+After the standard review completes, **spawn the devil-advocate sub-agent in its own fresh context** (`"$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/agents/devil-advocate.md"` via the runtime's subprocess/spawn facility, with a context brief per the orchestrator's Sub-agent delegation protocol — NOT inline role adoption: the pass must not inherit the main conversation's accumulated rationalizations, or it will re-validate them). This is a meta-review that challenges the AI's own work.
 
 **Fallback and trace:** if the runtime cannot spawn a sub-agent, run the pass inline AND emit an Inform note (*"[Inform] Devil's advocate pass running inline — sub-agent spawn unavailable on this runtime."*, same pattern as the P4 runtime-forced fallback). In both cases, record the execution mode in the AI Integrity Findings section of `review.md`: `DA execution: isolated` or `DA execution: inline-degraded`. Opportunistic enhancement: if the spawn facility exposes model selection, prefer a different model than the one that produced the artefacts (best-effort — weights-level blind spots are context-independent).
 
@@ -254,6 +254,6 @@ If findings with severity HIGH or MEDIUM exist:
 
 **Update `status.yaml.review_findings_open`** — set this counter to the total count of HIGH + MEDIUM findings currently unresolved across all sprint `review.md` files (i.e., findings without `status: fixed`). This counter is consumed by the git-push hook (spec §P13 — System hooks; design §7 — Hooks Design) which warns the user before pushing a branch with open findings. The counter is decremented by `/gse:fix` Step 6 when findings are resolved. If all findings are resolved (clean review or post-FIX), set to 0.
 
-**Regenerate dashboard** — Run `python3 "$(cat ~/.gse-one)/tools/dashboard.py"` to update `docs/dashboard.html` with review findings, health scores, and quality metrics. After review is a key moment to check the dashboard — inform the user:
+**Regenerate dashboard** — Run `python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/dashboard.py"` to update `docs/dashboard.html` with review findings, health scores, and quality metrics. After review is a key moment to check the dashboard — inform the user:
 - For beginners: "The project dashboard has been updated with the verification results. You can open it at `docs/dashboard.html`." (adapt wording to the user's language)
 - For intermediate/expert: "Dashboard updated with review findings and health scores."

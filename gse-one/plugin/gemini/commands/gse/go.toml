@@ -38,7 +38,7 @@ Examine the working directory to classify the situation.
 | Condition | State | Action |
 |-----------|-------|--------|
 | No `.gse/` directory AND project files exist (after exclusions) | **Adopt candidate** | Transition to Adopt mode (Step 8) |
-| No `.gse/` directory AND directory is empty/near-empty (only excluded dirs) | **New project** | **Automatically execute** `/gse:hug` (do NOT just propose it — run it directly). **Per the Activity Execution Fidelity Invariant (orchestrator)**: open the target activity's source file — `$(cat ~/.gse-one)/skills/hug/SKILL.md` on Claude Code or opencode, `$(cat ~/.gse-one)/commands/gse-hug.md` on Cursor — and apply Step 0 literally. Do NOT paraphrase the language question. No preamble, no table, no technical explanation before Step 0. |
+| No `.gse/` directory AND directory is empty/near-empty (only excluded dirs) | **New project** | **Automatically execute** `/gse:hug` (do NOT just propose it — run it directly). **Per the Activity Execution Fidelity Invariant (orchestrator)**: open the target activity's source file — `$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/skills/hug/SKILL.md` on Claude Code or opencode, `$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/commands/gse-hug.md` on Cursor — and apply Step 0 literally. Do NOT paraphrase the language question. No preamble, no table, no technical explanation before Step 0. |
 | `.gse/` exists | **Existing project** | Read `status.yaml` and proceed to Step 2 |
 
 **New project auto-start rule:** When the project is empty, the user's intent is clear — they want to get started. The agent MUST immediately execute the HUG skill inline (language question first, then profile interview) without asking for confirmation or displaying diagnostic output. The user should see the HUG language question as the very first interaction, not a status table.
@@ -70,8 +70,8 @@ If `config.yaml → testing.dependency_audit: true` (default for projects with p
 
 ### Step 2.6 — Dashboard Refresh
 
-1. **Validate tool registry** — Run `cat ~/.gse-one`. If the file is missing or the path it contains does not exist, warn the user: "GSE-One registry not found. Run `python3 install.py` to fix." and skip dashboard generation.
-2. **Regenerate `docs/dashboard.html`** — Run `python3 "$(cat ~/.gse-one)/tools/dashboard.py"` to update the dashboard with current state.
+1. **Validate tool registry** — Run `[ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one`. If the file is missing or the path it contains does not exist, warn the user: "GSE-One registry not found. Run `python3 install.py` to fix." and skip dashboard generation.
+2. **Regenerate `docs/dashboard.html`** — Run `python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/dashboard.py"` to update the dashboard with current state.
 3. This runs silently — no message to the user unless it's the first generation (in which case, inform per HUG Step 5.5 — Dashboard Initialization rules).
 
 ### Step 2.7 — Git Baseline Verification
@@ -154,7 +154,7 @@ Track the number of sessions (invocations of `/gse:go` or `/gse:resume`) where n
    - If **at least one TASK status changed** → reset `sessions_without_progress` to 0.
 3. Persist `status.yaml → sessions_without_progress` with the new value, then refresh the snapshot: write the current map of `{TASK-id: status}` to `status.yaml → task_status_snapshot`.
 4. The coach `mid_sprint_stall` event trigger (feeds axes 3-4 — sprint velocity, workflow health; per `plugin/agents/coach.md` Invocation contract + `plugin/agents/gse-orchestrator.md` — section "Coach delegation") reads this counter and activates when `sessions_without_progress >= 2`.
-5. **Integrity-counter backstop:** run `python3 "$(cat ~/.gse-one)/tools/counters.py" health`. If it returns `"stale": true` (≥ 5 activity transitions without any P16 integrity-counter write), emit an Inform note: *"P16 integrity counters have not moved for N activities — re-check the counting obligations (spec §P16) before proceeding."* Informational only — no Gate.
+5. **Integrity-counter backstop:** run `python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/counters.py" health`. If it returns `"stale": true` (≥ 5 activity transitions without any P16 integrity-counter write), emit an Inform note: *"P16 integrity counters have not moved for N activities — re-check the counting obligations (spec §P16) before proceeding."* Informational only — no Gate.
 
 If the session-without-progress count reaches the configured threshold:
 

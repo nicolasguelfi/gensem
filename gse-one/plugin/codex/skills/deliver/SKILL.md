@@ -155,7 +155,7 @@ Runs only when the project lifecycle mode is **lightweight** (`.gse/config.yaml`
 
 Lightweight has no REVIEW activity, so this is the only P16 integrity net before the code reaches `main`. Keep it minimal — this is NOT a review:
 
-1. **Spawn the devil-advocate in `delivery-integrity` mode** (`"$(cat ~/.gse-one)/agents/devil-advocate.md"`) in a fresh sub-agent context (same isolation contract as review.md Step 3 — inline fallback allowed with the Inform note, execution mode traced).
+1. **Spawn the devil-advocate in `delivery-integrity` mode** (`"$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/agents/devil-advocate.md"`) in a fresh sub-agent context (same isolation contract as review.md Step 3 — inline fallback allowed with the Inform note, execution mode traced).
 2. Input: the sprint diff (`git diff main...HEAD --stat` + changed files) and the sprint artefacts.
 3. The mode's restricted checklist (see agent file): referenced libraries/packages/APIs actually exist (`pip show` / `npm list` / docs URL), version compatibility, unverified critical assertions (P15 — claims tagged Verified without evidence, or untagged critical claims). Maximum 5 findings, most critical first.
 4. **Routing:** HIGH findings → Gate before proceeding to Step 2 (*Fix now / Accept the risk — recorded as a DEC- / Discuss*). MEDIUM/LOW findings → Inform, appended to the release notes (Step 6).
@@ -286,4 +286,4 @@ Remove backup tags older than `backup_retention_days` (default: 30):
    - Branches cleaned
    - Plan snapshot: `docs/sprints/sprint-{NN}/plan-summary.md`
    - Next step: propose `/gse:compound`
-5. **Regenerate dashboard** — Run `python3 "$(cat ~/.gse-one)/tools/dashboard.py"` to update `docs/dashboard.html` with delivery status and release info.
+5. **Regenerate dashboard** — Run `python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/dashboard.py"` to update `docs/dashboard.html` with delivery status and release info.

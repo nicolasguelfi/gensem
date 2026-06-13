@@ -38,7 +38,7 @@ The audit covers **28 jobs** in 6 categories, listed in `.claude/audit-jobs.json
 | `--distribution-only` | Run only Category F (5 distribution-hygiene jobs via `audit.py`) |
 | `--format <json\|md>` | Output format (default: md) |
 | `--fail-on <error\|warning>` | Exit non-zero if findings at this severity or higher |
-| `--no-save` | Do not save the report to `_LOCAL/audits/` |
+| `--no-save` | Engine stdout only — do not write the registry (quick check) |
 | `--save-to <path>` | Explicit output file path (overrides default) |
 | `--help` | Show this usage guide |
 
@@ -73,13 +73,13 @@ If any marker is missing, abort with:
 
 ### Phase 1 — Deterministic engine (Python)
 
-Unless `--strategic-only` is passed, invoke the Python engine:
+Unless `--strategic-only` is passed, **seed the canonical registry** with the engine findings (this also auto-archives any previous `_LOCAL/audit/audit.json` to `_LOCAL/audit/archive/`):
 
 ```
-python3 gse-one/audit.py --no-save --format json
+python3 gse-one/audit.py --emit-registry
 ```
 
-Pass `--no-save` so the engine does not save its own partial report — the skill saves the augmented report in Phase 6 (see "Division of work" there). Exception: when `--deterministic-only` is requested, drop `--no-save` and let the engine save its own report (Phase 6 is skipped for the LLM-augmented part).
+This writes `_LOCAL/audit/audit.json` (`schema_version` + engine findings, each with a stable `AUD-<hash>` id, `verdict:"detected"`, `status:"open"`). The skill folds the LLM findings into this **same** registry in Phase 4 via `audit.py --merge`. The registry is the SINGLE output artifact (see "Audit output contract" in CLAUDE.md) — do NOT save separate `audit-<ts>.md` / `latest.md` / `verify-*.md` files. For a quick stdout-only check (e.g. `--deterministic-only`), `python3 gse-one/audit.py --no-save --format json` still works.
 
 This returns the 17 deterministic categories — 12 coherence categories (version, file integrity, plugin parity, cross-refs, numeric, links, git, Python quality, template schema, TODOs, test coverage, freshness) + the 5 Category F distribution-hygiene categories (`plugin_language`, `plugin_secrets`, `plugin_personal`, `plugin_debug`, `plugin_runtime_paths`), which fully cover the catalog's 5 F-jobs. Retain the JSON output for Phase 4 aggregation.
 
@@ -223,6 +223,12 @@ Return YAML list, no preamble. Cite file:line for every claim.
 3. **NEEDS_REFINEMENT** findings — present the adjusted fix proposal alongside the original for user validation.
 4. **SCOPE_CHANGE** findings — reclassify and note the new scope (defer to release X, bundle with contract change Y).
 
+**Persist verdicts INTO the registry (not a side file).** Write the verdicts to a JSON file (e.g. `/tmp/gse-verdicts.json`: a list of `{finding_id | finding_title, verdict, verdict_rationale, current_state, proposed_fix}`) and apply them in place:
+```
+python3 gse-one/audit.py --set-verdicts /tmp/gse-verdicts.json
+```
+This updates each matched finding's `verdict`/`status` in `_LOCAL/audit/audit.json` (FALSE_POSITIVE → `wontfix` + a `detector_issues[]` entry; SCOPE_CHANGE → `deferred`), sets `meta.verify_run_at`, and recomputes the summary. **Do NOT write a `verify-*.md` file** — the registry is the single source of truth.
+
 **User validation.** Present the consolidated plan as a single structured message with the 4 groups clearly separated. Use Communication style Rule 2 (single-default question) for the final "ok to apply all CONFIRMED + NEEDS_REFINEMENT (with adjustments), skip FALSE_POSITIVE, defer SCOPE_CHANGE". Do NOT apply per-finding — the verification phase is what earns the bulk-validation trust.
 
 **False-positive documentation.** Once fixes are applied and committed, the CHANGELOG of the resolving release MUST document each FALSE_POSITIVE with:
@@ -254,13 +260,13 @@ After all sub-agents return:
 
 6. **Group coherence findings into thematic clusters.** When multiple findings share a common theme (same drift type across files), group them and present as a cluster heading with sub-findings. Example clusters observed in past runs: "Count inconsistencies", "Schema field drifts", "Severity scale drift", "Sprint lifecycle drift", "Structural defects". This grouping is a QUALITY requirement — not optional. It dramatically improves the report's actionability.
 
-7. **Regression diff (when history exists).** If `_LOCAL/audits/latest.json` or `latest.md` exists from a previous run, compare: which findings are new since that run, which are resolved, which persist. Add a short "Since last audit" line to the Summary (e.g., "+3 new, -7 resolved, 12 persisting vs audit-YYYY-MM-DD").
+7. **Regression diff (when history exists).** The previous registry was just auto-archived to `_LOCAL/audit/archive/` by `--emit-registry`. Compare the new registry's finding ids (`AUD-<hash>`, stable across runs) against the newest archived `audit-*.json`: which are new, resolved, persisting. Add a short "Since last audit" line to the Summary (e.g., "+3 new, -7 resolved, 12 persisting vs <archived ts>").
 
 8. **Render** the unified report (markdown by default) per the template in Phase 5.
 
-### Phase 5 — Unified report rendering
+### Phase 5 — Rendering (on demand, from the registry)
 
-The report must follow this structure. A table-of-contents is **required** whenever the report exceeds 100 lines (typically always in a full audit).
+Markdown is a **throwaway view rendered on demand from the registry**, never persisted in-repo. Render with `python3 gse-one/audit.py --render` (default: `/tmp/gse-audit-<ts>.md`; `--out PATH` to target a path; or render to chat). The renderer reproduces the structure below from `_LOCAL/audit/audit.json`, so it always reflects current verdicts and fix status. A table-of-contents is **required** whenever the report exceeds 100 lines.
 
 ```markdown
 # GSE-One Methodology Audit
@@ -387,45 +393,35 @@ If `--fail-on error` and errors > 0: exit with non-zero indication.
 If `--fail-on warning` and (errors > 0 or warnings > 0): exit with non-zero.
 Recommendations NEVER trigger exit codes (they are proposals, not defects).
 
-### Phase 6 — Save the augmented report (MANDATORY)
+### Phase 6 — Persist the registry (MANDATORY)
 
-Unless `--no-save` was passed, you **MUST** persist the final rendered report. This is not optional — the audit trail is the primary value of running the audit.
+The audit's output is the **single canonical registry** `_LOCAL/audit/audit.json` — NOT a markdown report. By the end of a full run it must contain the engine findings (seeded in Phase 1) **plus** the LLM findings, recommendations, and cluster grouping. Markdown is never persisted in-repo (it is a `/tmp` render, Phase 5).
 
-**Exact procedure** (perform in this order):
+**Exact procedure:**
 
-1. **Create the directory** using the Bash tool:
+1. **The engine findings are already in the registry** (Phase 1 `--emit-registry` wrote `_LOCAL/audit/audit.json` and auto-archived the previous one to `_LOCAL/audit/archive/`).
+
+2. **Fold in the LLM findings + recommendations + clusters.** Write a JSON additions file (e.g. `/tmp/gse-merge.json`) with the shape `{ "findings": [...], "recommendations": [...], "clusters": [{id, theme, finding_ids}], "meta": {model, scope, jobs} }` — the A–D LLM findings go in `findings` (with their `category`/`severity`/`title`/`location`/`detail`/`fix_hint`/`direction`/`cluster`), the Category E items go in `recommendations`. Then:
    ```
-   mkdir -p _LOCAL/audits/
+   python3 gse-one/audit.py --merge /tmp/gse-merge.json
    ```
+   This dedups by stable id, sets cluster grouping, and recomputes the summary in place.
 
-2. **Compute the filename** using current UTC date+time + VERSION:
-   - Pattern: `audit-YYYY-MM-DD-HHMMSS-vX.Y.Z.md`
-   - Example: `audit-2026-04-21-074512-v0.47.0.md`
-   - Read VERSION from the file at repo root to get the version string
-
-3. **Write TWO files** using the Write tool, in the same message:
-   - `_LOCAL/audits/audit-YYYY-MM-DD-HHMMSS-vX.Y.Z.md` — timestamped archive (unique per run)
-   - `_LOCAL/audits/latest.md` — always overwritten, convenience pointer to most recent
-
-4. **Both files must contain the FULL rendered markdown report** from Phase 5 (summary, TOC, Part 1, Part 2, conclusion — everything).
-
-5. **Verify the save succeeded** using the Bash tool:
+3. **Verify the registry:**
    ```
-   ls -la _LOCAL/audits/latest.md
+   python3 -c "import json;r=json.load(open('_LOCAL/audit/audit.json'));print(r['summary'])"
    ```
 
-6. **Report to the user** with the exact saved path:
-   > Full audit saved to `_LOCAL/audits/audit-YYYY-MM-DD-HHMMSS-vX.Y.Z.md` (and `latest.md`).
+4. **Report to the user** the single artifact path:
+   > Audit registry written to `_LOCAL/audit/audit.json` (N findings, M recommendations). Render a human view with `python3 gse-one/audit.py --render`.
 
-If `--save-to <path>` was passed, write to that exact path instead (no `latest.md` copy). Useful for CI exports.
+**Markdown on demand only:** to show a human view, `python3 gse-one/audit.py --render` (default: a throwaway `/tmp/gse-audit-<ts>.md`; or `--out PATH`, or render to chat). Never write `audit-<ts>.md` / `latest.md` into the repo.
 
-If `--no-save` was passed, skip this entire phase and only output the report to the chat.
+**Verification (Phase 3.5) writes back into the same registry** via `audit.py --set-verdicts` — it does NOT create a `verify-*.md` file.
 
-**Why mandatory?** The audit trail is the audit's primary value. A run without save leaves no evidence, no diff capability, no comparison across time. An LLM that skips this phase silently wastes the run.
+**Why a single registry?** It is the agent-consumed source of truth for the subsequent fix session, and it carries each finding's lifecycle (verdict → status → resolution) in place. One file, no divergence, sequentially processable. See "Audit output contract" in CLAUDE.md and `_LOCAL/maintenance/2026-06-13-audit-output-redesign.md`.
 
-**The `_LOCAL/` directory is gitignored** (via `/_*/` in `.gitignore`), so saved reports never leak into commits. Forkers accumulate audit history in their working tree without polluting their repo.
-
-**Division of work with Python engine:** the Python engine (`audit.py`) saves its own deterministic-only report when invoked standalone. When `/gse-audit` runs the full flow, the skill invokes the engine with `--no-save --format json` internally to skip engine-side saving, then the skill saves the AUGMENTED report (Python findings + LLM findings from the sub-agents) in Phase 6. **No duplicate files.**
+**The `_LOCAL/` directory is gitignored** (via `/_*/`), so the registry never leaks into commits; forkers accumulate `archive/` history without polluting their repo.
 
 ## Invocation examples
 

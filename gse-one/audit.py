@@ -1562,6 +1562,351 @@ def render_json(report: Report) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Audit registry (single canonical living artifact) — redesign v0.75.0
+#
+# One JSON registry per audit at _LOCAL/audit/audit.json is the SINGLE source
+# of truth: detection writes it, verification updates verdicts in place, the
+# fix session updates status/resolution in place. Markdown is rendered on
+# demand to /tmp (never persisted in-repo). On each new emit the previous
+# registry is auto-archived to _LOCAL/audit/archive/.
+# See _LOCAL/maintenance/2026-06-13-audit-output-redesign.md for the contract.
+# ---------------------------------------------------------------------------
+
+REGISTRY_SCHEMA_VERSION = "1.0"
+AUDIT_DIR = REPO_ROOT / "_LOCAL" / "audit"
+REGISTRY_PATH = AUDIT_DIR / "audit.json"
+ARCHIVE_DIR = AUDIT_DIR / "archive"
+
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _norm(s: str) -> str:
+    import re as _re
+    return _re.sub(r"\s+", " ", str(s)).strip().lower()
+
+
+def finding_id(category: str, file: str, title: str) -> str:
+    """Stable id: AUD-<8 hex of sha1(category|file|normalized title)>.
+    Stable across runs → enables new/resolved/persisting diff and commit refs."""
+    import hashlib
+    h = hashlib.sha1(f"{category}|{file or ''}|{_norm(title)}".encode("utf-8")).hexdigest()[:8]
+    return f"AUD-{h}"
+
+
+def rec_id(job: str, title: str) -> str:
+    import hashlib
+    return "REC-" + hashlib.sha1(f"{job}|{_norm(title)}".encode("utf-8")).hexdigest()[:8]
+
+
+def _coerce_finding(d: dict) -> dict:
+    """Normalize a raw finding dict (engine or LLM) into the registry shape,
+    filling stable id + lifecycle fields. Idempotent (keeps existing values)."""
+    cat = d.get("category", "")
+    file = d.get("file", "") or ""
+    loc = d.get("location", "") or ""
+    title = d.get("title", "")
+    out = {
+        "id": d.get("id") or finding_id(cat, file or loc, title),
+        "source": d.get("source") or d.get("job_id", "python-engine"),
+        "category": cat,
+        "severity": d.get("severity", "info"),
+        "title": title,
+        "location": loc,
+        "file": file,
+        "detail": d.get("detail", ""),
+        "fix_hint": d.get("fix_hint", ""),
+        "direction": d.get("direction", "none"),
+        "impact": d.get("impact", "none"),
+        "cluster": d.get("cluster"),
+        "verdict": d.get("verdict", "detected"),
+        "verdict_rationale": d.get("verdict_rationale", ""),
+        "current_state": d.get("current_state", ""),
+        "refined_fix": d.get("refined_fix", ""),
+        "status": d.get("status", "open"),
+        "resolution": d.get("resolution") or {"commit": None, "changelog": None, "release": None},
+    }
+    return out
+
+
+def _coerce_rec(d: dict) -> dict:
+    return {
+        "id": d.get("id") or rec_id(d.get("job", ""), d.get("title", "")),
+        "job": d.get("job", ""),
+        "category": "E",
+        "title": d.get("title", ""),
+        "detail": d.get("detail", ""),
+        "impact": d.get("impact", "none"),
+        "direction": d.get("direction", "none"),
+        "status": d.get("status", "proposed"),
+    }
+
+
+def _recompute_summary(reg: dict) -> None:
+    import collections as _c
+    fs = reg.get("findings", [])
+    recs = reg.get("recommendations", [])
+    sev = _c.Counter(f.get("severity") for f in fs)
+    verd = _c.Counter(f.get("verdict") for f in fs
+                      if f.get("verdict") and f.get("verdict") != "detected")
+    stat = _c.Counter(f.get("status") for f in fs)
+    n_ver = sum(verd.values())
+    reg["summary"] = {
+        "errors": sev.get("error", 0),
+        "warnings": sev.get("warning", 0),
+        "info": sev.get("info", 0),
+        "recommendations": len(recs),
+        "verdicts": dict(verd),
+        "false_positive_rate": (round(verd.get("FALSE_POSITIVE", 0) / n_ver, 3)
+                                if n_ver else None),
+        "status_counts": dict(stat),
+    }
+
+
+def _load_registry() -> dict:
+    if not REGISTRY_PATH.exists():
+        raise SystemExit(f"error: no registry at {REGISTRY_PATH} — run --emit-registry first")
+    return json.loads(REGISTRY_PATH.read_text(encoding="utf-8"))
+
+
+def _save_registry(reg: dict) -> None:
+    AUDIT_DIR.mkdir(parents=True, exist_ok=True)
+    REGISTRY_PATH.write_text(json.dumps(reg, indent=2, ensure_ascii=False) + "\n",
+                             encoding="utf-8")
+
+
+def _archive_existing_registry() -> Optional[Path]:
+    """Move an existing audit.json into archive/ (auto, systematic — C2)."""
+    if not REGISTRY_PATH.exists():
+        return None
+    import re as _re
+    try:
+        old = json.loads(REGISTRY_PATH.read_text(encoding="utf-8"))
+        meta = old.get("meta", {})
+        raw = meta.get("audit_run_at") or ""
+        ts = _re.sub(r"[^0-9]", "", raw)[:14] or datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+        ver = meta.get("version", "unknown")
+    except Exception:  # noqa: BLE001
+        ts = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+        ver = "unknown"
+    ARCHIVE_DIR.mkdir(parents=True, exist_ok=True)
+    dest = ARCHIVE_DIR / f"audit-{ts}-v{ver}.json"
+    i = 1
+    while dest.exists():
+        dest = ARCHIVE_DIR / f"audit-{ts}-v{ver}.{i}.json"
+        i += 1
+    REGISTRY_PATH.rename(dest)
+    return dest
+
+
+def cmd_emit_registry(categories: Optional[list]) -> int:
+    """Archive any existing registry, run the deterministic engine, and write a
+    fresh canonical registry seeded with the engine findings (Phase 1 / Phase 6
+    seed). The skill merges LLM findings/recommendations via --merge."""
+    archived = _archive_existing_registry()
+    report = run_audit(categories)
+    findings = [_coerce_finding({
+        "category": f.category, "severity": f.severity, "title": f.title,
+        "detail": f.detail, "fix_hint": f.fix_hint, "location": f.location,
+        "file": f.file, "job_id": f.job_id,
+    }) for f in report.findings]
+    version = (REPO_ROOT / "VERSION").read_text(encoding="utf-8").strip() or "unknown"
+    reg = {
+        "schema_version": REGISTRY_SCHEMA_VERSION,
+        "meta": {
+            "repo_root": str(REPO_ROOT),
+            "version": version,
+            "audit_run_at": _now_iso(),
+            "verify_run_at": None,
+            "model": None,
+            "scope": "deterministic-engine (seed; merge LLM findings via --merge)",
+            "jobs": {"llm_completed": 0, "llm_total": 0, "f_jobs": 5, "failed": []},
+            "lifecycle_state": "detected",
+        },
+        "summary": {}, "clusters": [], "findings": findings,
+        "recommendations": [], "detector_issues": [],
+    }
+    _recompute_summary(reg)
+    _save_registry(reg)
+    if archived:
+        print(f"archived previous registry → {archived.relative_to(REPO_ROOT)}", file=sys.stderr)
+    print(f"wrote {REGISTRY_PATH.relative_to(REPO_ROOT)} "
+          f"({len(findings)} engine findings)", file=sys.stderr)
+    return 0
+
+
+def cmd_merge(path: str) -> int:
+    """Merge additions (findings / recommendations / clusters / meta) into the
+    registry; dedup by id; recompute summary. Used by the skill to fold in the
+    LLM sub-agent findings + Category E recommendations + cluster grouping."""
+    reg = _load_registry()
+    add = json.loads(Path(path).read_text(encoding="utf-8"))
+    by_id = {f["id"]: f for f in reg["findings"]}
+    for d in add.get("findings", []):
+        f = _coerce_finding(d)
+        if f["id"] in by_id:
+            by_id[f["id"]].update({k: v for k, v in f.items() if v not in (None, "", [])})
+        else:
+            reg["findings"].append(f)
+            by_id[f["id"]] = f
+    rby = {r["id"]: r for r in reg["recommendations"]}
+    for d in add.get("recommendations", []):
+        r = _coerce_rec(d)
+        if r["id"] not in rby:
+            reg["recommendations"].append(r)
+            rby[r["id"]] = r
+    if add.get("clusters"):
+        reg["clusters"] = add["clusters"]
+    if add.get("meta"):
+        reg["meta"].update(add["meta"])
+    _recompute_summary(reg)
+    _save_registry(reg)
+    print(f"merged: {len(reg['findings'])} findings, "
+          f"{len(reg['recommendations'])} recommendations", file=sys.stderr)
+    return 0
+
+
+def cmd_set_verdicts(path: str) -> int:
+    """Apply Phase 3.5 verdicts into the registry in place (match by finding id
+    or normalized title). FALSE_POSITIVE → status=wontfix + detector_issues
+    entry; SCOPE_CHANGE → status=deferred. Sets meta.verify_run_at."""
+    reg = _load_registry()
+    verdicts = json.loads(Path(path).read_text(encoding="utf-8"))
+    if isinstance(verdicts, dict):
+        verdicts = verdicts.get("verdicts", [])
+    by_id = {f["id"]: f for f in reg["findings"]}
+    by_title = {_norm(f["title"]): f for f in reg["findings"]}
+    applied = 0
+    for v in verdicts:
+        f = by_id.get(v.get("finding_id")) or by_title.get(_norm(v.get("finding_title", "")))
+        if not f:
+            continue
+        f["verdict"] = v.get("verdict", f.get("verdict"))
+        f["verdict_rationale"] = v.get("verdict_rationale", "")
+        f["current_state"] = v.get("current_state", "")
+        f["refined_fix"] = v.get("proposed_fix") or v.get("refined_fix", "")
+        if f["verdict"] == "FALSE_POSITIVE":
+            f["status"] = "wontfix"
+            reg.setdefault("detector_issues", []).append({
+                "finding_id": f["id"],
+                "detector": v.get("detector", ""),
+                "fix": v.get("detector_fix") or v.get("proposed_fix", ""),
+            })
+        elif f["verdict"] == "SCOPE_CHANGE":
+            f["status"] = "deferred"
+        applied += 1
+    reg["meta"]["verify_run_at"] = _now_iso()
+    reg["meta"]["lifecycle_state"] = "verified"
+    _recompute_summary(reg)
+    _save_registry(reg)
+    print(f"applied {applied} verdicts; "
+          f"verdicts={reg['summary'].get('verdicts')}", file=sys.stderr)
+    return 0
+
+
+def render_registry_markdown(reg: dict) -> str:
+    """Render the canonical registry to a human markdown view (on-demand, /tmp)."""
+    m = reg.get("meta", {})
+    s = reg.get("summary", {})
+    fs = reg.get("findings", [])
+    recs = reg.get("recommendations", [])
+    verified = m.get("verify_run_at") is not None
+    L = []
+    a = L.append
+    a("# GSE-One Methodology Audit (rendered from registry)")
+    a("")
+    a(f"**Repository:** {m.get('repo_root')}")
+    a(f"**VERSION:** {m.get('version')}")
+    a(f"**Audit run:** {m.get('audit_run_at')}  ·  **Verified:** {m.get('verify_run_at') or '—'}")
+    a(f"**Lifecycle:** {m.get('lifecycle_state')}  ·  **Scope:** {m.get('scope')}")
+    a("")
+    a("## Summary")
+    a("")
+    a(f"- Errors {s.get('errors',0)} · Warnings {s.get('warnings',0)} · "
+      f"Info {s.get('info',0)} · Recommendations {s.get('recommendations',0)}")
+    if verified:
+        a(f"- Verdicts: {s.get('verdicts',{})}  ·  FP-rate: {s.get('false_positive_rate')}")
+    a(f"- Status: {s.get('status_counts',{})}")
+    a("")
+    clusters = {c["id"]: c for c in reg.get("clusters", [])}
+    a("---")
+    a("")
+    a("## Part 1 — Findings")
+    a("")
+    def emit(f):
+        a(f"- **[{f.get('severity')}] {f.get('title')}**  ")
+        a(f"  `{f.get('location') or f.get('file')}` · id={f.get('id')} · "
+          f"verdict={f.get('verdict')} · status={f.get('status')} · cluster={f.get('cluster')}")
+        if f.get("detail"):
+            a(f"  {_norm(f['detail'])[:300]}")
+        fix = f.get("refined_fix") or f.get("fix_hint")
+        if fix:
+            a(f"  *Fix:* {_norm(fix)[:240]}")
+        a("")
+    if verified:
+        for grp in ("CONFIRMED", "NEEDS_REFINEMENT", "SCOPE_CHANGE", "FALSE_POSITIVE", "detected"):
+            g = [f for f in fs if f.get("verdict") == grp and f.get("severity") in ("error", "warning")]
+            if g:
+                a(f"### {grp} ({len(g)})")
+                a("")
+                for f in g:
+                    emit(f)
+    else:
+        for sevlvl in ("error", "warning"):
+            g = [f for f in fs if f.get("severity") == sevlvl]
+            if g:
+                a(f"### {sevlvl.upper()} ({len(g)})")
+                a("")
+                for f in g:
+                    emit(f)
+    info = [f for f in fs if f.get("severity") == "info"]
+    a(f"### Info / passes ({len(info)})")
+    a("")
+    for f in info:
+        a(f"- [{f.get('source')}] {f.get('title')}")
+    a("")
+    a("---")
+    a("")
+    a(f"## Part 2 — Strategic recommendations ({len(recs)})")
+    a("")
+    if recs:
+        a("| # | Job | Recommendation | Impact | Dir | Status |")
+        a("|:-:|---|---|:-:|:-:|:-:|")
+        for i, r in enumerate(recs, 1):
+            a(f"| {i} | {r.get('job')} | {_norm(r.get('title'))} | "
+              f"{r.get('impact')} | {r.get('direction')} | {r.get('status')} |")
+    a("")
+    di = reg.get("detector_issues", [])
+    if di:
+        a("## Detector issues (false-positive root causes → audit.py work items)")
+        a("")
+        for d in di:
+            a(f"- {d.get('finding_id')}: {d.get('fix')}")
+        a("")
+    return "\n".join(L) + "\n"
+
+
+def cmd_render(path: Optional[str], out: Optional[str]) -> int:
+    reg_path = Path(path) if (path and path != "__DEFAULT__") else REGISTRY_PATH
+    if not reg_path.exists():
+        print(f"error: registry not found: {reg_path}", file=sys.stderr)
+        return 2
+    reg = json.loads(reg_path.read_text(encoding="utf-8"))
+    md = render_registry_markdown(reg)
+    if out:
+        Path(out).write_text(md, encoding="utf-8")
+        print(out)
+    else:
+        # default: a throwaway /tmp file (never persisted in-repo)
+        ts = datetime.now(timezone.utc).strftime("%Y-%m-%d-%H%M%S")
+        tmp = Path("/tmp") / f"gse-audit-{ts}.md"
+        tmp.write_text(md, encoding="utf-8")
+        print(str(tmp))
+    return 0
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
@@ -1609,6 +1954,40 @@ def _build_parser() -> argparse.ArgumentParser:
         metavar="PATH",
         default=None,
         help="Explicit output file path (overrides default _LOCAL/audits/audit-<ts>.md)",
+    )
+    # --- Registry modes (redesign v0.75.0) — single canonical _LOCAL/audit/audit.json ---
+    p.add_argument(
+        "--emit-registry",
+        action="store_true",
+        help="Archive any existing registry, run the engine, and write a fresh "
+             "_LOCAL/audit/audit.json seeded with engine findings (the skill merges LLM findings).",
+    )
+    p.add_argument(
+        "--merge",
+        metavar="FILE",
+        default=None,
+        help="Merge additions (findings/recommendations/clusters/meta JSON) into the registry.",
+    )
+    p.add_argument(
+        "--set-verdicts",
+        metavar="FILE",
+        default=None,
+        help="Apply Phase 3.5 verdicts (JSON) into the registry in place.",
+    )
+    p.add_argument(
+        "--render",
+        nargs="?",
+        const="__DEFAULT__",
+        metavar="REGISTRY",
+        default=None,
+        help="Render the registry (default _LOCAL/audit/audit.json) to markdown "
+             "(default: a throwaway /tmp file; use --out to target a path).",
+    )
+    p.add_argument(
+        "--out",
+        metavar="PATH",
+        default=None,
+        help="Target path for --render (default: /tmp/gse-audit-<ts>.md).",
     )
     return p
 
@@ -1728,6 +2107,16 @@ def main(argv: Optional[list] = None) -> int:
     if args.list_clusters:
         return _list_clusters()
 
+    # Registry modes (redesign v0.75.0) — standalone, mutually exclusive with the
+    # legacy stdout/save flow. --render works without repo markers; the others
+    # need them (checked below for emit which runs the engine).
+    if args.render is not None:
+        return cmd_render(args.render, args.out)
+    if args.merge:
+        return cmd_merge(args.merge)
+    if args.set_verdicts:
+        return cmd_set_verdicts(args.set_verdicts)
+
     # Context detection: must be in a gensem-like repo
     if not (REPO_ROOT / "gse-one-spec.md").exists():
         print(
@@ -1743,6 +2132,10 @@ def main(argv: Optional[list] = None) -> int:
             file=sys.stderr,
         )
         return 3
+
+    # Registry seed mode (runs the engine, needs the repo markers above)
+    if args.emit_registry:
+        return cmd_emit_registry(args.category)
 
     report = run_audit(args.category)
 

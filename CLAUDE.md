@@ -255,6 +255,18 @@ These are inherited automatically when someone clones gensem (or a fork of it). 
 
 **Do not move these tools into `gse-one/plugin/`** — that would distribute them to all end users of GSE-One, polluting the methodology for people who only use the plugin without forking. Maintainer tools live at `.claude/` (repo-local) or `gse-one/` (e.g., `audit.py` alongside `gse_generate.py`), never in `gse-one/plugin/`.
 
+#### Audit output contract (single canonical registry — since v0.75.0)
+
+An audit produces ONE living machine artifact — its primary consumer is the coding agent that later processes the fixes, not a human reading markdown. The contract:
+
+- **Single source of truth:** `_LOCAL/audit/audit.json` (JSON, `schema_version` field). Detection writes it; verification (Phase 3.5) updates verdicts **in place**; the fix session updates `status`/`resolution` **in place**. There is exactly one such file in the working path at any time.
+- **Markdown is a throwaway render**, produced on demand to `/tmp` via `python3 gse-one/audit.py --render` (default target `/tmp/gse-audit-<ts>.md`, or `--out PATH`). It is **never** persisted in the repo tree — so it can never diverge from the JSON.
+- **Auto-archive (systematic):** every `audit.py --emit-registry` moves the previous `audit.json` into `_LOCAL/audit/archive/audit-<ts>-v<version>.json` before writing the new one. The working path stays noise-free; history lives out of the way (rarely consulted; the previous registry is the cross-run diff baseline).
+- **Stable finding identity:** `AUD-<8 hex of sha1(category|file|normalized title)>` (recommendations: `REC-…`). Stable across runs → enables new/resolved/persisting diff and lets commits/CHANGELOG reference a finding id.
+- **Finding lifecycle (fields, not files):** `verdict: detected → CONFIRMED|FALSE_POSITIVE|NEEDS_REFINEMENT|SCOPE_CHANGE`; `status: open → in_progress → fixed|wontfix|deferred`. FALSE_POSITIVE → `wontfix` + a `detector_issues[]` entry (audit.py work item). Category E recommendations live in their own array (`status: proposed|accepted|rejected|backlog`).
+- **`audit.py` registry commands:** `--emit-registry` (archive + engine seed), `--merge <file>` (fold in LLM findings/recommendations/clusters), `--set-verdicts <file>` (apply Phase 3.5 verdicts), `--render [registry] [--out]`. The legacy `--format json`/`--no-save` stdout flow is preserved for piping.
+- **Never** write `audit-<ts>.md` / `latest.md` / `verify-*.md` / `reconciled` files — those are the retired pre-v0.75.0 multi-file pattern (their drift was the reason for this contract). Full spec: `_LOCAL/maintenance/2026-06-13-audit-output-redesign.md`.
+
 ### Communication style (development sessions)
 
 When proposing changes, applying fixes, or explaining methodology concepts during interactive sessions with the user, follow these two rules.

@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.75.0] - 2026-06-13
+
+*Audit output redesign: a single canonical JSON registry replaces the multi-file (raw / verify / reconciled / latest.md / latest.json) sprawl.*
+
+### Added
+- Added the audit registry contract: `/gse-audit` now produces ONE living artifact `_LOCAL/audit/audit.json` (schema_version, stable `AUD-<hash>` finding ids, per-finding lifecycle: verdict → status → resolution). Documented as "Audit output contract" in CLAUDE.md; full spec in `_LOCAL/maintenance/2026-06-13-audit-output-redesign.md`.
+- Added `audit.py` registry commands: `--emit-registry` (auto-archives previous, seeds engine findings), `--merge` (fold in LLM findings/recommendations/clusters), `--set-verdicts` (apply Phase 3.5 verdicts in place), `--render` (on-demand markdown to `/tmp`).
+
+### Changed
+- `gse-audit.md` Phases 1/3.5/4/5/6 rewired to the registry: verification writes verdicts into the registry (no `verify-*.md`); markdown is a throwaway `/tmp` render, never persisted in-repo; previous audits auto-archive to `_LOCAL/audit/archive/`.
+
+### Removed
+- Retired the per-run multi-file audit output (`audit-<ts>.md`, `latest.md`, `latest.json`, `verify-*.md`) whose md/json divergence motivated the redesign.
+
 ## [0.74.0] - 2026-06-13
 
 *Adds a fully-isolated sandbox install mode with a project launcher — install once, run isolated for days.*

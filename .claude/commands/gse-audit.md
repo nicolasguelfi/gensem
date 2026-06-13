@@ -119,7 +119,7 @@ For each selected job, construct a dedicated prompt and spawn a sub-agent with:
 #### Sub-agent prompt template
 
 ```
-You are the methodology-auditor (defined in .claude/agents/methodology-auditor.md — principles 1-9 apply, notably 8 verify-before-report and 9 anti-rigidity).
+You are the methodology-auditor (defined in .claude/agents/methodology-auditor.md — principles apply, notably 1 evidence, 8 verify-before-report, 9 anti-rigidity, 11 product-vs-source dualism).
 
 AUDIT JOB: <job.id>           # REQUIRED: include this exact id in every Finding
 CATEGORY: <job.category>
@@ -193,7 +193,7 @@ This phase is NOT part of the initial audit run — it is invoked by the maintai
 **How to spawn it.** For each cluster the maintainer wants to address, spawn ONE methodology-auditor sub-agent with a focused verification prompt:
 
 ```
-You are the methodology-auditor (principles 1, 8, 9, 10 apply — evidence, verify-before-report, anti-rigidity, structured verdict).
+You are the methodology-auditor (principles 1, 8, 9, 10, 11 apply — evidence, verify-before-report, anti-rigidity, structured verdict, product-vs-source dualism).
 
 MISSION: verify cluster <cluster-id> findings from audit <report-path>.
 For each finding, produce a structured verdict per Principle 10.

@@ -1226,7 +1226,7 @@ Evaluate states in order — the first matching row wins.
 
 | Current state | Next action |
 |---------------|-------------|
-| No sprint exists | Sub-decision: greenfield + no `docs/intent.md` → Intent Capture (Step 5); else Complexity Assessment (Step 6) → mode-appropriate start (Micro → PRODUCE; Lightweight → PLAN; Full → LC01 `COLLECT` > `ASSESS` > `PLAN`) |
+| No sprint exists | Sub-decision: greenfield + no `docs/intent.md` → Intent Capture (Step 7 — Intent Capture); else Complexity Assessment (Step 6) → mode-appropriate start (Micro → PRODUCE; Lightweight → PLAN; Full → LC01 `COLLECT` > `ASSESS` > `PLAN`) |
 | `plan.yaml` exists, `status: draft` | Resume PLAN — present plan summary, ask for approval Gate |
 | `plan.yaml.workflow.active == reqs` | Start REQS — test-driven requirements (Hard guardrail: PRODUCE blocked until REQS exist) |
 | `plan.yaml.workflow.active == design` | Start DESIGN (record `design` in `workflow.skipped` if not needed, then advance) |
@@ -1362,10 +1362,10 @@ health:
 consecutive_acceptances: 2
 pushback_dismissed: 0
 
-# P16 root-cause discipline (REQUIRED per spec §12.4.1; transversal counter — see §5.13 prose)
+# P16 root-cause discipline (REQUIRED per spec §12.4.1; transversal counter — see §5.16 — Root-Cause Discipline — Design Mechanics)
 fix_attempts_on_current_symptom: 0
 
-# Scope reconciliation anchor (set at activity start by produce/task; see §5.13 prose)
+# Scope reconciliation anchor (set at activity start by produce/task; see §5.16 — Scope Reconciliation & Inform-Tier Summary — Design Mechanics)
 activity_start_sha: ""
 
 last_activity: /gse:produce

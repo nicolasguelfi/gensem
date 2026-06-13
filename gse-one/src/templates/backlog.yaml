@@ -22,7 +22,7 @@ items: []
   #                                      # `done`     : reviewed + fixed (FIX applied) — ready to merge
   #                                      # `delivered`: merged by /gse:deliver
   #   requires_review: true              # set false for complexity <= 1 OR --no-review OR spikes
-  #   delivered_at: null                 # ISO 8601 timestamp, set by /gse:deliver Step 4
+  #   delivered_at: null                 # ISO 8601 timestamp, set by /gse:deliver Step 5 — Cleanup
   #   completed_at: null                 # ISO 8601 timestamp, set when status → done or reviewed (terminal pre-merge states)
   #   origin: user                       # plan | review | collect | user | import | ad-hoc
   #   origin_ref: null                   # Reference to originating artefact

@@ -84,12 +84,12 @@ Wait for confirmation → proceed to Step 0.
    - If no: *"Open `.env` in your editor, set `DEPLOY_USER=<your-learner-id>`, save, and re-run `/gse:deploy`."* → Exit.
 3. Ask: *"Is your project pushed to a GitHub repository? (y/n)"* (Coolify clones from GitHub — an unpushed project fails at deploy time.)
    - If no: *"Push it first: create a repo (`gh repo create` or the GitHub UI), then `git push -u origin <branch>`. A public repo is simplest for the course; for a private repo, follow `docs/deploy/learner-private-repo-setup.md` BEFORE deploying. Then re-run `/gse:deploy`."* → Exit.
-3. Persist role:
+4. Persist role:
    ```
    python3 "$(cat ~/.gse-one)/tools/deploy.py" record-role learner
    ```
-4. Say: *"I'll detect your instructor's shared server from the training config and deploy your project at `{project-name}-{DEPLOY_USER}.{DEPLOY_DOMAIN}`. Expected duration: ~5 minutes."*
-5. Proceed to Step 0 (will detect app-only mode → Phase 6).
+5. Say: *"I'll detect your instructor's shared server from the training config and deploy your project at `{project-name}-{DEPLOY_USER}.{DEPLOY_DOMAIN}`. Expected duration: ~5 minutes."*
+6. Proceed to Step 0 (will detect app-only mode → Phase 6).
 
 **(4) Skip** — Meta-action (not a role value): no `record-role` call; no `user_role` persisted in `deploy.json`. Proceed directly to Step 0. The 3 role values stored in `user_role` are `solo` / `instructor` / `learner` only — see design §5.18 State schema for the enum.
 
@@ -207,7 +207,7 @@ The detection logic (which variables map to which starting phase) is documented 
 
 7. **Verify SSH access**
    - `ssh -i ~/.ssh/gse-deploy -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10 root@<IP> "echo ok"`
-   - Retry up to 3 times with 15s wait between attempts (per `references/ssh-operations.md` — the canonical SSH pattern source)
+   - Retry up to 3 times with 15s wait between attempts (per `plugin/references/ssh-operations.md` — the canonical SSH pattern source)
 
 8. **Persist completion**
    ```

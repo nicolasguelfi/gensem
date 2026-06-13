@@ -71,7 +71,7 @@ Before reviewing any TASK, verify test execution:
    - **Cursor:** Multiple subagents (up to 8 in parallel)
 
 **Each sub-agent receives:**
-- Its specialized agent definition (from `agents/` directory)
+- Its specialized agent definition (from `plugin/agents/`)
 - The diff to review (from Step 1)
 - Relevant sprint artefacts (reqs.md, design.md, test-strategy.md)
 - `profile.yaml` (for P9 adaptation)

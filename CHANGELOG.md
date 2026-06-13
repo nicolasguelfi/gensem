@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.80.0] - 2026-06-13
+
+*Sandbox launcher gains platform-agnostic `--bypass` / `--auto` flags.*
+
+### Added
+- Sandbox launcher (`.gse-sandbox/run`) now accepts two generic convenience flags it translates to each agent's native equivalent: `--bypass` (fully unprotected — codex `--dangerously-bypass-approvals-and-sandbox`, gemini `--yolo`, claude `--dangerously-skip-permissions`) and `--auto` (autonomous, OS sandbox kept where supported — codex `--full-auto`, gemini `--approval-mode=auto_edit`, claude `--permission-mode acceptEdits`). opencode/cursor print a note (config/app-setting driven). Unknown args still pass through verbatim.
+
 ## [0.79.0] - 2026-06-13
 
 *Codex runtime-UX fixes: correct skill-invocation guidance and relocate the sandbox launcher out of the GSE state dir.*

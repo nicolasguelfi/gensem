@@ -1149,9 +1149,11 @@ def _gm_build_manifest(gm: Path) -> None:
 # next to the script at runtime and starts the right agent with the right
 # environment. In sandbox mode it isolates HOME inside .gse-sandbox/ (the
 # script's own directory) so nothing under the real $HOME is read or written,
-# while running the agent from the project root. POSIX sh, no jq/bash
-# dependency. No `cat ~/.gse-one` (untouched by the registry-resolution
-# rewrite).
+# while running the agent from the project root. Accepts two generic
+# convenience flags it translates per platform: --bypass (fully unprotected)
+# and --auto (autonomous, OS sandbox kept where supported). POSIX sh, no
+# jq/bash dependency. No `cat ~/.gse-one` (untouched by the
+# registry-resolution rewrite).
 _LAUNCHER_BODY = '''set -eu
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
@@ -1173,6 +1175,37 @@ case "$platform" in
   cursor) bin=cursor ;;
   *) echo "GSE-One: unknown platform '$platform' in $meta" >&2; exit 1 ;;
 esac
+
+# Generic convenience flags, translated to each agent's native equivalent:
+#   --bypass  fully unprotected (no approvals, no OS sandbox where applicable)
+#   --auto    autonomous, but keep the OS sandbox / lighter scope where supported
+# The agents do not understand --bypass/--auto, so strip them from the args
+# (preserving order + quoting of the rest) and inject the native flag.
+want=""
+n=$#
+i=0
+while [ "$i" -lt "$n" ]; do
+  a=$1; shift
+  case "$a" in
+    --bypass) want=bypass ;;
+    --auto)   want=auto ;;
+    *) set -- "$@" "$a" ;;
+  esac
+  i=$((i+1))
+done
+if [ -n "$want" ]; then
+  case "$platform:$want" in
+    codex:bypass)  set -- --dangerously-bypass-approvals-and-sandbox "$@"; echo "GSE-One: --bypass -> codex --dangerously-bypass-approvals-and-sandbox (no approvals, no OS sandbox)" >&2 ;;
+    codex:auto)    set -- --full-auto "$@"; echo "GSE-One: --auto -> codex --full-auto (autonomous; OS sandbox kept)" >&2 ;;
+    gemini:bypass) set -- --yolo "$@"; echo "GSE-One: --bypass -> gemini --yolo (auto-approve all)" >&2 ;;
+    gemini:auto)   set -- --approval-mode=auto_edit "$@"; echo "GSE-One: --auto -> gemini --approval-mode=auto_edit (auto-approve edits only)" >&2 ;;
+    claude:bypass) set -- --dangerously-skip-permissions "$@"; echo "GSE-One: --bypass -> claude --dangerously-skip-permissions" >&2 ;;
+    claude:auto)   set -- --permission-mode acceptEdits "$@"; echo "GSE-One: --auto -> claude --permission-mode acceptEdits" >&2 ;;
+    opencode:*)    echo "GSE-One: opencode permissions are config-driven (.opencode/opencode.json 'permission'); --$want injected no flag." >&2 ;;
+    cursor:*)      echo "GSE-One: Cursor auto-run is an app setting (Settings > Agent > Auto-Run); --$want injected no flag." >&2 ;;
+    *)             echo "GSE-One: --$want has no mapping for '$platform'; ignored." >&2 ;;
+  esac
+fi
 
 cd "$root"
 
@@ -1538,7 +1571,8 @@ def verify() -> None:
     if launcher.exists():
         lt = launcher.read_text(encoding="utf-8")
         missing = [m for m in ("launch.env", "GSE-One: launching", "exec \"$bin\"",
-                               "HOME=\"$script_dir\"", "cd \"$root\"", "XDG_CONFIG_HOME") if m not in lt]
+                               "HOME=\"$script_dir\"", "cd \"$root\"", "XDG_CONFIG_HOME",
+                               "--bypass", "--full-auto") if m not in lt]
         if missing:
             errors.append(f"gse-run launcher missing: {', '.join(missing)}")
             print(f"    MISSING markers: {', '.join(missing)}")

@@ -91,6 +91,7 @@ python3 install.py --platform codex --mode local --project-dir /path/to/project
 # Sandbox — isolated $HOME in .gse-sandbox/ + a .gse-sandbox/run launcher (codex/gemini/opencode)
 python3 install.py --platform codex --mode sandbox --project-dir /path/to/project
 # then, any day:  sh .gse-sandbox/run
+#   add --auto (autonomous) or --bypass (unprotected) — translated to the agent's native flag
 
 # Both Claude + Cursor
 python3 install.py --platform both --mode plugin --scope user

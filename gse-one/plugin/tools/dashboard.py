@@ -415,8 +415,12 @@ def collect_data():
 
     # Status
     status = parse_yaml_simple(GSE_DIR / "status.yaml")
-    data["current_sprint"] = status.get("current_sprint", 0)
-    data["current_phase"] = status.get("current_phase", "LC00")
+    # `or` (not the get-default) so an explicit `null` in status.yaml — the
+    # legitimate pre-first-sprint baseline written just after /gse:hug — coerces
+    # to the sprint-0 sentinel instead of None (None crashes the f"{:02d}"
+    # sprint-dir format below). current_sprint: 0 == "no active sprint yet".
+    data["current_sprint"] = status.get("current_sprint") or 0
+    data["current_phase"] = status.get("current_phase") or "LC00"
     data["last_activity"] = status.get("last_activity", "none")
     data["last_activity_timestamp"] = status.get("last_activity_timestamp", "never")
     # GSE-One plugin version stamped at project init by /gse:hug Step 4 (empty if pre-v0.59 project)

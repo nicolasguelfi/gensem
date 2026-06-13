@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.81.0] - 2026-06-13
+
+*Fix the post-HUG pre-sprint baseline state: dashboard crashed on `current_sprint: null`.*
+
+### Fixed
+- `dashboard.py`: coerce `current_sprint` / `current_phase` `null` (or missing) to the `0` / `LC00` sentinels instead of `None` — `None` crashed the `f"sprint-{n:02d}"` format (TypeError), failing dashboard generation in the legitimate pre-first-sprint state right after `/gse:hug`.
+
+### Changed
+- Template `status.yaml` initial state aligned with the documented baseline (`go.md` Adopt Step 5 — Set baseline): `current_sprint: 0` + `current_phase: LC01` (was `1` / `LC02`, which falsely implied an active sprint in Development before any planning).
+- `hug.md` Step 3 now explicitly copies `status.yaml` from the template (was implicit — agents could hand-author it with crash-inducing `null` cursor values).
+
+### Added
+- `tests/test_dashboard.py` — regression guard: dashboard renders for `current_sprint` null / 0 / active without writing an error marker (121 tests total).
+
 ## [0.80.0] - 2026-06-13
 
 *Sandbox launcher gains platform-agnostic `--bypass` / `--auto` flags.*

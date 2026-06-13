@@ -3,8 +3,8 @@
 # Schema aligned with current spec (see VERSION file at repository root)
 
 gse_version: ""                        # filled by /gse:hug from VERSION registry at project init
-current_sprint: 1
-current_phase: LC02                    # LC00 | LC01 | LC02 | LC03
+current_sprint: 0                      # 0 = pre-first-sprint baseline (just after /gse:hug); PLAN promotes to 1 (first GSE-managed sprint) — see go.md Adopt Step 5 — Set baseline
+current_phase: LC01                    # LC00 | LC01 | LC02 | LC03
 
 # Session pause state (set by /gse:pause, cleared by /gse:resume)
 session_paused: false                  # true between /gse:pause and /gse:resume

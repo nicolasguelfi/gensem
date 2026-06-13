@@ -1,7 +1,7 @@
 <h1 align="center">GSE-One</h1>
 <h2 align="center">Built by AI.<br>Governed by Humans.</h2>
 
-GSE-One is an AI engineering companion that brings structured software development lifecycle (SDLC) management to coding agents. It works as a plugin for **Claude Code**, **Cursor**, and **opencode**, guiding projects through requirements, design, testing, production, review, and knowledge transfer — with adaptive risk analysis and methodology guardrails.
+GSE-One is an AI engineering companion that brings structured software development lifecycle (SDLC) management to coding agents. It works as a plugin for **Claude Code**, **Cursor**, **opencode**, **Codex CLI**, and **Gemini CLI**, guiding projects through requirements, design, testing, production, review, and knowledge transfer — with adaptive risk analysis and methodology guardrails.
 
 <p align="center">
   <img src="../assets/images/logo-gse-geni-with-shield-landscape_4x_slogan.png" width="700" alt="GSE-One — Built by AI, Governed by Humans">
@@ -46,7 +46,7 @@ GSE-One orchestrates the full lifecycle: `COLLECT > ASSESS > PLAN > REQS > DESIG
 
 ### Quick install (curl | sh) — recommended for end users
 
-One command installs GSE-One on every coding agent it detects (Claude Code, Cursor, opencode):
+One command installs GSE-One on every coding agent it detects (Claude Code, Cursor, opencode, Codex CLI, Gemini CLI):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/nicolasguelfi/gensem/main/install.sh | sh
@@ -64,7 +64,7 @@ cd gensem
 python3 install.py
 ```
 
-The installer detects your OS (macOS, Linux, Windows), available platforms (Claude Code, Cursor), and guides you through the installation interactively. It supports plugin mode (with scope selection) and non-plugin mode for both platforms.
+The installer detects your OS (macOS, Linux, Windows), available platforms (Claude Code, Cursor, opencode, Codex CLI, Gemini CLI), and guides you through the installation interactively. It supports plugin mode (with scope selection), non-plugin mode, and a fully-local mode (`--mode local`: project registry, nothing under `$HOME`).
 
 For non-interactive installation, use CLI flags:
 
@@ -81,10 +81,17 @@ python3 install.py --platform opencode --mode plugin
 # opencode — non-plugin (project .opencode/)
 python3 install.py --platform opencode --mode no-plugin --project-dir /path/to/project
 
+# Codex CLI — plugin (global) / Gemini CLI — plugin (global extension)
+python3 install.py --platform codex --mode plugin
+python3 install.py --platform gemini --mode plugin
+
+# Fully local — nothing under $HOME (self-contained / committable)
+python3 install.py --platform codex --mode local --project-dir /path/to/project
+
 # Both Claude + Cursor
 python3 install.py --platform both --mode plugin --scope user
 
-# All three platforms at once
+# All detected platforms at once
 python3 install.py --platform all --mode plugin --scope user
 
 # Uninstall

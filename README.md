@@ -205,7 +205,7 @@ In opencode, type: `/gse-go`.
 
 ### Plugin mode (alternative)
 
-To install via the platform's plugin system (prefixed commands `/gse:*` on Claude, `/gse-*` on Cursor/opencode):
+To install via the platform's plugin system (prefixed commands `/gse:*` on Claude/Gemini, `/gse-*` on Cursor/opencode; contextual skills on Codex):
 
 ```bash
 # Cursor (local plugin)
@@ -217,7 +217,13 @@ python3 install.py --platform claude --mode plugin --scope user
 # opencode (global — ~/.config/opencode/)
 python3 install.py --platform opencode --mode plugin
 
-# All three at once (user/global scope)
+# Codex CLI (global — ~/.codex/ + ~/.agents/skills/)
+python3 install.py --platform codex --mode plugin
+
+# Gemini CLI (global extension — ~/.gemini/extensions/gse-one/)
+python3 install.py --platform gemini --mode plugin
+
+# All detected platforms at once (user/global scope)
 python3 install.py --platform all --mode plugin --scope user
 
 # Interactive (the installer guides you)
@@ -228,7 +234,7 @@ python3 install.py
 
 ## Mono-plugin Architecture
 
-GSE-One uses a **single deployable directory** (`plugin/`) that works on all three platforms:
+GSE-One uses a **single deployable directory** (`plugin/`) that works on all five platforms (Claude Code, Cursor, opencode, Codex CLI, Gemini CLI):
 
 ```
 gse-one/
@@ -313,9 +319,9 @@ python3 install.py
 | Option | Values | Default | Description |
 |--------|--------|---------|-------------|
 | *(no flags)* | — | — | **Interactive mode** — detects environment, guides step by step |
-| `--platform` | `claude` \| `cursor` \| `opencode` \| `both` \| `all` | *(interactive)* | Target platform (`both` = claude+cursor, `all` = all three) |
-| `--mode` | `plugin` \| `no-plugin` | *(interactive)* | `plugin` (recommended) or `no-plugin` (copies artifacts directly) |
-| `--scope` | `project` \| `local` \| `user` | `project` | Claude Code plugin scope only (ignored by Cursor/opencode) |
+| `--platform` | `claude` \| `cursor` \| `opencode` \| `codex` \| `gemini` \| `both` \| `all` | *(interactive)* | Target platform (`both` = claude+cursor, `all` = every supported platform) |
+| `--mode` | `plugin` \| `no-plugin` \| `local` | *(interactive)* | `plugin` (recommended), `no-plugin` (copies artifacts directly), or `local` (no-plugin + project registry, nothing under `$HOME`) |
+| `--scope` | `project` \| `local` \| `user` | `project` | Claude Code plugin scope only (ignored by Cursor, opencode, Codex, Gemini) |
 | `--project-dir` | path | current directory | No-plugin mode only |
 | `--uninstall` | *(flag)* | `false` | Remove GSE-One |
 
@@ -334,14 +340,21 @@ python3 install.py --platform opencode --mode plugin
 # opencode — non-plugin (project .opencode/)
 python3 install.py --platform opencode --mode no-plugin --project-dir /path/to/myproject
 
+# Codex CLI — plugin (global) / Gemini CLI — plugin (global extension)
+python3 install.py --platform codex --mode plugin
+python3 install.py --platform gemini --mode plugin
+
 # Both Claude + Cursor
 python3 install.py --platform both --mode plugin --scope user
 
-# All three platforms at once
+# All detected platforms at once
 python3 install.py --platform all --mode plugin --scope user
 
 # Non-plugin mode (Claude)
 python3 install.py --platform claude --mode no-plugin --project-dir /path/to/myproject
+
+# Fully local mode — nothing under $HOME (self-contained / committable)
+python3 install.py --platform codex --mode local --project-dir /path/to/myproject
 
 # Uninstall
 python3 install.py --uninstall --platform claude --mode plugin

@@ -584,7 +584,7 @@ def verify_no_plugin(location, platform_name):
 # ---------------------------------------------------------------------------
 
 def detect_environment():
-    """Detect OS, Claude Code CLI, Cursor, and opencode availability."""
+    """Detect OS and Claude Code, Cursor, opencode, Codex, Gemini availability."""
     os_name = platform.system()
     os_display = {"Darwin": "macOS", "Linux": "Linux", "Windows": "Windows"}.get(os_name, os_name)
 

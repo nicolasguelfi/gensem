@@ -19,10 +19,10 @@ Arguments: $ARGUMENTS
 ## Prerequisites
 
 Before executing, read:
-1. `.gse/status.yaml` — current health scores and sprint state
+1. `.gse/status.yaml` — current health scores, sprint state, and engagement counters (consecutive_acceptances — the ai_integrity input)
 2. `.gse/config.yaml` — `health.disabled_dimensions` (if any)
 3. `.gse/backlog.yaml` — task statuses for computation
-4. `.gse/profile.yaml` — user engagement metrics (consecutive_acceptances) + apply P9 Adaptive Communication to all output
+4. `.gse/profile.yaml` — apply P9 Adaptive Communication to all output
 5. `docs/sprints/sprint-{NN}/review.md` — review findings (if exists)
 
 ## Workflow

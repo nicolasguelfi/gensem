@@ -104,7 +104,7 @@ HEALTH {overall}/10
   ai_integrity:           {score}
 ```
 
-Flag any dimension below 5/10 with a warning marker.
+Flag any dimension below 7/10 with a warning marker.
 
 ### Step 6 — Git State
 
@@ -211,4 +211,4 @@ Based on current state, suggest next actions:
 - If tasks are in `review`: "Ready for `/gse:review`"
 - If all tasks `done` or `reviewed`: "Ready for `/gse:deliver`"
 - If stale sprint detected ({N} sessions without progress > `lifecycle.stale_sprint_sessions`): "Sprint has had {N} sessions without progress — consider `/gse:go`"
-- If health score below 5/10: "Health is low — consider addressing {worst dimension}"
+- If health score below 7/10: "Health is low — consider addressing {worst dimension}"

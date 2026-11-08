@@ -32,7 +32,7 @@ Before any check or Gate, display once a short map of what `/gse:deliver` will d
 
 ```
 DELIVERY MAP
-  Step 1 — Pre-flight (review status, conflicts, uncommitted, REQ→TST coverage)
+  Step 1 — Pre-flight (review status, conflicts, uncommitted, REQ→TST coverage, open HIGH findings)
   Step 1.5 — Test evidence per TASK + declared test levels (spec §9.3.1)
   Step 2 — Merge features into integration branch — default: {merge_strategy_default}
   Step 3 — Merge integration into main — default: merge --no-ff
@@ -114,6 +114,12 @@ Verify delivery readiness:
    - **Uncovered REQ with priority `must`** → **Hard guardrail: block delivery.** Report: "Requirement REQ-{NNN} ({description}) has no test covering it. Tests must be written before delivery." For beginners: "One of the things the app should do hasn't been verified yet. I need to add a check for it first."
    - **Uncovered REQ with priority `should` or `could`** → **Soft guardrail: warn.** Report: "Requirement REQ-{NNN} has no test. This is acceptable but noted." Add a RVW- finding.
    - **All must-priority REQs covered** → Proceed.
+
+5. **Open HIGH findings (safety net)** — For each TASK about to be delivered, list the HIGH findings in the sprint `review.md` files that are still `status: open` and are NOT traced by an acceptance DEC (a Gate DEC in `.gse/decisions.md` whose `Traces:` cites that RVW and whose decision is to deliver with it open — see `/gse:fix` Step 6 — Finalize). Such a finding means the TASK reached `reviewed`/`done` without a human decision on a serious problem (e.g., a TASK closed by an older plugin version, or a manual status edit). For each one present a Gate:
+   - **Fix first** — stop delivery for this TASK and recommend `/gse:fix --finding RVW-NNN`.
+   - **Accept the risk** — record the acceptance DEC (same format as in `/gse:fix` Step 6 — Finalize), then continue.
+   - **Discuss**
+   Never deliver over an open HIGH finding without one of these explicit choices (P4 — Human-in-the-Loop: silence is not consent).
 
 ### Step 1.5 — Test Execution Evidence
 

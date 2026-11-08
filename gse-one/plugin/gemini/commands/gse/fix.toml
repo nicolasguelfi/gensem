@@ -191,15 +191,20 @@ Mark each fixed finding as resolved in `docs/sprints/sprint-{NN}/review.md`:
 
 ### Step 6 — Finalize
 
-1. Update TASK in `backlog.yaml`:
-   - `status: done` (ready to merge)
+1. **HIGH-finding gate (before any status change).** List the HIGH findings of this TASK in `review.md` that are still `status: open` after Step 5 (a partial pass via `--finding` / `--severity`, or a fix that failed, can leave some open). If none remain, go to item 2. Otherwise present a Gate for each remaining HIGH finding:
+   - **Fix now** — run another fix pass on it; the TASK stays `status: fixing`.
+   - **Accept the risk** — the user explicitly accepts delivering with this finding open. Record a Gate DEC in `.gse/decisions.md` (type `methodology-deviation`, decision "deliver with RVW-NNN open", rationale in the user's words, `Traces: RVW-NNN`). The finding keeps `status: open` in `review.md`, so the push hook keeps warning about it; the DEC that traces it is the acceptance record (no new finding field).
+   - **Discuss**
+   The TASK moves to `done` only when every HIGH finding is either `fixed` or traced by such an acceptance DEC. Silence is not acceptance (P4 — Human-in-the-Loop): without an explicit choice, the TASK stays `fixing`. For beginners: *"One serious problem found by the review is still there. Do you want me to fix it now, or do you knowingly accept to deliver with it?"*
+2. Update TASK in `backlog.yaml`:
+   - `status: done` (ready to merge) — only when item 1 is satisfied
    - `completed_at: {timestamp}` (per the backlog.yaml schema — set when status → `done` or `reviewed`)
    - `review_findings_fixed: {count}`
-2. **Decrement `status.yaml.review_findings_open`** by the number of findings resolved in this fix pass (findings whose `status` transitioned to `fixed` in Step 5). If all findings across all sprint `review.md` files are now resolved, set the counter to 0. This counter is consumed by the git-push hook (spec §P13 — System hooks; design §7 — Hooks Design) to warn the user before pushing a branch with open findings.
-3. *(Cursor fields `last_activity` / `last_activity_timestamp` in `status.yaml` are maintained centrally by the orchestrator after the activity closes — see `plugin/agents/gse-orchestrator.md` — section "Sprint Plan Maintenance", and `gse-one-implementation-design.md` §10.1 — Sprint Plan Lifecycle. FIX writes no cursor fields directly, per v0.53.0.)*
-4. Report fix summary:
+3. **Decrement `status.yaml.review_findings_open`** by the number of findings resolved in this fix pass (findings whose `status` transitioned to `fixed` in Step 5). If all findings across all sprint `review.md` files are now resolved, set the counter to 0. This counter is consumed by the git-push hook (spec §P13 — System hooks; design §7 — Hooks Design) to warn the user before pushing a branch with open findings.
+4. *(Cursor fields `last_activity` / `last_activity_timestamp` in `status.yaml` are maintained centrally by the orchestrator after the activity closes — see `plugin/agents/gse-orchestrator.md` — section "Sprint Plan Maintenance", and `gse-one-implementation-design.md` §10.1 — Sprint Plan Lifecycle. FIX writes no cursor fields directly, per v0.53.0.)*
+5. Report fix summary:
    - Findings fixed: {count}
-   - Findings remaining: {count}
-   - If all findings resolved: recommend `/gse:deliver`
-   - If HIGH findings remain: recommend another `/gse:fix` pass
+   - Findings remaining: {count} (of which HIGH accepted by decision: {count})
+   - If the TASK reached `done`: recommend `/gse:deliver`
+   - If the TASK stays `fixing`: recommend another `/gse:fix` pass
 '''

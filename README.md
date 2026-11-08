@@ -135,18 +135,20 @@ The curl installer reads five environment variables that override auto-detection
 | `GSE_VERSION` | `latest` \| `vX.Y.Z` | Release tag to install; `latest` resolves via the GitHub API (default: `latest`) |
 | `GSE_PROJECT_DIR` | path | Target directory for `project` / `sandbox` modes (default: current working directory; relative paths are resolved against the invocation directory) |
 
+> **Where the variables go:** put `GSE_*` variables just before the `sh` that runs the installer (as in the examples below) or use the `GSE_PLATFORM=… sh -c "$(curl …)"` form of the table. Written in front of `curl` (`GSE_VERSION=… curl … | sh`), they apply to `curl` only and the installer never sees them — the version is then not pinned.
+
 Example — pin to an explicit version and install only for Cursor:
 
 ```bash
-GSE_PLATFORM=cursor GSE_VERSION=v0.62.7 \
-  curl -fsSL https://raw.githubusercontent.com/nicolasguelfi/gensem/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/nicolasguelfi/gensem/main/install.sh | \
+  GSE_PLATFORM=cursor GSE_VERSION=v0.62.7 sh
 ```
 
 Example — install into a specific project directory:
 
 ```bash
-GSE_PROJECT_DIR=/path/to/myproject \
-  curl -fsSL https://raw.githubusercontent.com/nicolasguelfi/gensem/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/nicolasguelfi/gensem/main/install.sh | \
+  GSE_PROJECT_DIR=/path/to/myproject sh
 ```
 
 ---
@@ -159,8 +161,8 @@ GSE_PROJECT_DIR=/path/to/myproject \
 
 ```bash
 # Install once (here: Codex into ./my-project)
-GSE_MODE=sandbox GSE_PLATFORM=codex GSE_PROJECT_DIR=./my-project \
-  curl -fsSL https://raw.githubusercontent.com/nicolasguelfi/gensem/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/nicolasguelfi/gensem/main/install.sh | \
+  GSE_MODE=sandbox GSE_PLATFORM=codex GSE_PROJECT_DIR=./my-project sh
 
 # Run the agent isolated — any day, no reinstall
 cd my-project
@@ -239,8 +241,8 @@ Both are required by the installer to fetch and extract the release tarball. The
 When `GSE_VERSION` is `latest` (the default), the installer calls `https://api.github.com/repos/nicolasguelfi/gensem/releases/latest` to resolve the current tag. Unauthenticated GitHub API requests are capped at roughly 60 per hour per IP, so CI runners, shared networks, or tight install loops can hit the limit. Work around it by pinning an explicit version so the API call is skipped:
 
 ```bash
-GSE_VERSION=v0.62.7 \
-  curl -fsSL https://raw.githubusercontent.com/nicolasguelfi/gensem/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/nicolasguelfi/gensem/main/install.sh | \
+  GSE_VERSION=v0.62.7 sh
 ```
 
 ---

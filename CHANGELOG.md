@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.89.1] - 2026-11-09
+
+### Fixed
+- Fixed `/gse:fix` marking a TASK `done` with HIGH findings still open: a Gate now requires fixing or an explicit acceptance DEC.
+- Added a pre-flight safety net to `/gse:deliver`: open HIGH findings without an acceptance DEC trigger a Fix / Accept / Discuss Gate.
+- Fixed `/gse:deploy` reading `.env` whole into the model context; it now uses `deploy.py detect` / `env-get` presence checks.
+- Fixed README pinned-install examples: `GSE_*` variables placed before `curl` never reached the installer; moved before `sh`, with an explanatory note.
+
+### Added
+- Added `.github/workflows/ci.yml`: generator parity, unit tests and deterministic audit on every push and pull request to main.
+
 ## [0.89.0] - 2026-07-11
 
 *Classroom readiness (backlog BKL-cc94d3cf, BKL-843a9572, BKL-a59cafa0, BKL-7f37c853). Full train synthesis: `docs/post-audit-reports/2026-07-11-coding-agents-compatibility-train.md`.*

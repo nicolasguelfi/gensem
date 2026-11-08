@@ -23,7 +23,7 @@ Arguments: $ARGUMENTS
 Before executing, read:
 1. `.gse/config.yaml` — deploy section (provider, server type, datacenter)
 2. `.gse/deploy.json` — infrastructure state (if exists)
-3. `.env` — credentials and configuration (if exists)
+3. `.env` — credentials and configuration (if exists). **Do not read this file whole**: it holds API tokens (in training mode, the shared course token that can write to every learner app), and reading it puts their values in the model context. Use the presence map returned by `deploy.py detect` (Step 0 — Situation Detection) to know which keys are set, and `deploy.py env-get <KEY>` when a step needs one value; the shell checks below (`test -f`, `grep -E '^KEY='`) test presence without printing secrets. Never display, log, or commit a token value.
 4. `.gse/profile.yaml` — user profile (apply P9 Adaptive Communication to all output)
 5. `$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/agents/deploy-operator.md` — adopt this role for the entire activity
 6. `$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/references/hetzner-infrastructure.md` — pricing, sizing, Coolify API (consulted on demand)

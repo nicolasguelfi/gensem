@@ -1,0 +1,43 @@
+name: ci
+
+# Second pair of eyes on every push / PR to main: the release workflow only
+# runs on v* tags, so without this the generator parity, the unit tests and the
+# deterministic audit only ran when a maintainer launched them by hand.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Verify generator parity
+        run: |
+          cd gse-one
+          python3 gse_generate.py --verify
+
+      - name: Unit tests
+        run: |
+          cd gse-one
+          python3 -m unittest discover -s tests
+
+      - name: Deterministic audit (fail on errors)
+        run: |
+          python3 -m pip install --quiet pyyaml  # optional dep: enables YAML template validation
+          python3 gse-one/audit.py --no-save --fail-on error

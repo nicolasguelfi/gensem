@@ -76,6 +76,11 @@ class TestForcePushHook(unittest.TestCase):
         for form in (
             "git push --force",
             "git push -f",
+            "git push -fu",
+            "git push -uf",
+            "git push -vf",
+            "git push -4f",
+            "git push -f4",
             "git push origin main --force",
             "git push --force-with-lease",
             "cd sub && git push -f origin main",
@@ -97,7 +102,7 @@ class TestForcePushHook(unittest.TestCase):
             self.assertIn("EMERGENCY GUARDRAIL", res.stderr)
 
     def test_allows_benign(self):
-        for form in ("git push", "git push origin main", "ls -f", "echo --force",
+        for form in ("git push -ofoo", "git push -vofoo", "git push", "git push origin main", "ls -f", "echo --force",
                      "git push origin main:main"):
             res = _run_hook(self.cmd, form, self.dir)
             self.assertEqual(res.returncode, 0, f"{form!r}: {res.stderr}")
@@ -138,7 +143,13 @@ class TestProtectMainHook(unittest.TestCase):
     def test_blocks_commit_on_main(self):
         self._first_commit()
         for form in ("git commit -m x", "git add -A && git commit -m x",
-                     "git -C . commit -m x"):
+                     "git -C . commit -m x",
+                     "git -c user.name=x commit -m x",
+                     "git -c user.name=x -c user.email=x@y commit -m x",
+                     "git --no-pager commit -m x",
+                     "git status\ngit commit -m x",
+                     "  git commit -m x",
+                     "(git commit -m x)"):
             res = _run_hook(self.cmd, form, self.dir)
             self.assertEqual(res.returncode, 2, f"{form!r}: {res.stderr}")
             self.assertIn("GUARDRAIL", res.stderr)

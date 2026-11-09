@@ -27,10 +27,22 @@ jobs:
         with:
           python-version: '3.11'
 
+      - uses: oven-sh/setup-bun@v2   # runs the OpenCode guardrail runtime tests (tests/opencode.test.ts)
+        with:
+          bun-version: '1.4.3'
+
       - name: Verify generator parity
         run: |
           cd gse-one
           python3 gse_generate.py --verify
+
+      - name: Check generated artifacts are committed
+        run: |
+          changes=$(git status --porcelain --untracked-files=all -- gse-one/plugin)
+          if [ -n "$changes" ]; then
+            printf '%s\n' "$changes"
+            exit 1
+          fi
 
       - name: Unit tests
         run: |

@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.90.0] - 2026-11-09
+
+### Added
+- Added a native OpenCode 2 guardrail adapter (`id`/`setup` hooks); the installer detects `opencode --version` and installs exactly one adapter (V1 kept for OpenCode 1).
+- Added OpenCode adapter tests (`tests/test_opencode.py`, Bun runtime tests) and Bun to CI and release verification. Contributed by İbrahim S. Akarçeşme (PR #11).
+
+### Fixed
+- Hardened git guardrail matching: `git -c … commit`, `--no-pager`, newline/subshell starts, clustered push flags (`-fu`, `-4f`) versus push-option values.
+- Fixed OpenCode guardrails resolving `.gse/` paths and Git probes from the plugin root and command workdir; dashboard sync now covers `apply_patch`.
+
 ## [0.89.1] - 2026-11-09
 
 ### Fixed

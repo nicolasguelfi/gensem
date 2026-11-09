@@ -22,6 +22,7 @@ import argparse
 import json
 import os
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -1171,9 +1172,11 @@ def install_opencode_plugin(env):
         return False
 
     target = env["opencode_dir"]
-    ensure_dir(target)
 
     counts = _opencode_copy_tree(OPENCODE_PLUGIN_DIR, target)
+    if counts is None:
+        tracker.add("opencode", "machine", "global", str(target), "FAIL", "guardrail selection failed")
+        return False
     # Common runtime assets (tools/, templates/, references/, VERSION) —
     # needed because opencode skills shell out to $(cat ~/.gse-one)/tools/...
     # and templates/references are consulted by activities at runtime.
@@ -1236,9 +1239,11 @@ def install_opencode_no_plugin(project_dir):
 
     project_dir = Path(project_dir)
     target = project_dir / ".opencode"
-    ensure_dir(target)
 
     counts = _opencode_copy_tree(OPENCODE_PLUGIN_DIR, target)
+    if counts is None:
+        tracker.add("opencode", "project", "project", str(target), "FAIL", "guardrail selection failed")
+        return False
     # Common runtime assets (tools/, templates/, references/, VERSION) —
     # needed because opencode skills shell out to $(cat ~/.gse-one)/tools/...
     # and templates/references are consulted by activities at runtime.
@@ -1289,11 +1294,41 @@ def uninstall_opencode_no_plugin(project_dir):
 # opencode — helpers
 # ---------------------------------------------------------------------------
 
+def _opencode_guardrails_source(src):
+    """Select one loader-compatible adapter; absent CLI preserves V1 installs."""
+    legacy = src / "plugins" / "gse-guardrails.ts"
+    try:
+        result = subprocess.run(
+            ["opencode", "--version"], capture_output=True, text=True, timeout=10,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        warn("Cannot detect OpenCode version; installing V1 guardrails. Reinstall after upgrading to OpenCode 2.")
+        return legacy
+    match = re.fullmatch(r"(?:opencode\s+)?v?(\d+)\.\d+\.\d+(?:[-+][\w.-]+)?", result.stdout.strip())
+    if result.returncode != 0 or not match:
+        warn("Unrecognized OpenCode version; installing V1 guardrails. Reinstall after upgrading to OpenCode 2.")
+        return legacy
+    major = int(match.group(1))
+    if major == 2:
+        info("Selecting OpenCode 2 guardrails")
+        return src / "compat" / "gse-guardrails-v2.ts"
+    if major > 2:
+        err(f"Unsupported OpenCode major version: {major}; no files installed")
+        return None
+    return legacy
+
+
 def _opencode_copy_tree(src, target):
     """Copy opencode artefacts (skills/, commands/, agents/, plugins/) into target.
 
-    Overwrites existing GSE-named items. Returns counts dict.
+    Overwrites existing GSE-named items. Returns counts, or None on adapter selection failure.
     """
+    guardrails = _opencode_guardrails_source(src)
+    if guardrails is None:
+        return None
+    if not guardrails.is_file():
+        err(f"Missing OpenCode guardrails: {guardrails}; regenerate before installing")
+        return None
     counts = {"skills": 0, "commands": 0, "agents": 0, "plugins": 0}
     # Skills (copy each subdir individually so we don't wipe user-added skills)
     src_skills = src / "skills"
@@ -1322,7 +1357,7 @@ def _opencode_copy_tree(src, target):
     dst_pl = target / "plugins"
     ensure_dir(dst_pl)
     for pl in sorted(src_pl.glob("*.ts")):
-        shutil.copy2(pl, dst_pl / pl.name)
+        shutil.copy2(guardrails if pl.name == "gse-guardrails.ts" else pl, dst_pl / pl.name)
         counts["plugins"] += 1
     return counts
 

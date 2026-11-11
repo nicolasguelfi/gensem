@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# @gse-tool dashboard 1.0
+# @gse-tool dashboard 1.1
 """
 GSE-One Dashboard Generator — Generates docs/dashboard.html from .gse/ state files.
 
@@ -138,6 +138,20 @@ def _read_and_clear_error_marker():
 # YAML parser (minimal, no dependencies)
 # ---------------------------------------------------------------------------
 
+def _strip_inline_comment(text):
+    """Drop a trailing YAML comment (`  # ...`) that sits outside quotes."""
+    quote = None
+    for i, ch in enumerate(text):
+        if quote:
+            if ch == quote:
+                quote = None
+        elif ch in ("'", '"'):
+            quote = ch
+        elif ch == "#" and (i == 0 or text[i - 1] in " \t"):
+            return text[:i].rstrip()
+    return text
+
+
 def parse_yaml_simple(filepath):
     """Parse a simple YAML file into a dict with dotted keys for nested values.
 
@@ -165,7 +179,7 @@ def parse_yaml_simple(filepath):
                 continue
             # Measure indentation
             indent = len(line) - len(line.lstrip())
-            stripped = line.strip()
+            stripped = _strip_inline_comment(line.strip())
             # If indentation dropped back to top level, reset parent
             if indent == 0:
                 parent_key = None

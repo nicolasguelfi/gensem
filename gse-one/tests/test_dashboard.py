@@ -87,5 +87,47 @@ class TestDashboardPreSprintBaseline(unittest.TestCase):
             self.assertFalse(error_marker)
 
 
+class TestParseYamlInlineComments(unittest.TestCase):
+    """Regression (v0.90.1): `key: value   # comment` must yield `value`.
+
+    Seen in a classroom rehearsal: config.yaml lines such as
+    `protect_main: true   # block direct commits` were read as the string
+    "true   # block direct commits", so booleans and numbers were not coerced.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        import importlib.util
+        sys.dont_write_bytecode = True
+        spec = importlib.util.spec_from_file_location("gse_dashboard", DASHBOARD)
+        cls.mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cls.mod)
+
+    def _parse(self, text):
+        with tempfile.TemporaryDirectory() as d:
+            f = Path(d) / "x.yaml"
+            f.write_text(text, encoding="utf-8")
+            return self.mod.parse_yaml_simple(f)
+
+    def test_trailing_comments_are_dropped(self):
+        r = self._parse(
+            "git:\n"
+            "  protect_main: true          # block direct commits\n"
+            "  max_points: 10 # budget\n"
+            "mode: lightweight  # comment\n"
+            "section:   # parent with a comment\n"
+            "  child: ok\n"
+        )
+        self.assertIs(r["git.protect_main"], True)
+        self.assertEqual(r["git.max_points"], 10)
+        self.assertEqual(r["mode"], "lightweight")
+        self.assertEqual(r["section.child"], "ok")
+
+    def test_hash_inside_quotes_or_words_is_kept(self):
+        r = self._parse('title: "Sprint #1 # not a comment"\nref: issue#42\n')
+        self.assertEqual(r["title"], "Sprint #1 # not a comment")
+        self.assertEqual(r["ref"], "issue#42")
+
+
 if __name__ == "__main__":
     unittest.main()

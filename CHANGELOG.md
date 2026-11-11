@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.90.1] - 2026-11-11
+
+### Fixed
+- Fixed host-project lint failures: the generated OpenCode guardrail adapters now carry `/* eslint-disable */`.
+- Fixed `dashboard.py` YAML parsing of `key: value  # comment` lines (values were read with the comment, booleans not coerced).
+- Fixed `__pycache__` leaking into installs: release tarball excludes it and `install.py` copies skip bytecode.
+- Added `__pycache__/` to the `.gitignore` additions seeded for new repositories.
+
 ## [0.90.0] - 2026-11-09
 
 ### Added

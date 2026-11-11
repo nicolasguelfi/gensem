@@ -77,3 +77,19 @@ class TestOpenCodeRuntime(unittest.TestCase):
     def test_generated_adapters(self):
         result = subprocess.run(["bun", "test", "tests/opencode.test.ts"], cwd=ROOT / "gse-one", capture_output=True, text=True, timeout=60)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+
+class TestInstallerSkipsBytecode(unittest.TestCase):
+    """Regression (v0.90.1): installs must not copy __pycache__ into projects."""
+
+    def test_copy_tree_ignores_pycache(self):
+        with tempfile.TemporaryDirectory() as d:
+            src, dst = Path(d) / "src", Path(d) / "dst"
+            (src / "__pycache__").mkdir(parents=True)
+            (src / "__pycache__" / "tool.cpython-311.pyc").write_bytes(b"x")
+            (src / "stray.pyc").write_bytes(b"x")
+            (src / "tool.py").write_text("print(1)\n")
+            installer.copy_tree(src, dst)
+            self.assertTrue((dst / "tool.py").exists())
+            self.assertFalse((dst / "__pycache__").exists())
+            self.assertFalse((dst / "stray.pyc").exists())

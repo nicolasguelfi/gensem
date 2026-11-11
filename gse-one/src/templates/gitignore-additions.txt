@@ -5,3 +5,5 @@
 .gse/decisions-auto.log
 # GSE-One generated dashboard (refreshed on demand by tools/dashboard.py — local view, not versioned)
 docs/dashboard.html
+# Python bytecode written when GSE-One tools run
+__pycache__/

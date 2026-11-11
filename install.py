@@ -276,7 +276,8 @@ def copy_tree(src, dst):
     """Copy a directory tree, overwriting destination if it exists."""
     dst = Path(dst)
     remove_path(dst)
-    shutil.copytree(src, dst)
+    # Never ship bytecode caches left by local tool runs or test imports.
+    shutil.copytree(src, dst, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
 
 
 def ensure_dir(path):

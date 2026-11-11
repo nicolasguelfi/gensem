@@ -29,6 +29,7 @@ jobs:
       - name: Package release tarball
         run: |
           tar -czf gse-one.tar.gz \
+            --exclude='__pycache__' --exclude='*.pyc' \
             gse-one/plugin \
             install.py \
             VERSION \

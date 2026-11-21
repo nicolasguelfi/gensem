@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.91.2] - 2026-11-21
+
+### Fixed
+- Fixed Lightweight delivery stopping on every produced task ("not complete (status: review)"): `/gse:deliver` now accepts `review` in Lightweight.
+- Added the `review → reviewed` transition at the end of the Lightweight minimal integrity pass; spec, design and orchestrator state machine aligned.
+
 ## [0.91.1] - 2026-11-21
 
 ### Fixed

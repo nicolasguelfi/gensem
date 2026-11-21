@@ -1,5 +1,5 @@
 <!-- GSE-ONE START -->
-<!-- gse-one-version: 0.91.1 -->
+<!-- gse-one-version: 0.91.2 -->
 # GSE-One Methodology (Gemini edition)
 
 This section is managed by GSE-One. Edit `gse-one/src/` and regenerate — do not hand-edit between the START/END markers.
@@ -169,7 +169,7 @@ Each runtime exposes its own interactive-question tool — `AskUserQuestion` on 
 - `/gse:produce` — transitions `planned → in-progress` (on branch/worktree setup, Step 2) and `in-progress → review` (on Finalize, Step 5). The TASK leaves PRODUCE with `status: review`, not `done`.
 - `/gse:review` — consumes TASKs with `status: review`. Transitions `review → reviewed` if no HIGH/MEDIUM findings (clean first-pass), or `review → fixing` if findings exist.
 - `/gse:fix` — consumes TASKs with `status: fixing`. Transitions `fixing → done` when no HIGH finding remains open without an explicit acceptance DEC (Gate in FIX Step 6); otherwise the TASK stays `fixing`.
-- `/gse:deliver` — consumes TASKs with `status: reviewed` OR `status: done` (both are "ready to merge"). Transitions to `status: delivered` after successful merge.
+- `/gse:deliver` — consumes TASKs with `status: reviewed` OR `status: done` (both are "ready to merge"). Transitions to `status: delivered` after successful merge. **Lightweight mode** (no `/gse:review`): DELIVER also accepts TASKs at `status: review` and performs `review → reviewed` itself, at the end of its Step 1.6 — Minimal Integrity Pass, once no HIGH finding is left undecided.
 
 **Rationale for the reviewed/done split:** both statuses mean "ready to merge", but the distinction is preserved for the coach Axis 5 (`quality_trends`): a high ratio of `reviewed` (clean first-pass) vs `done` (fixed after findings) signals high PRODUCE quality. Collapsing them would silently erase this signal. The cost is one extra enum value in `backlog.yaml`; the benefit is a measurable quality trend the methodology is designed to surface.
 

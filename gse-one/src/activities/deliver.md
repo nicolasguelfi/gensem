@@ -99,6 +99,7 @@ Verify delivery readiness:
 1. **Review status** — Check that all sprint TASKs are ready for delivery (`backlog.yaml` TASK `status: reviewed` or `status: done` — both are terminal "ready to merge" statuses per spec §12.3 Status lifecycle). If any task has `status: in-progress`, `status: planned`, `status: review`, or `status: fixing`:
    - Report: "Task TASK-{ID} is not complete (status: {status})."
    - Present Gate: **Wait** / **Deliver partial** / **Discuss**
+   - **Lightweight exception — `status: review` is expected, not incomplete.** Lightweight has no `/gse:review`, so a produced TASK can only be at `review` when it reaches DELIVER. In Lightweight mode, do NOT report or Gate a TASK at `status: review`: it is a delivery candidate, and Step 1.6 — Minimal Integrity Pass is what moves it to `reviewed`. The Gate above still applies in Lightweight to `in-progress`, `planned` and `fixing`.
 
 2. **Merge conflict detection** — For each feature branch, check for conflicts:
    ```
@@ -165,6 +166,7 @@ Lightweight has no REVIEW activity, so this is the only P16 integrity net before
 3. The mode's restricted checklist (see agent file): referenced libraries/packages/APIs actually exist (`pip show` / `npm list` / docs URL), version compatibility, unverified critical assertions (P15 — claims tagged Verified without evidence, or untagged critical claims). Maximum 5 findings, most critical first.
 4. **Routing:** HIGH findings → Gate before proceeding to Step 2 (*Fix now / Accept the risk — recorded as a DEC- / Discuss*). MEDIUM/LOW findings → Inform, appended to the release notes (Step 6).
 5. Record `DA execution: isolated | inline-degraded` alongside the findings.
+6. **Close the review status.** Once no HIGH finding is left undecided (none found, each fixed, or each accepted as a recorded DEC-), set every sprint TASK at `status: review` to `status: reviewed` with `completed_at: {timestamp}` in `backlog.yaml`, and commit. This is the Lightweight equivalent of the `review → reviewed` transition that `/gse:review` performs in Full mode; a TASK is never left at `review` when Step 2 — Merge Features into Sprint Branch starts.
 
 ### Step 2 — Merge Features into Sprint Branch
 

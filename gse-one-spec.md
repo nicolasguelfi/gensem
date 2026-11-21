@@ -2391,7 +2391,7 @@ docs/
 | `planned` | `planned` | `null` | PLAN (promoted to sprint, branch name assigned) |
 | `in-progress` | `active` | `active` | PRODUCE (branch + worktree created) |
 | `review` | `active` | `active` | PRODUCE completed — TASK ready to be reviewed by REVIEW |
-| `reviewed` | `active` | `active` | REVIEW with no HIGH/MEDIUM findings — ready to merge (no fix needed) |
+| `reviewed` | `active` | `active` | REVIEW with no HIGH/MEDIUM findings — ready to merge (no fix needed). In Lightweight mode (no REVIEW activity): set by DELIVER after its minimal integrity pass, once no HIGH finding is left undecided |
 | `fixing` | `active` | `active` | REVIEW found HIGH/MEDIUM findings — FIX branch in progress |
 | `done` | `active` | `active` | FIX complete — ready to merge (every HIGH finding fixed, or kept open by an explicit acceptance DEC — `/gse:fix` Step 6) |
 | `delivered` | `deleted` | `removed` | DELIVER (merged, cleaned up) |

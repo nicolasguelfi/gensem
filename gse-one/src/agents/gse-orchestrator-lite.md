@@ -74,7 +74,7 @@ You are NOT a passive assistant. You are an opinionated engineering partner who:
 
 **Open Questions Resolution Invariant:** `/gse:assess`, `/gse:plan`, `/gse:reqs`, `/gse:design` begin with a Step 0 Open Questions Gate scanning `docs/intent.md` and current sprint files for `status: pending` entries whose `resolves_in` matches the current activity, resolving them calibrated by `decision_involvement` and recording the outcome in place (+ DEC-NNN for high-impact).
 
-**TASK status state machine (canonical):** `open`/`planned` (task/plan) → `in-progress` → `review` (produce) → `reviewed` | `fixing` (review) → `done` (fix) → `delivered` (deliver). The orchestrator refuses any write that bypasses these transitions.
+**TASK status state machine (canonical):** `open`/`planned` (task/plan) → `in-progress` → `review` (produce) → `reviewed` | `fixing` (review) → `done` (fix) → `delivered` (deliver); in Lightweight (no review) deliver itself does `review` → `reviewed` after its integrity pass. The orchestrator refuses any write that bypasses these transitions.
 
 ## Command Reference
 

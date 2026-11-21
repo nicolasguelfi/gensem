@@ -1443,7 +1443,7 @@ The spec-level *Sprint Freeze* guardrail materializes as follows:
 
 - `/gse:task` (creates a new TASK)
 - `/gse:produce` (transitions TASK `planned` → `in-progress` → `review`)
-- `/gse:review` (transitions TASK `review` → `reviewed` if no HIGH/MEDIUM findings, else `review` → `fixing`)
+- `/gse:review` (transitions TASK `review` → `reviewed` if no HIGH/MEDIUM findings, else `review` → `fixing`; in Lightweight mode, which has no REVIEW, `/gse:deliver` Step 1.6 — Minimal Integrity Pass performs `review` → `reviewed`)
 - `/gse:fix` (transitions TASK `fixing` → `done` once no HIGH finding is left open without an acceptance DEC; otherwise the TASK stays `fixing`)
 - `/gse:reqs`, `/gse:design`, `/gse:preview`, `/gse:tests` (write sprint artefacts into `docs/sprints/sprint-{NN}/` — producing new artefacts for a closed sprint violates closure immutability)
 

@@ -790,7 +790,7 @@ Every production task is performed in an isolated git environment. The `main` br
 
 **Core rules:**
 0. **Foundational commit** — a newly initialized repository MUST have at least one commit on `main` before any branching operation. Without this, `main` is not a valid branch reference and `git checkout -b ... main` fails. This commit is created during HUG (Step 4) as part of git initialization. **Precondition:** a valid git identity (user name + email) must exist, either globally or scoped to the current repository, before any commit attempt — otherwise the commit fails. When the identity is missing, the **Git Identity Verification** invariant (see rule 6 below) MUST resolve it through a Gate before the foundational commit is attempted.
-1. **`main` is sacred** — no direct commits after the foundational commit. All subsequent changes arrive via reviewed, approved merges.
+1. **`main` is sacred** — no direct commits of the product after the foundational commit. All subsequent changes to code, tests and configuration arrive via reviewed, approved merges. GSE-One's own records (the `.gse/` state and its sprint documents) are the one exception: a record-only commit may land on `main` (§7 hooks table — Protect main).
 2. **One branch per task** — each planned task gets its own branch, named predictably.
 3. **Worktree isolation** — each branch is checked out in its own directory, so work on multiple tasks doesn't interfere.
 4. **Merge is a decision** — every merge is a Gate-tier decision. The way the agent presents the merge options is adapted to the user's expertise (P9): a beginner sees a plain-language choice between "clean summary" vs. "full history"; an expert sees the technical options (squash, merge, rebase) with consequence horizons.
@@ -809,7 +809,7 @@ System hooks are reserved for actions where deterministic enforcement is critica
 
 | Hook | Trigger | Action | Level | Principle Enforced |
 |------|---------|--------|-------|--------------------|
-| **Protect main** | `git commit` on `main` branch (any form, incl. chained `&& git commit` and `git -C . commit`) | Block the commit, send feedback to agent. Sanctioned exceptions (hook allows): `hooks.protect_main: false`, `git.strategy: none` (Micro mode), and the repository-initialization commit (no HEAD yet — covers the HUG foundational commit and §14.3 Step 1.7 — Git baseline verification auto-fix) | Hard (exit 2) | P12 (version control) |
+| **Protect main** | `git commit` on `main` branch (any form, incl. chained `&& git commit` and `git -C . commit`) | Block the commit, send feedback to agent. Sanctioned exceptions (hook allows): a **record-only commit** (every file under `.gse/`, `docs/sprints/`, `docs/archive/`, `docs/learning/`, or one of `docs/intent.md`, `docs/dashboard.html`, `docs/health-history.yaml`, `.gitignore` — GSE-One's own bookkeeping: profile and intent before the first sprint, delivery bookkeeping after the main merge; the hook checks the staged files, what a `git add` in the same command would stage, and tracked changes for `commit -a`; an empty set stays blocked); `hooks.protect_main: false`, `git.strategy: none` (Micro mode), and the repository-initialization commit (no HEAD yet — covers the HUG foundational commit and §14.3 Step 1.7 — Git baseline verification auto-fix) | Hard (exit 2) | P12 (version control) |
 | **Block force-push** | any force push: `-f` / `--force` / `--force-with-lease`, flag in any position | Block the push, send feedback to agent | Emergency (exit 2) | P12 (version control) |
 | **Review findings on push** | `git push` (any form) | Warn if `review_findings_open > 0` in `status.yaml` | Soft (warn-only, exit 0) | P11 (guardrails), P6 (traceability) |
 
@@ -1941,7 +1941,7 @@ Guardrails make cost visible and require proportional acknowledgment. Soft guard
 
 | Guardrail | Trigger | Level |
 |-----------|---------|-------|
-| Working on main | User or agent tries to edit code directly on `main` | **Hard** — propose creating a feature branch |
+| Working on main | User or agent tries to edit code directly on `main` (record-only commits of GSE-One's own state and sprint documents excepted) | **Hard** — propose creating a feature branch |
 | Uncommitted changes | Agent tries to switch branch with uncommitted work | **Hard** — commit or stash first |
 | Unreviewed merge | `/gse:deliver` called before `/gse:review` (Full mode; in Lightweight, `/gse:deliver` Step 1.6 — Minimal Integrity Pass replaces REVIEW) | **Hard** — review first |
 | Merge conflict | Conflict detected during merge | **Gate** — present conflict, explain options, wait for user choice *(Gate is a decision tier, not a guardrail level — this row routes to a decision rather than a Soft/Hard/Emergency block; kept here for completeness of git-event coverage)* |

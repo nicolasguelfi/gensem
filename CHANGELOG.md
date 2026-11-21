@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.92.1] - 2026-11-22
+
+### Fixed
+- Fixed the protect-main hook refusing GSE-One's own bookkeeping commits on `main` (profile, intent, delivery state), which agents worked around by improvised branches.
+- Added the record-only exception: a commit whose every file is `.gse/` state or a GSE-One sprint document passes; any other file stays blocked.
+- Added hook tests (Python and OpenCode runtime) for record-only, mixed, `git add -A` and `commit -a` forms.
+
 ## [0.92.0] - 2026-11-22
 
 *First lightness release: no stop without an exit, a real quick path, light modes that do what they announce.*

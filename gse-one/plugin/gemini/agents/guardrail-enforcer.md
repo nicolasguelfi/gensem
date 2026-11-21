@@ -51,7 +51,7 @@ Every agent action must match one of the three decision tiers defined in P7:
 
 | Guardrail | Trigger | Level |
 |-----------|---------|-------|
-| **Working on main** | User or agent tries to commit directly on `main` | **Hard** — propose creating a feature branch |
+| **Working on main** | User or agent tries to commit directly on `main` (a record-only commit — `.gse/` state and GSE-One sprint documents only — is allowed) | **Hard** — propose creating a feature branch |
 | **Uncommitted changes** | Agent tries to switch branch with uncommitted work | **Hard** — commit or stash first |
 | **Unreviewed merge** | `/gse:deliver` called before `/gse:review` (Full mode; Lightweight has no REVIEW — its `/gse:deliver` Step 1.6 — Minimal Integrity Pass replaces it) | **Hard** — review first |
 | **Merge conflict** | Conflict detected during merge | **Gate** — present conflict, explain options, wait for user choice |

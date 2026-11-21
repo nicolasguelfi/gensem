@@ -413,6 +413,18 @@ def generate(clean: bool = False) -> None:
     print(f"Total files: {total}\n")
 
 
+# Paths GSE-One writes as its own records (state and sprint documents). A commit on `main`
+# whose every file matches is allowed by the protect-main guardrail (record-only commit).
+_RECORD_PATHS_PY = (
+    "^(?:\\.gse/|docs/(?:sprints|archive|learning)/|"
+    "docs/(?:intent\\.md|dashboard\\.html|health-history\\.yaml)$|\\.gitignore$)"
+)
+_RECORD_PATHS_TS = (
+    "/^(?:\\.gse\\/|docs\\/(?:sprints|archive|learning)\\/|"
+    "docs\\/(?:intent\\.md|dashboard\\.html|health-history\\.yaml)$|\\.gitignore$)/"
+)
+
+
 def _guardrail_commands() -> dict:
     """Return the cross-platform guardrail hook commands as a dict.
 
@@ -438,6 +450,12 @@ def _guardrail_commands() -> dict:
         "d=json.loads(raw) if raw.lstrip().startswith('{') else {}; "
         "t=str((d.get('tool_input') or {}).get('command') or ''); "
     )
+    # Record-only commits (v0.92.1): GSE-One's own bookkeeping — `.gse/` state and its sprint
+    # documents — may be committed on `main` (profile and intent before the first sprint, the
+    # delivery bookkeeping after the main merge). A commit is "record-only" when every path it
+    # would contain matches _RECORD_PATHS: the staged files, plus what a `git add` in the same
+    # command would stage, plus tracked modifications for `commit -a`. Anything else — or an
+    # empty set — stays blocked. Mirrored in the OpenCode adapter below.
     pre_bash_commit = (
         "python3 -c \""
         "import sys,json,os,re,subprocess; "
@@ -451,10 +469,25 @@ def _guardrail_commands() -> dict:
         "capture_output=True,text=True).stdout.strip() if c and not off else ''; "
         "init=bool(b=='main' and subprocess.run(['git','rev-parse','--verify','HEAD'],"
         "capture_output=True).returncode!=0); "
-        "(c and not off and not init and b=='main') and (print("
+        "chk=bool(c and not off and not init and b=='main'); "
+        "g=lambda *a: [x for x in subprocess.run(['git','-c','core.quotePath=false',*a],"
+        "capture_output=True,text=True).stdout.splitlines() if x] if chk else []; "
+        "st=g('diff','--cached','--name-only'); "
+        "po=g('status','--porcelain','--untracked-files=all'); "
+        "ch=[x[3:].split(' -> ')[-1] for x in po]; "
+        "A=[a.split() for a in re.findall(r'\\bgit\\s+add\\s+([^;&|\\n]*)',t)]; "
+        "aa=any(x in ('.','-A','--all','-u','--update') for a in A for x in a); "
+        "nm=[x.rstrip('/') for a in A for x in a if not x.startswith('-')]; "
+        "ad=ch if aa else [y for y in ch if any(y==n or y.startswith(n+'/') for n in nm)]; "
+        "ca=bool(re.search(r'\\bcommit\\b[^;&|\\n]*\\s(?:--all\\b|-[A-Za-z]*a[A-Za-z]*\\b)',t)); "
+        "tr=[x[3:].split(' -> ')[-1] for x in po if not x.startswith('??')] if ca else []; "
+        "S=set(st)|set(ad)|set(tr); "
+        "rec=bool(S) and all(re.match(r'" + _RECORD_PATHS_PY + "',y) for y in S); "
+        "(chk and not rec) and (print("
         "'GUARDRAIL: Direct commit to main detected. Use a feature branch. '"
-        "'(Sanctioned exceptions: hooks.protect_main: false or git.strategy: none "
-        "in .gse/config.yaml; repository-initialization commit.)'"
+        "'(Sanctioned exceptions: a record-only commit — every file under .gse/, docs/sprints/, '"
+        "'docs/archive/, docs/learning/, or docs/intent.md, docs/dashboard.html, docs/health-history.yaml, .gitignore; '"
+        "'hooks.protect_main: false or git.strategy: none in .gse/config.yaml; repository-initialization commit.)'"
         ",file=sys.stderr),sys.exit(2))"
         "\""
     )
@@ -760,9 +793,25 @@ export const GseGuardrails: Plugin = async ({{ directory }}: {{ directory: strin
             // Repository-initialization exception: no HEAD yet (foundational commit)
             const head = await $`git rev-parse --verify HEAD`.cwd(cwd).nothrow().quiet()
             if (head.exitCode === 0) {{
-              throw new Error(
-                "GUARDRAIL: Direct commit to main detected. Use a feature branch. (Sanctioned exceptions: hooks.protect_main: false or git.strategy: none in .gse/config.yaml; repository-initialization commit.)"
-              )
+              // Record-only exception: every file the commit would contain is a GSE-One record.
+              const lines = (text: string) => text.split("\\n").filter((x: string) => x)
+              const staged = lines(await $`git -c core.quotePath=false diff --cached --name-only`.cwd(cwd).nothrow().quiet().text())
+              const po = lines(await $`git -c core.quotePath=false status --porcelain --untracked-files=all`.cwd(cwd).nothrow().quiet().text())
+              const path = (x: string) => x.slice(3).split(" -> ").pop() as string
+              const changed = po.map(path)
+              const adds = [...cmd.matchAll(/\\bgit\\s+add\\s+([^;&|\\n]*)/g)].map((m: any) => m[1].split(/\\s+/).filter((x: string) => x))
+              const all = adds.some((a: string[]) => a.some((x: string) => [".", "-A", "--all", "-u", "--update"].includes(x)))
+              const names = adds.flat().filter((x: string) => !x.startsWith("-")).map((x: string) => x.replace(/\\/+$/, ""))
+              const added = all ? changed : changed.filter((y: string) => names.some((n: string) => y === n || y.startsWith(n + "/")))
+              const commitAll = /\\bcommit\\b[^;&|\\n]*\\s(?:--all\\b|-[A-Za-z]*a[A-Za-z]*\\b)/.test(cmd)
+              const tracked = commitAll ? po.filter((x: string) => !x.startsWith("??")).map(path) : []
+              const files = new Set([...staged, ...added, ...tracked])
+              const recordOnly = files.size > 0 && [...files].every((y: string) => {_RECORD_PATHS_TS}.test(y))
+              if (!recordOnly) {{
+                throw new Error(
+                  "GUARDRAIL: Direct commit to main detected. Use a feature branch. (Sanctioned exceptions: a record-only commit — every file under .gse/, docs/sprints/, docs/archive/, docs/learning/, or docs/intent.md, docs/dashboard.html, docs/health-history.yaml, .gitignore; hooks.protect_main: false or git.strategy: none in .gse/config.yaml; repository-initialization commit.)"
+                )
+              }}
             }}
           }}
         }}

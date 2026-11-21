@@ -79,6 +79,18 @@ for (const version of [1, 2]) describe(`OpenCode ${version}`, () => {
     await run("git commit -m allowed")
   })
 
+  test("allows a record-only commit on main and blocks one that carries code", async () => {
+    git("-c", "user.name=Test", "-c", "user.email=test@example.invalid", "commit", "--allow-empty", "-m", "fixture")
+    const write = (rel: string) => { mkdirSync(join(project, rel, ".."), { recursive: true }); writeFileSync(join(project, rel), "x") }
+    write(".gse/status.yaml"); write("docs/sprints/sprint-01/release.md"); write("docs/intent.md")
+    await run("git add .gse docs/sprints docs/intent.md && git commit -m bookkeeping")
+    await run("git add -A && git commit -m bookkeeping")
+    write("src/app.js")
+    await expect(run("git add -A && git commit -m mixed")).rejects.toThrow("record-only")
+    await expect(run("git add src/app.js && git commit -m code")).rejects.toThrow("Direct commit to main")
+    await run("git add .gse && git commit -m state-only")
+  })
+
   test("appends a model-visible warning using relative and absolute workdir", async () => {
     writeFileSync(join(project, ".gse/status.yaml"), "review_findings_open: 3\n")
     for (const workdir of [".", project]) {

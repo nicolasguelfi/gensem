@@ -175,6 +175,64 @@ class TestProtectMainHook(unittest.TestCase):
             res = _run_hook(self.cmd, "git commit -m x", self.dir)
             self.assertEqual(res.returncode, 0, f"{body!r}: {res.stderr}")
 
+    def _write(self, rel, text="x"):
+        f = self.dir / rel
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text(text)
+
+    def test_record_only_commit_allowed_on_main(self):
+        """v0.92.1: GSE-One bookkeeping (.gse/ state, sprint documents) may be committed on main."""
+        self._first_commit()
+        self._write(".gse/status.yaml", "a: 1\n")
+        self._write("docs/sprints/sprint-01/release.md")
+        self._write("docs/intent.md")
+        # staged beforehand
+        _git(self.dir, "add", ".gse", "docs")
+        res = _run_hook(self.cmd, "git commit -m 'gse(deliver): bookkeeping'", self.dir)
+        self.assertEqual(res.returncode, 0, res.stderr)
+        _git(self.dir, "reset", "-q")
+        # staged by the same command (named paths, and the catch-all forms)
+        for form in ("git add .gse docs/sprints docs/intent.md && git commit -m x",
+                     "git add .gse/ docs/ && git commit -m x",
+                     "git add -A && git commit -m x",
+                     "git add . && git commit -m x"):
+            res = _run_hook(self.cmd, form, self.dir)
+            self.assertEqual(res.returncode, 0, f"{form!r}: {res.stderr}")
+
+    def test_code_in_the_commit_still_blocked(self):
+        self._first_commit()
+        self._write(".gse/status.yaml")
+        self._write("src/app.js")
+        for form in ("git add -A && git commit -m x",            # catch-all picks up the code file
+                     "git add . && git commit -m x",
+                     "git add .gse src && git commit -m x",       # named code path
+                     "git add src/app.js && git commit -m x"):
+            res = _run_hook(self.cmd, form, self.dir)
+            self.assertEqual(res.returncode, 2, f"{form!r}: {res.stderr}")
+            self.assertIn("record-only", res.stderr)
+        _git(self.dir, "add", "src/app.js")                       # already staged code
+        res = _run_hook(self.cmd, "git add .gse && git commit -m x", self.dir)
+        self.assertEqual(res.returncode, 2, res.stderr)
+
+    def test_commit_all_includes_tracked_code(self):
+        self._first_commit()                                      # tracks file `f`
+        self._write(".gse/status.yaml")
+        _git(self.dir, "add", ".gse")
+        _git(self.dir, "commit", "--no-verify", "-q", "-m", "state")   # direct git call: not through the hook
+        self._write(".gse/status.yaml", "b: 2\n")
+        self._write("f", "changed")
+        for form in ("git commit -am x", "git commit -a -m x", "git commit --all -m x"):
+            res = _run_hook(self.cmd, form, self.dir)
+            self.assertEqual(res.returncode, 2, f"{form!r}: {res.stderr}")
+        _git(self.dir, "checkout", "--", "f")
+        res = _run_hook(self.cmd, "git commit -am x", self.dir)  # only .gse/ modified
+        self.assertEqual(res.returncode, 0, res.stderr)
+
+    def test_nothing_to_commit_stays_blocked(self):
+        self._first_commit()
+        res = _run_hook(self.cmd, "git add .gse && git commit -m x", self.dir)
+        self.assertEqual(res.returncode, 2, res.stderr)
+
     def test_allows_non_commit(self):
         self._first_commit()
         res = _run_hook(self.cmd, "git log --oneline", self.dir)

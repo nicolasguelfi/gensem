@@ -21,7 +21,7 @@ Hooks are not optional conveniences; they are the enforcement mechanism for the 
 
    | Hook | Trigger | Action | Level | Principle Enforced |
    |------|---------|--------|-------|--------------------|
-   | **Protect main** | `git commit` on `main` branch (any form, incl. chained `&& git commit` and `git -C . commit`) | Block the commit, send feedback to agent. Sanctioned exceptions: `hooks.protect_main: false`, `git.strategy: none` (Micro mode), repository-initialization commit | **Hard** (exit 2) | P12 (version control) |
+   | **Protect main** | `git commit` on `main` branch (any form, incl. chained `&& git commit` and `git -C . commit`) | Block the commit, send feedback to agent. Sanctioned exceptions: a **record-only commit** (every file under `.gse/`, `docs/sprints/`, `docs/archive/`, `docs/learning/`, or one of `docs/intent.md`, `docs/dashboard.html`, `docs/health-history.yaml`, `.gitignore` — GSE-One's own bookkeeping: profile and intent before the first sprint, delivery bookkeeping after the main merge; the hook checks the staged files, what a `git add` in the same command would stage, and tracked changes for `commit -a`; an empty set stays blocked); `hooks.protect_main: false`, `git.strategy: none` (Micro mode), repository-initialization commit | **Hard** (exit 2) | P12 (version control) |
    | **Block force-push** | any force push: `-f` / `--force` / `--force-with-lease`, flag in any position | Block the push, send feedback to agent | **Emergency** (exit 2) | P12 (version control) |
    | **Review findings on push** | `git push` (any form) | Warn if `review_findings_open > 0` in `status.yaml` | Soft (warn-only, exit 0) | P11 (guardrails), P6 (traceability) |
 

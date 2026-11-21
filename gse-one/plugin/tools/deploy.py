@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# @gse-tool deploy 1.0
+# @gse-tool deploy 1.1
 """
 GSE-One /gse:deploy orchestrator.
 
@@ -31,7 +31,7 @@ from typing import Any, Optional
 _HERE = Path(__file__).resolve().parent
 if str(_HERE) not in sys.path:
     sys.path.insert(0, str(_HERE))
-from coolify_client import CoolifyClient, CoolifyError  # noqa: E402
+from coolify_client import CoolifyClient, CoolifyError, error_details  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -103,6 +103,7 @@ def _empty_state() -> dict:
             "name": "",
             "id": None,
             "ipv4": "",
+            "ipv6": "",
             "type": "cax21",
             "datacenter": "fsn1",
         },
@@ -373,10 +374,17 @@ def record_phase(phase_name: str) -> dict:
 
 
 def record_server(
-    name: str, ipv4: str, id_: Optional[int], type_: str, datacenter: str
+    name: str,
+    ipv4: str,
+    id_: Optional[int],
+    type_: str,
+    datacenter: str,
+    ipv6: str = "",
 ) -> dict:
     """Persist the provisioned Hetzner server block in state (called at the end of Phase 2 —
-    provision). Returns status-wrapped dict: {"status": "ok" | "error", "server": {...}}."""
+    provision). `ipv6` (optional, as reported by hcloud, e.g. `2a01:…::/64`) feeds the
+    optional AAAA records of Phase 5. Returns status-wrapped dict:
+    {"status": "ok" | "error", "server": {...}}."""
     if not name or not ipv4:
         return {
             "status": "error",
@@ -387,6 +395,7 @@ def record_server(
         "name": name,
         "id": id_,
         "ipv4": ipv4,
+        "ipv6": ipv6 or "",
         "type": type_,
         "datacenter": datacenter,
     }
@@ -665,7 +674,23 @@ def deploy_app(
         source_type, github_app_uuid = _select_app_source(env)
         server_uuid = (env.get("SERVER_UUID") or "").strip() or None
 
-        if existing and existing.get("coolify", {}).get("app_uuid"):
+        # 4b. Not in local state: adopt a same-name app already present in
+        # THIS project's environment (e.g. created by a previous run that
+        # failed before saving state) instead of creating a duplicate.
+        adopted_uuid = None
+        if not (existing and existing.get("coolify", {}).get("app_uuid")):
+            for candidate in client.list_environment_applications(
+                project.uuid, "production"
+            ):
+                if candidate.name == name and candidate.uuid:
+                    adopted_uuid = candidate.uuid
+                    break
+
+        if adopted_uuid:
+            app_uuid = adopted_uuid
+            client.trigger_deploy(app_uuid, force=True)
+            created = False
+        elif existing and existing.get("coolify", {}).get("app_uuid"):
             app_uuid = existing["coolify"]["app_uuid"]
             server_uuid = (
                 existing.get("coolify", {}).get("server_uuid") or server_uuid
@@ -746,7 +771,8 @@ def deploy_app(
             "http_code": health.get("http_code"),
         }
     except CoolifyError as e:
-        return {"status": "error", "error": str(e), "http_status": e.status}
+        return {"status": "error", "error": str(e), "http_status": e.status,
+                "details": error_details(e.body)}
 
 
 def _find_application(state: dict, name: str) -> Optional[dict]:
@@ -801,12 +827,356 @@ def app_status(name: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# App logs (runtime logs of the user's own deployed application)
+# ---------------------------------------------------------------------------
+
+
+DEFAULT_LOG_LINES = 100
+MAX_LOG_LINES = 5000
+
+
+def _redact(text: str, secrets: list) -> str:
+    """Replace every non-empty secret value occurring in `text` by '***'."""
+    for secret in secrets:
+        if secret and len(secret) >= 4:
+            text = text.replace(secret, "***")
+    return text
+
+
+def _own_scope(env: dict) -> dict:
+    """Describe whose apps this project may read: training (DEPLOY_USER set)
+    → only the `gse-<user>` Coolify project; solo → the `gse` project."""
+    raw_user = (env.get("DEPLOY_USER") or "").strip()
+    user = sanitize_component(raw_user) if raw_user else ""
+    return {
+        "training": bool(user),
+        "user": user,
+        "coolify_project": f"gse-{raw_user}" if raw_user else "gse",
+    }
+
+
+def _default_app_name(scope: dict, project_dir: Optional[str]) -> str:
+    """Name `deploy-app` gives this project's app: the subdomain label
+    `{project}` (solo) or `{project}-{user}` (training)."""
+    project = sanitize_component(Path(project_dir or Path.cwd()).name)
+    if not project:
+        return ""
+    return f"{project}-{scope['user']}" if scope["training"] else project
+
+
+def _resolve_own_application(
+    client: Any,
+    env: dict,
+    state: dict,
+    name: Optional[str] = None,
+    project_dir: Optional[str] = None,
+) -> dict:
+    """Find the Coolify app of THIS project for THIS user (status-wrapped).
+
+    Order: `.gse/deploy.json → applications[]` entries owned by the current
+    user (training: matching `deploy_user`; solo: no `deploy_user`) → API
+    lookup restricted to the user's own Coolify project (`gse-<user>` or
+    `gse`), environment `production`. Never enumerates the applications of
+    other projects: in training mode, other learners' apps stay unread.
+    """
+    scope = _own_scope(env)
+    if scope["training"] and name and not name.endswith(f"-{scope['user']}"):
+        return {
+            "status": "error",
+            "error": (
+                f"'{name}' is not one of your apps: in training mode you can "
+                f"only read apps named '<project>-{scope['user']}'."
+            ),
+        }
+    target = name or _default_app_name(scope, project_dir)
+
+    def _owned(entry: dict) -> bool:
+        entry_user = sanitize_component(entry.get("deploy_user") or "")
+        return entry_user == scope["user"]
+
+    owned = [
+        a for a in state.get("applications", [])
+        if _owned(a) and (a.get("coolify") or {}).get("app_uuid")
+    ]
+    match = next((a for a in owned if a.get("name") == target), None)
+    if match is None and not name and len(owned) == 1:
+        match = owned[0]
+    if match is None and not name and len(owned) > 1:
+        return {
+            "status": "error",
+            "error": (
+                "several of your apps are recorded; pick one with --name: "
+                + ", ".join(sorted(a.get("name", "?") for a in owned))
+            ),
+        }
+    if match is not None:
+        return {
+            "status": "ok",
+            "name": match.get("name", ""),
+            "app_uuid": match["coolify"]["app_uuid"],
+            "url": match.get("url", ""),
+            "source": "state",
+        }
+
+    if not target:
+        return {
+            "status": "error",
+            "error": "cannot derive the app name from the project directory — pass --name",
+        }
+    # Fallback (e.g. state lost, other machine): look only inside the
+    # user's own Coolify project.
+    project = client.find_project_by_name(scope["coolify_project"])
+    if project is None:
+        return {
+            "status": "not_deployed",
+            "error": (
+                f"no deployed app found for this project (Coolify project "
+                f"'{scope['coolify_project']}' does not exist yet)."
+            ),
+        }
+    for app in client.list_environment_applications(project.uuid, "production"):
+        if app.name == target and app.uuid:
+            return {
+                "status": "ok",
+                "name": app.name,
+                "app_uuid": app.uuid,
+                "url": app.fqdn,
+                "source": "coolify",
+            }
+    return {
+        "status": "not_deployed",
+        "error": (
+            f"no app named '{target}' in your Coolify project "
+            f"'{scope['coolify_project']}' — it has not been deployed yet."
+        ),
+    }
+
+
+def _logs_error(e: CoolifyError, scope: dict) -> dict:
+    """Map a Coolify API error to a beginner-friendly, token-free message."""
+    who = (
+        "ask your instructor for a fresh .env.training (the course token may "
+        "have been revoked)"
+        if scope["training"]
+        else "create a new token in Coolify (Keys & Tokens) and store it with "
+        "`deploy.py env-set COOLIFY_API_TOKEN --stdin`"
+    )
+    if e.status == 401:
+        return {
+            "status": "error",
+            "http_status": 401,
+            "error": f"Coolify rejected the API token (401). Fix: {who}.",
+        }
+    if e.status == 403:
+        return {
+            "status": "error",
+            "http_status": 403,
+            "error": (
+                "the API token is not allowed to read logs (403): Coolify "
+                "requires the 'read:sensitive' permission. Fix: "
+                + (
+                    "ask your instructor for a token with that permission."
+                    if scope["training"]
+                    else "create a token with 'read:sensitive' in Coolify "
+                    "(Keys & Tokens) and store it with `deploy.py env-set "
+                    "COOLIFY_API_TOKEN --stdin`."
+                )
+            ),
+        }
+    if e.status in (400, 404):
+        body = (e.body or "").lower()
+        if "application not found" in body:
+            return {
+                "status": "not_found",
+                "http_status": e.status,
+                "error": (
+                    "this app no longer exists in Coolify (deleted or reaped). "
+                    "Re-run /gse:deploy to recreate it."
+                ),
+            }
+        return {
+            "status": "not_running",
+            "http_status": e.status,
+            "error": (
+                "your app has no running container, so there are no runtime "
+                "logs yet: it is still building, its build failed, or it "
+                "crashed and stopped. Wait a minute and retry; if it persists, "
+                "re-run /gse:deploy --redeploy and read the logs right after."
+            ),
+        }
+    if e.status == 0:
+        return {
+            "status": "error",
+            "http_status": 0,
+            "error": "cannot reach the Coolify server (network or URL issue).",
+        }
+    return {
+        "status": "error",
+        "http_status": e.status,
+        "error": f"Coolify API error {e.status}: {e.message}",
+    }
+
+
+def app_logs(
+    lines: int = DEFAULT_LOG_LINES,
+    name: Optional[str] = None,
+    project_dir: Optional[str] = None,
+) -> dict:
+    """Fetch the last `lines` runtime log lines of this project's own app.
+
+    Status-wrapped: ``{"status": "ok", name, app_uuid, url, lines, logs}`` or
+    ``{"status": "not_deployed" | "not_found" | "not_running" | "error",
+    "error": ..., ["http_status": N]}``. The Coolify token is never part of
+    the result (redacted even if it appears in the log text).
+    """
+    if not isinstance(lines, int) or lines < 1 or lines > MAX_LOG_LINES:
+        return {
+            "status": "error",
+            "error": f"--lines must be between 1 and {MAX_LOG_LINES}",
+        }
+    env = parse_env()
+    coolify_url = env.get("COOLIFY_URL")
+    coolify_token = env.get("COOLIFY_API_TOKEN")
+    if not coolify_url or not coolify_token:
+        return {
+            "status": "error",
+            "error": "missing COOLIFY_URL or COOLIFY_API_TOKEN in .env",
+        }
+    scope = _own_scope(env)
+    state = load_state()
+    client = CoolifyClient(coolify_url, coolify_token)
+    try:
+        resolved = _resolve_own_application(
+            client, env, state, name=name, project_dir=project_dir
+        )
+        if resolved["status"] != "ok":
+            return resolved
+        text = client.get_application_logs(resolved["app_uuid"], lines)
+    except CoolifyError as e:
+        result = _logs_error(e, scope)
+        result["error"] = _redact(result["error"], [coolify_token])
+        return result
+    return {
+        "status": "ok",
+        "name": resolved["name"],
+        "app_uuid": resolved["app_uuid"],
+        "url": resolved.get("url", ""),
+        "lines": lines,
+        "logs": _redact(text, [coolify_token]),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Coolify localhost-server validation (Phase 4 — install Coolify)
+# ---------------------------------------------------------------------------
+
+
+def _server_reachable(record: dict) -> bool:
+    """True when Coolify reports the server reachable (top-level field on
+    recent versions, `settings.is_reachable` on older ones)."""
+    if record.get("is_reachable") is True:
+        return True
+    settings = record.get("settings")
+    return isinstance(settings, dict) and settings.get("is_reachable") is True
+
+
+def validate_server(
+    timeout_seconds: int = 180, poll_interval: int = 10, install: bool = False
+) -> dict:
+    """Check the Coolify API is usable, then validate the Coolify host server.
+
+    Coolify only starts its Traefik proxy (`coolify-proxy`) once its own
+    host server validates, i.e. once Coolify can SSH into the host as root
+    from its Docker network. Steps: GET /version (detects API disabled or
+    bad token), resolve the server UUID (`_resolve_server_uuid`, persisted
+    as SERVER_UUID), POST /servers/{uuid}/validate, then poll
+    GET /servers/{uuid} until reachable. Status-wrapped, token-free.
+    """
+    env = parse_env()
+    url = env.get("COOLIFY_URL")
+    token = env.get("COOLIFY_API_TOKEN")
+    if not url or not token:
+        return {
+            "status": "error",
+            "error": "COOLIFY_URL and COOLIFY_API_TOKEN must be set in .env",
+        }
+    client = CoolifyClient(url, token)
+    try:
+        version = client.get_version()
+    except CoolifyError as e:
+        if e.status == 401:
+            hint = "the API token was rejected (401): create a new one in Keys & Tokens"
+        elif e.status == 403:
+            hint = (
+                "API access refused (403): on self-hosted Coolify the API is "
+                "disabled by default — enable it in Settings > Advanced > "
+                "API access (and check 'Allowed API IPs')"
+            )
+        else:
+            hint = f"Coolify API error {e.status}: {e.message}"
+        return {"status": "error", "http_status": e.status, "error": hint}
+
+    resolved = _resolve_server_uuid(client, env, required=True)
+    if resolved.get("status") != "ok":
+        return {**resolved, "coolify_version": version}
+    uuid = resolved["server_uuid"]
+
+    try:
+        client.validate_server(uuid, install=install)
+    except CoolifyError as e:
+        return {
+            "status": "error",
+            "http_status": e.status,
+            "coolify_version": version,
+            "server_uuid": uuid,
+            "error": (
+                f"server validation request failed ({e.status}: {e.message}); "
+                "the token needs the 'write' and 'deploy' permissions"
+            ),
+        }
+
+    deadline = time.monotonic() + max(0, timeout_seconds)
+    while True:
+        try:
+            if _server_reachable(client.get_server(uuid)):
+                return {
+                    "status": "ok",
+                    "server_uuid": uuid,
+                    "coolify_version": version,
+                    "reachable": True,
+                }
+        except CoolifyError:
+            pass
+        if time.monotonic() >= deadline:
+            break
+        time.sleep(poll_interval)
+    return {
+        "status": "timeout",
+        "server_uuid": uuid,
+        "coolify_version": version,
+        "reachable": False,
+        "error": (
+            "Coolify cannot SSH into its own host as root. Check on the "
+            "server: `sudo sshd -T -C user=root,host=localhost,addr=10.0.0.2 "
+            "| grep permitrootlogin` must say prohibit-password (deploy.md "
+            "Phase 3 Step 3 — Harden SSH), and `sudo fail2ban-client status "
+            "sshd` must not list a 10.x/172.x Docker address (Phase 3 Step 5 "
+            "— Install fail2ban)."
+        ),
+    }
+
+
+# ---------------------------------------------------------------------------
 # Destroy
 # ---------------------------------------------------------------------------
 
 
+# EUR/month excl. VAT incl. primary IPv4. CAX/CX23-53 re-verified 2026-11-21
+# (hetzner.com/cloud/cost-optimized); CX22-52 (legacy names) and CCX not
+# re-verified — the Phase 2 Gate shows the live hcloud price anyway.
 _COST_PER_TYPE_EUR = {
-    "cax11": 4.49, "cax21": 8.49, "cax31": 16.49, "cax41": 31.99,
+    "cax11": 6.49, "cax21": 10.99, "cax31": 21.49, "cax41": 41.49,
+    "cx23": 5.99, "cx33": 8.99, "cx43": 16.49, "cx53": 29.99,
     "cx22": 5.09, "cx32": 9.09, "cx42": 21.49, "cx52": 42.49,
     "ccx13": 12.49, "ccx23": 24.49, "ccx33": 48.49,
     "ccx43": 96.49, "ccx53": 191.99,
@@ -1380,6 +1750,9 @@ def training_init(output_path: str = ".env.training") -> dict:
         "# Distribute to learners alongside /gse:deploy usage instructions.\n"
         "# NEVER commit .env to git (learners should keep this local).\n"
         "#\n"
+        "# The token must carry Coolify's 'read:sensitive' permission (or\n"
+        "# 'root'), otherwise /gse:deploy --logs answers 403.\n"
+        "#\n"
         "# WARNING: COOLIFY_API_TOKEN grants full access to the Coolify\n"
         "# instance. If you don't trust participants, generate a dedicated\n"
         "# token in Coolify Keys & Tokens and replace it below. Revoke\n"
@@ -1404,6 +1777,36 @@ def training_init(output_path: str = ".env.training") -> dict:
         "optional_keys": optional_keys,
         "learners_can_deploy_at": f"{{project}}-{{DEPLOY_USER}}.{domain}",
     }
+
+
+REAP_EMPTY_WAIT_SECONDS = 90
+REAP_POLL_SECONDS = 5
+
+
+def _reap_project(client, project, deleted_apps: list[str]) -> None:
+    """Delete every application of a learner project, then the project.
+
+    Coolify refuses to delete a non-empty project (400 "Project has
+    resources") and deletes applications asynchronously (a queued job), so
+    the project deletion is retried until the jobs have emptied it.
+    Databases or services added by hand are not removed: the final 400 then
+    names the project, for manual cleanup in the Coolify UI.
+    """
+    for env_obj in client.list_environments(project.uuid):
+        for app in client.list_environment_applications(
+            project.uuid, env_obj.name
+        ):
+            client.delete_application(app.uuid)
+            deleted_apps.append(f"{project.name}/{app.name}")
+    deadline = time.monotonic() + REAP_EMPTY_WAIT_SECONDS
+    while True:
+        try:
+            client.delete_project(project.uuid)
+            return
+        except CoolifyError as e:
+            if e.status != 400 or time.monotonic() >= deadline:
+                raise
+            time.sleep(REAP_POLL_SECONDS)
 
 
 def training_reap(
@@ -1463,13 +1866,15 @@ def training_reap(
         }
 
     deleted: list[str] = []
+    deleted_apps: list[str] = []
     errors: list[str] = []
     for p in targets:
         try:
-            client.delete_project(p.uuid)
+            _reap_project(client, p, deleted_apps)
             deleted.append(p.name)
         except CoolifyError as e:
-            errors.append(f"{p.name}: {e}")
+            reason = error_details(e.body)
+            errors.append(f"{p.name}: {e}" + (f" — {reason}" if reason else ""))
 
     # Sync state: drop applications[] entries whose deploy_user matches
     state = load_state()
@@ -1485,6 +1890,7 @@ def training_reap(
     return {
         "status": "ok" if not errors else "partial",
         "deleted_projects": deleted,
+        "deleted_applications": deleted_apps,
         "errors": errors,
     }
 
@@ -1567,8 +1973,35 @@ def _cmd_env_get(args: argparse.Namespace) -> None:
     _json_out({"key": args.key, "value": value, "present": args.key in env})
 
 
+def _read_value_from_stdin(key: str) -> str:
+    """Read one value from stdin without putting it on the command line.
+
+    Interactive terminal → hidden prompt (getpass, no echo); pipe → first
+    line. Keeps secrets out of the process list (`ps`) and shell history."""
+    if sys.stdin is None:
+        return ""
+    if sys.stdin.isatty():
+        import getpass
+
+        return getpass.getpass(f"{key} (input hidden): ").strip()
+    return sys.stdin.readline().rstrip("\r\n").strip()
+
+
 def _cmd_env_set(args: argparse.Namespace) -> None:
-    set_env(args.key, args.value)
+    if args.stdin and args.value is not None:
+        _err("env-set: give the value either as argument or via --stdin, not both")
+    if args.stdin:
+        value = _read_value_from_stdin(args.key)
+        if not value:
+            _err(f"env-set --stdin: empty value for {args.key} (nothing written)")
+    elif args.value is None:
+        _err(
+            "env-set: missing value — pass it as argument, or use --stdin "
+            "for secrets (tokens) so they never appear in the process list"
+        )
+    else:
+        value = args.value
+    set_env(args.key, value)
     _json_out({"status": "ok", "key": args.key})
 
 
@@ -1591,6 +2024,7 @@ def _cmd_record_server(args: argparse.Namespace) -> None:
         id_=args.id,
         type_=args.type,
         datacenter=args.datacenter,
+        ipv6=args.ipv6 or "",
     )
     _json_out(result)
     if result.get("status") != "ok":
@@ -1663,6 +2097,37 @@ def _cmd_app_status(args: argparse.Namespace) -> None:
     _json_out(app_status(args.name))
 
 
+def _cmd_logs(args: argparse.Namespace) -> None:
+    result = app_logs(lines=args.lines, name=args.name or None)
+    if args.json:
+        _json_out(result)
+    elif result.get("status") == "ok":
+        logs = result.get("logs") or ""
+        print(
+            f"=== Last {result['lines']} log lines of {result['name']}"
+            + (f" ({result['url']})" if result.get("url") else "")
+            + " ==="
+        )
+        print(
+            logs.rstrip("\n")
+            if logs.strip()
+            else "(the app is running but has not written any log line yet)"
+        )
+    else:
+        sys.stderr.write(f"{result.get('status')}: {result.get('error')}\n")
+    if result.get("status") != "ok":
+        sys.exit(6)
+
+
+def _cmd_validate_server(args: argparse.Namespace) -> None:
+    result = validate_server(
+        timeout_seconds=args.timeout, install=args.install
+    )
+    _json_out(result)
+    if result.get("status") != "ok":
+        sys.exit(7)
+
+
 def _cmd_destroy(args: argparse.Namespace) -> None:
     if not args.dry_run and not args.confirm:
         _err("--confirm is required unless --dry-run is set")
@@ -1718,7 +2183,13 @@ def _build_parser() -> argparse.ArgumentParser:
 
     p_es = sub.add_parser("env-set", help="Write .env key=value")
     p_es.add_argument("key")
-    p_es.add_argument("value")
+    p_es.add_argument("value", nargs="?", default=None)
+    p_es.add_argument(
+        "--stdin",
+        action="store_true",
+        help="Read the value from stdin (hidden prompt on a terminal) — use "
+        "for secrets so they never appear on the command line",
+    )
 
     p_ed = sub.add_parser("env-delete", help="Delete .env key")
     p_ed.add_argument("key")
@@ -1732,6 +2203,7 @@ def _build_parser() -> argparse.ArgumentParser:
     p_rs.add_argument("--id", type=int, default=None)
     p_rs.add_argument("--type", required=True)
     p_rs.add_argument("--datacenter", required=True)
+    p_rs.add_argument("--ipv6", default="", help="IPv6 (net) for AAAA records")
 
     p_rc = sub.add_parser("record-coolify", help="Update coolify block")
     p_rc.add_argument("--url", required=True)
@@ -1784,6 +2256,36 @@ def _build_parser() -> argparse.ArgumentParser:
 
     p_as = sub.add_parser("app-status", help="Live health check of a recorded app")
     p_as.add_argument("name")
+
+    p_logs = sub.add_parser(
+        "logs",
+        help="Print the last runtime log lines of this project's own app",
+    )
+    p_logs.add_argument(
+        "--lines",
+        type=int,
+        default=DEFAULT_LOG_LINES,
+        help=f"Number of lines (default {DEFAULT_LOG_LINES}, max {MAX_LOG_LINES})",
+    )
+    p_logs.add_argument(
+        "--name",
+        default=None,
+        help="App name (default: derived from the project dir + DEPLOY_USER)",
+    )
+    p_logs.add_argument(
+        "--json", action="store_true", help="Status-wrapped JSON output"
+    )
+
+    p_vs = sub.add_parser(
+        "validate-server",
+        help="Check the Coolify API and validate Coolify's own host server",
+    )
+    p_vs.add_argument("--timeout", type=int, default=180)
+    p_vs.add_argument(
+        "--install",
+        action="store_true",
+        help="Let Coolify install missing prerequisites (sends install=true)",
+    )
 
     p_destroy = sub.add_parser(
         "destroy",
@@ -1854,6 +2356,8 @@ _COMMANDS = {
     "preflight": _cmd_preflight,
     "deploy-app": _cmd_deploy_app,
     "app-status": _cmd_app_status,
+    "logs": _cmd_logs,
+    "validate-server": _cmd_validate_server,
     "destroy": _cmd_destroy,
     "training-init": _cmd_training_init,
     "training-reap": _cmd_training_reap,

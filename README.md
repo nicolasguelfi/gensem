@@ -534,7 +534,7 @@ GSE-One includes `/gse:deploy` — a single-command deployment flow that provisi
 
 **Just run `/gse:deploy`.** On first use, the command displays a Step -1 Orientation menu and asks whether you are:
 
-- **Solo** — deploying your own project to your own server (~1h setup, ~8.49 EUR/month)
+- **Solo** — deploying your own project to your own server (~1h setup, ~11 EUR/month for the default CAX21 server)
 - **Instructor** — preparing a shared training server, then distributing `.env.training` to learners (~1h setup)
 - **Learner** — your instructor sent you a `.env.training` file (~5 min to deploy your app)
 - **Skip** — experienced user, proceed directly to detection

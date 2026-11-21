@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# @gse-tool coolify_client 1.0
+# @gse-tool coolify_client 1.2
 """
 Coolify API v1 HTTP client for GSE-One /gse:deploy.
 
@@ -33,6 +33,49 @@ class CoolifyError(Exception):
         self.message = message
         self.body = body
         super().__init__(f"[{status}] {message}")
+
+
+def public_repository_url(repo: str) -> str:
+    """Return a clone URL Coolify accepts for `/applications/public`.
+
+    Coolify 4.7 rejects the `owner/repo` slug on that endpoint (422: the
+    repository must start with https://, http://, git://, ssh:// or be an
+    SSH URL). A bare slug is expanded to its github.com HTTPS URL; any
+    value already carrying a scheme or an SSH form is returned unchanged.
+    """
+    value = repo.strip()
+    if "://" in value or "@" in value:
+        return value
+    slug = value.strip("/")
+    if slug.endswith(".git"):
+        slug = slug[:-4]
+    return f"https://github.com/{slug}"
+
+
+def error_details(body: Optional[str], limit: int = 600) -> Optional[str]:
+    """Extract a short, human-readable reason from a Coolify error body.
+
+    Coolify validation errors carry `{"message": ..., "errors": {field: [..]}}`;
+    the field messages are what the user needs. Falls back to the raw body,
+    truncated. Coolify error bodies never echo the bearer token.
+    """
+    if not body:
+        return None
+    try:
+        data = json.loads(body)
+    except (json.JSONDecodeError, TypeError):
+        return body[:limit]
+    if isinstance(data, dict):
+        errors = data.get("errors")
+        if isinstance(errors, dict) and errors:
+            parts = []
+            for field, msgs in errors.items():
+                text = "; ".join(msgs) if isinstance(msgs, list) else str(msgs)
+                parts.append(f"{field}: {text}")
+            return " | ".join(parts)[:limit]
+        if data.get("message"):
+            return str(data["message"])[:limit]
+    return body[:limit]
 
 
 # ---------------------------------------------------------------------------
@@ -232,6 +275,25 @@ class CoolifyClient:
             )
         return envs
 
+    def list_environment_applications(
+        self, project_uuid: str, environment_name: str
+    ) -> list[CoolifyApplication]:
+        """Return the applications of ONE environment of ONE project.
+
+        GET /projects/{uuid}/{environment_name_or_uuid} returns the
+        environment with its `applications` relation. Used to resolve an
+        app scoped to a single project (training mode: the learner's own
+        `gse-<user>` project) without listing every application visible to
+        a shared token.
+        """
+        data = self._request(
+            "GET",
+            f"/projects/{urllib.parse.quote(project_uuid, safe='')}/"
+            f"{urllib.parse.quote(environment_name, safe='')}",
+        )
+        apps = data.get("applications", []) if isinstance(data, dict) else []
+        return [self._to_application(a) for a in apps or []]
+
     def find_environment_by_name(
         self, project_uuid: str, name: str
     ) -> Optional[CoolifyEnvironment]:
@@ -279,6 +341,43 @@ class CoolifyClient:
         data = self._request("GET", "/servers")
         return data if isinstance(data, list) else []
 
+    def get_server(self, uuid: str) -> dict:
+        """Return the raw server record (GET /servers/{uuid})."""
+        data = self._request(
+            "GET", f"/servers/{urllib.parse.quote(uuid, safe='')}"
+        )
+        return data if isinstance(data, dict) else {}
+
+    def validate_server(self, uuid: str, install: bool = False) -> dict:
+        """Ask Coolify to validate (SSH-check) a server and start its proxy.
+
+        POST /servers/{uuid}/validate with {"install": bool} (Coolify 4.7+,
+        verified 2026-11-21 against coolify-docs api/permissions; needs the
+        `write` + `deploy` permissions). Older versions only exposed GET and
+        recent ones answer 405 on GET, so a 405 on POST falls back to GET.
+        The validation itself runs asynchronously: poll get_server().
+        """
+        path = f"/servers/{urllib.parse.quote(uuid, safe='')}/validate"
+        try:
+            data = self._request("POST", path, json_body={"install": bool(install)})
+        except CoolifyError as e:
+            if e.status != 405:
+                raise
+            data = self._request("GET", path)
+        return data if isinstance(data, dict) else {}
+
+    def get_version(self) -> str:
+        """Return the Coolify version string (GET /version, authenticated).
+
+        A 403 here usually means API access is disabled instance-wide
+        (self-hosted default: Settings > Advanced > API access)."""
+        data = self._request("GET", "/version")
+        if isinstance(data, str):
+            return data.strip().strip('"')
+        if isinstance(data, dict):
+            return str(data.get("version", ""))
+        return ""
+
     # -------------------------------------------------------------------
     # Applications
     # -------------------------------------------------------------------
@@ -313,7 +412,7 @@ class CoolifyClient:
         git_branch: str,
         ports_exposes: str,
         fqdn: str,
-        dockerfile_location: str = "./Dockerfile",
+        dockerfile_location: str = "/Dockerfile",
         build_pack: str = "dockerfile",
         server_uuid: Optional[str] = None,
     ) -> CoolifyApplication:
@@ -325,7 +424,8 @@ class CoolifyClient:
         `create_private_github_app_application` instead.
         """
         payload = self._app_payload(
-            project_uuid, environment_name, name, git_repository,
+            project_uuid, environment_name, name,
+            public_repository_url(git_repository),
             git_branch, ports_exposes, fqdn, dockerfile_location,
             build_pack, server_uuid,
         )
@@ -342,7 +442,7 @@ class CoolifyClient:
         fqdn: str,
         github_app_uuid: str,
         server_uuid: str,
-        dockerfile_location: str = "./Dockerfile",
+        dockerfile_location: str = "/Dockerfile",
         build_pack: str = "dockerfile",
     ) -> CoolifyApplication:
         """Create an application from a private repository via a GitHub App.
@@ -432,16 +532,51 @@ class CoolifyClient:
         return self._request("POST", f"/applications/{uuid}/restart") or {}
 
     def trigger_deploy(self, uuid: str, force: bool = False) -> dict:
-        """GET /deploy?uuid=...&force=true — forces a rebuild even on the same commit."""
+        """POST /deploy?uuid=...&force=true — forces a rebuild even on the same commit.
+
+        Coolify 4.7 answers 405 ("This endpoint has changed to a POST
+        request") to the historical GET form; GET is kept only as a
+        fallback for older instances that answer 405 to POST.
+        """
         query = {"uuid": uuid}
         if force:
             query["force"] = "true"
-        return self._request("GET", "/deploy", query=query) or {}
+        try:
+            return self._request("POST", "/deploy", query=query) or {}
+        except CoolifyError as e:
+            if e.status != 405:
+                raise
+            return self._request("GET", "/deploy", query=query) or {}
 
     def get_deployment_status(self, uuid: str) -> dict:
         """Return the status payload of a deployment by UUID."""
         app = self.get_application(uuid)
         return {"uuid": uuid, "status": app.status, "fqdn": app.fqdn}
+
+    # -------------------------------------------------------------------
+    # Runtime logs
+    # -------------------------------------------------------------------
+
+    def get_application_logs(self, uuid: str, lines: int = 100) -> str:
+        """Return the last `lines` lines of the application's running container.
+
+        GET /applications/{uuid}/logs?lines=N (Coolify v4 API v1, verified
+        2026-11-21 against coollabsio/coolify ApplicationsController and
+        coolify-docs). Response: {"logs": "<text>"}. Requires a token with
+        the `read:sensitive` permission (else 403). Coolify answers 404
+        (recent versions) or 400 (older ones) when no container is running.
+        """
+        data = self._request(
+            "GET",
+            f"/applications/{urllib.parse.quote(uuid, safe='')}/logs",
+            query={"lines": int(lines)},
+        )
+        if isinstance(data, dict):
+            logs = data.get("logs")
+            return logs if isinstance(logs, str) else ""
+        if isinstance(data, str):
+            return data
+        return ""
 
     # -------------------------------------------------------------------
     # Helpers

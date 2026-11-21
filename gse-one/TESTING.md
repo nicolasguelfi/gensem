@@ -89,13 +89,18 @@ Run this checklist when modifying: `destroy`, `deploy_app`, `training_init`,
       (hcloud install, token paste, domain)
 - [ ] Phase 2: server created (`cax21`, `fsn1`), firewall applied, SSH works as
       `root`
-- [ ] Phase 3: `deploy` user created, SSH hardened (root disabled), UFW active,
-      `ufw-docker` installed, fail2ban running, unattended-upgrades set
-- [ ] Phase 4: Coolify installed, admin account created, API token obtained
-      (pasted back in chat), containers `coolify`, `coolify-proxy`, `coolify-db`
-      running
+- [ ] Phase 3: `deploy` user created, SSH hardened (`sshd -T`: root `no`
+      globally, `prohibit-password` for `addr=10.0.0.2`), UFW active, fail2ban
+      running with Docker networks in `ignoreip`, unattended-upgrades set
+      without any interactive prompt
+- [ ] Phase 4: Coolify installed, `ufw-docker` installed (pinned hash OK) with
+      route rules — 8000 still reachable from outside, admin account created,
+      API access enabled, token (`root` or incl. `read:sensitive`) stored via
+      `env-set --stdin`, `validate-server` → `ok`, containers `coolify`,
+      `coolify-db`, `coolify-redis`, `coolify-proxy` running
 - [ ] Phase 5: DNS records configured (verify for at least one registrar),
-      `wait-dns` resolves, SSL active on `coolify.<domain>`, port 8000 closed.
+      `wait-dns` resolves, SSL active on `coolify.<domain>`, port 8000 closed
+      (ufw rule, `ufw route` 8080 rule and Hetzner rule all removed).
       Decline Cloudflare CDN proposal.
 - [ ] Phase 6: preflight passes (or warnings accepted), Dockerfile generated
       (`Dockerfile.streamlit` for Streamlit), Coolify project `gse` created,
@@ -134,6 +139,9 @@ Run this checklist when modifying: `destroy`, `deploy_app`, `training_init`,
 - [ ] Deployed at `alice-<project>.<domain>`
 - [ ] Creates a second Streamlit project, repeats → `alice-<project2>.<domain>`
 - [ ] Both URLs live simultaneously
+- [ ] `/gse:deploy --logs --lines 20` (from the first project) → last 20
+      runtime log lines of `<project>-alice` only; token never shown;
+      `--name <project>-bob` is refused
 
 **Learner Bob (different project type):**
 

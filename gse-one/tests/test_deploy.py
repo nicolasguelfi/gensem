@@ -352,10 +352,10 @@ class StateTests(unittest.TestCase):
 class CostHintTests(unittest.TestCase):
     def test_known_cax21(self):
         h = deploy._cost_hint("cax21")
-        self.assertIn("8.49", h)
+        self.assertIn("10.99", h)
 
     def test_known_case_insensitive(self):
-        self.assertIn("4.49", deploy._cost_hint("CAX11"))
+        self.assertIn("6.49", deploy._cost_hint("CAX11"))
 
     def test_unknown_type(self):
         self.assertIn("unknown", deploy._cost_hint("nonexistent"))
@@ -650,6 +650,690 @@ class TrainingInitOptionalKeysTests(unittest.TestCase):
         self.assertIn("COOLIFY_GITHUB_APP_UUID=gh-2", text)
         # Hetzner/SSH secrets must stay instructor-only.
         self.assertNotIn("HETZNER_API_TOKEN", text)
+
+
+# ---------------------------------------------------------------------------
+# Runtime logs of the user's own app (v0.91.0 — /gse:deploy --logs)
+# ---------------------------------------------------------------------------
+
+import contextlib  # noqa: E402
+import io  # noqa: E402
+import urllib.error  # noqa: E402
+from unittest import mock  # noqa: E402
+
+import coolify_client  # noqa: E402
+
+SECRET = "tok-SECRET-1234567890"
+
+
+class _FakeLogsClient:
+    """Duck-typed CoolifyClient for app_logs(); records every call."""
+
+    instances: list = []
+
+    def __init__(self, base_url, token, timeout=None):
+        self.calls = []
+        self.projects = {}       # name -> uuid
+        self.env_apps = {}       # project uuid -> [CoolifyApplication]
+        self.logs = {}           # app uuid -> text
+        self.error = None        # CoolifyError raised by get_application_logs
+        _FakeLogsClient.instances.append(self)
+        cfg = _FakeLogsClient.config
+        self.projects.update(cfg.get("projects", {}))
+        self.env_apps.update(cfg.get("env_apps", {}))
+        self.logs.update(cfg.get("logs", {}))
+        self.error = cfg.get("error")
+
+    def find_project_by_name(self, name):
+        self.calls.append(("find_project_by_name", name))
+        uuid = self.projects.get(name)
+        return coolify_client.CoolifyProject(uuid=uuid, name=name) if uuid else None
+
+    def list_environment_applications(self, project_uuid, env_name):
+        self.calls.append(("list_environment_applications", project_uuid, env_name))
+        return self.env_apps.get(project_uuid, [])
+
+    def list_applications(self):  # must never be used by app_logs
+        raise AssertionError("app_logs must not enumerate all applications")
+
+    def get_application_logs(self, uuid, lines=100):
+        self.calls.append(("get_application_logs", uuid, lines))
+        if self.error:
+            raise self.error
+        return self.logs.get(uuid, "")
+
+
+class AppLogsTests(unittest.TestCase):
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp())
+        self.addCleanup(lambda: shutil.rmtree(self.root))
+        self.dir = self.root / "reading-tracker"
+        self.dir.mkdir()
+        self._prev_cwd = os.getcwd()
+        os.chdir(self.dir)
+        self.addCleanup(lambda: os.chdir(self._prev_cwd))
+        _FakeLogsClient.instances = []
+        _FakeLogsClient.config = {}
+        patcher = mock.patch.object(deploy, "CoolifyClient", _FakeLogsClient)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def _env(self, user="alice"):
+        text = (
+            "COOLIFY_URL=https://coolify.example.com\n"
+            f"COOLIFY_API_TOKEN={SECRET}\n"
+            "DEPLOY_DOMAIN=example.com\n"
+        )
+        if user:
+            text += f"DEPLOY_USER={user}\n"
+        Path(".env").write_text(text, encoding="utf-8")
+
+    def _state(self, apps):
+        state = deploy._empty_state()
+        state["applications"] = apps
+        deploy.save_state(state)
+
+    @staticmethod
+    def _entry(name, user, uuid):
+        return {
+            "name": name, "deploy_user": user,
+            "url": f"https://{name}.example.com",
+            "coolify": {"app_uuid": uuid},
+        }
+
+    def _client(self):
+        return _FakeLogsClient.instances[-1]
+
+    def test_training_resolves_own_app_from_state(self):
+        self._env("alice")
+        self._state([
+            self._entry("reading-tracker-bob", "bob", "u-bob"),
+            self._entry("reading-tracker-alice", "alice", "u-alice"),
+        ])
+        _FakeLogsClient.config = {"logs": {"u-alice": "line1\nline2\n"}}
+        r = deploy.app_logs(lines=50)
+        self.assertEqual(r["status"], "ok")
+        self.assertEqual(r["name"], "reading-tracker-alice")
+        self.assertEqual(r["logs"], "line1\nline2\n")
+        self.assertIn(("get_application_logs", "u-alice", 50), self._client().calls)
+        # Bob's app is never touched.
+        self.assertFalse(any("u-bob" in str(c) for c in self._client().calls))
+
+    def test_training_refuses_other_learner_name(self):
+        self._env("alice")
+        self._state([self._entry("reading-tracker-bob", "bob", "u-bob")])
+        r = deploy.app_logs(name="reading-tracker-bob")
+        self.assertEqual(r["status"], "error")
+        self.assertIn("only read apps", r["error"])
+        self.assertEqual(self._client().calls, [])
+
+    def test_training_ignores_other_users_state_entries(self):
+        # Only bob's app is in state: alice must not get it, and the API
+        # fallback looks only inside gse-alice.
+        self._env("alice")
+        self._state([self._entry("reading-tracker-bob", "bob", "u-bob")])
+        _FakeLogsClient.config = {"projects": {"gse-bob": "p-bob"}}
+        r = deploy.app_logs()
+        self.assertEqual(r["status"], "not_deployed")
+        self.assertIn("gse-alice", r["error"])
+        self.assertEqual(
+            self._client().calls, [("find_project_by_name", "gse-alice")]
+        )
+
+    def test_training_fallback_to_own_coolify_project(self):
+        self._env("alice")
+        _FakeLogsClient.config = {
+            "projects": {"gse-alice": "p-alice"},
+            "env_apps": {"p-alice": [
+                coolify_client.CoolifyApplication(
+                    uuid="u-alice", name="reading-tracker-alice")
+            ]},
+            "logs": {"u-alice": "started\n"},
+        }
+        r = deploy.app_logs()
+        self.assertEqual(r["status"], "ok")
+        self.assertEqual(r["app_uuid"], "u-alice")
+        self.assertIn(
+            ("list_environment_applications", "p-alice", "production"),
+            self._client().calls,
+        )
+
+    def test_solo_resolution(self):
+        self._env(user=None)
+        self._state([
+            self._entry("reading-tracker", "", "u-solo"),
+            self._entry("reading-tracker-bob", "bob", "u-bob"),
+        ])
+        _FakeLogsClient.config = {"logs": {"u-solo": "ok\n"}}
+        r = deploy.app_logs()
+        self.assertEqual(r["status"], "ok")
+        self.assertEqual(r["app_uuid"], "u-solo")
+
+    def test_not_deployed_when_app_absent(self):
+        self._env("alice")
+        _FakeLogsClient.config = {
+            "projects": {"gse-alice": "p-alice"}, "env_apps": {"p-alice": []},
+        }
+        r = deploy.app_logs()
+        self.assertEqual(r["status"], "not_deployed")
+        self.assertIn("reading-tracker-alice", r["error"])
+
+    def test_404_no_running_container(self):
+        self._env("alice")
+        self._state([self._entry("reading-tracker-alice", "alice", "u-alice")])
+        _FakeLogsClient.config = {"error": deploy.CoolifyError(
+            404, "Not Found", '{"message":"No running container found."}')}
+        r = deploy.app_logs()
+        self.assertEqual(r["status"], "not_running")
+        self.assertEqual(r["http_status"], 404)
+
+    def test_404_application_not_found(self):
+        self._env("alice")
+        self._state([self._entry("reading-tracker-alice", "alice", "u-alice")])
+        _FakeLogsClient.config = {"error": deploy.CoolifyError(
+            404, "Not Found", '{"message":"Application not found."}')}
+        r = deploy.app_logs()
+        self.assertEqual(r["status"], "not_found")
+        self.assertIn("/gse:deploy", r["error"])
+
+    def test_401_token_rejected(self):
+        self._env("alice")
+        self._state([self._entry("reading-tracker-alice", "alice", "u-alice")])
+        _FakeLogsClient.config = {
+            "error": deploy.CoolifyError(401, "Unauthorized", SECRET)}
+        r = deploy.app_logs()
+        self.assertEqual(r["status"], "error")
+        self.assertEqual(r["http_status"], 401)
+        self.assertIn("instructor", r["error"])
+        self.assertNotIn(SECRET, json.dumps(r))
+
+    def test_403_missing_read_sensitive(self):
+        self._env(user=None)
+        self._state([self._entry("reading-tracker", "", "u-solo")])
+        _FakeLogsClient.config = {
+            "error": deploy.CoolifyError(403, "Forbidden")}
+        r = deploy.app_logs()
+        self.assertEqual(r["http_status"], 403)
+        self.assertIn("read:sensitive", r["error"])
+
+    def test_lines_bounds(self):
+        self._env("alice")
+        for bad in (0, -5, deploy.MAX_LOG_LINES + 1):
+            self.assertEqual(deploy.app_logs(lines=bad)["status"], "error")
+
+    def test_missing_credentials(self):
+        Path(".env").write_text("DEPLOY_USER=alice\n", encoding="utf-8")
+        r = deploy.app_logs()
+        self.assertEqual(r["status"], "error")
+        self.assertIn("COOLIFY_API_TOKEN", r["error"])
+
+    def test_token_redacted_from_log_text(self):
+        self._env("alice")
+        self._state([self._entry("reading-tracker-alice", "alice", "u-alice")])
+        _FakeLogsClient.config = {
+            "logs": {"u-alice": f"env dump: TOKEN={SECRET}\n"}}
+        r = deploy.app_logs()
+        self.assertNotIn(SECRET, r["logs"])
+        self.assertIn("***", r["logs"])
+
+    def test_cli_never_prints_token(self):
+        self._env("alice")
+        self._state([self._entry("reading-tracker-alice", "alice", "u-alice")])
+        _FakeLogsClient.config = {"logs": {"u-alice": f"a\n{SECRET}\nb\n"}}
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            deploy.main(["logs", "--lines", "20"])
+        self.assertIn("Last 20 log lines of reading-tracker-alice", out.getvalue())
+        self.assertNotIn(SECRET, out.getvalue() + err.getvalue())
+        self.assertIn(("get_application_logs", "u-alice", 20), self._client().calls)
+
+    def test_cli_error_exit_code_and_no_token(self):
+        self._env("alice")
+        self._state([self._entry("reading-tracker-alice", "alice", "u-alice")])
+        _FakeLogsClient.config = {
+            "error": deploy.CoolifyError(401, "Unauthorized", SECRET)}
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            with self.assertRaises(SystemExit) as cm:
+                deploy.main(["logs", "--json"])
+        self.assertEqual(cm.exception.code, 6)
+        self.assertNotIn(SECRET, out.getvalue() + err.getvalue())
+        self.assertEqual(json.loads(out.getvalue())["http_status"], 401)
+
+
+class _FakeResponse:
+    def __init__(self, payload):
+        self._raw = json.dumps(payload).encode("utf-8")
+
+    def read(self):
+        return self._raw
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+
+class CoolifyClientLogsTests(unittest.TestCase):
+    def test_get_application_logs_url_and_lines(self):
+        seen = {}
+
+        def fake_urlopen(req, timeout=None):
+            seen["url"] = req.full_url
+            seen["method"] = req.get_method()
+            seen["auth"] = req.get_header("Authorization")
+            return _FakeResponse({"logs": "hello\nworld"})
+
+        client = coolify_client.CoolifyClient("https://c.example.com/", SECRET)
+        with mock.patch.object(
+            coolify_client.urllib.request, "urlopen", fake_urlopen
+        ):
+            text = client.get_application_logs("app-1", 42)
+        self.assertEqual(text, "hello\nworld")
+        self.assertEqual(seen["method"], "GET")
+        self.assertEqual(
+            seen["url"], "https://c.example.com/api/v1/applications/app-1/logs?lines=42"
+        )
+        self.assertEqual(seen["auth"], f"Bearer {SECRET}")
+
+    def test_get_application_logs_401_raises_without_token(self):
+        def fake_urlopen(req, timeout=None):
+            raise urllib.error.HTTPError(
+                req.full_url, 401, "Unauthorized", {}, io.BytesIO(b"{}")
+            )
+
+        client = coolify_client.CoolifyClient("https://c.example.com", SECRET)
+        with mock.patch.object(
+            coolify_client.urllib.request, "urlopen", fake_urlopen
+        ):
+            with self.assertRaises(coolify_client.CoolifyError) as cm:
+                client.get_application_logs("app-1")
+        self.assertEqual(cm.exception.status, 401)
+        self.assertNotIn(SECRET, str(cm.exception))
+
+    def test_list_environment_applications(self):
+        seen = {}
+
+        def fake_urlopen(req, timeout=None):
+            seen["url"] = req.full_url
+            return _FakeResponse({"name": "production", "applications": [
+                {"uuid": "u1", "name": "reading-tracker-alice"}]})
+
+        client = coolify_client.CoolifyClient("https://c.example.com", SECRET)
+        with mock.patch.object(
+            coolify_client.urllib.request, "urlopen", fake_urlopen
+        ):
+            apps = client.list_environment_applications("p1", "production")
+        self.assertEqual(seen["url"], "https://c.example.com/api/v1/projects/p1/production")
+        self.assertEqual([(a.uuid, a.name) for a in apps], [("u1", "reading-tracker-alice")])
+
+
+
+# ---------------------------------------------------------------------------
+# Instructor-path rehearsal fixes (v0.91.0 — F11 secrets on argv, F14 IPv6,
+# F5/F6 Coolify host validation + API-disabled detection)
+# ---------------------------------------------------------------------------
+
+
+class _ChdirTmp(unittest.TestCase):
+    def setUp(self):
+        self.dir = Path(tempfile.mkdtemp())
+        self.addCleanup(lambda: shutil.rmtree(self.dir))
+        self._prev_cwd = os.getcwd()
+        os.chdir(self.dir)
+        self.addCleanup(lambda: os.chdir(self._prev_cwd))
+
+
+class _PipeStdin(io.StringIO):
+    def isatty(self):
+        return False
+
+
+class EnvSetStdinTests(_ChdirTmp):
+    def _run(self, argv, stdin_text=""):
+        out = io.StringIO()
+        with mock.patch.object(sys, "stdin", _PipeStdin(stdin_text)), \
+                contextlib.redirect_stdout(out):
+            deploy.main(argv)
+        return out.getvalue()
+
+    def test_stdin_value_written_and_never_echoed(self):
+        out = self._run(["env-set", "COOLIFY_API_TOKEN", "--stdin"], SECRET + "\n")
+        self.assertEqual(deploy.parse_env().get("COOLIFY_API_TOKEN"), SECRET)
+        self.assertNotIn(SECRET, out)
+        self.assertEqual(json.loads(out), {"status": "ok", "key": "COOLIFY_API_TOKEN"})
+
+    def test_positional_value_still_supported(self):
+        self._run(["env-set", "DEPLOY_DOMAIN", "example.com"])
+        self.assertEqual(deploy.parse_env().get("DEPLOY_DOMAIN"), "example.com")
+
+    def test_empty_stdin_rejected(self):
+        with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
+            self._run(["env-set", "HETZNER_API_TOKEN", "--stdin"], "\n")
+        self.assertNotIn("HETZNER_API_TOKEN", deploy.parse_env())
+
+    def test_value_and_stdin_together_rejected(self):
+        with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
+            self._run(["env-set", "K", "v", "--stdin"], "w\n")
+
+    def test_missing_value_rejected(self):
+        with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
+            self._run(["env-set", "K"])
+
+
+class RecordServerIpv6Tests(_ChdirTmp):
+    def test_ipv6_recorded(self):
+        r = deploy.record_server(
+            "srv", "1.2.3.4", 7, "cax31", "fsn1", ipv6="2001:db8::/64"
+        )
+        self.assertEqual(r["server"]["ipv6"], "2001:db8::/64")
+        self.assertEqual(deploy.load_state()["server"]["ipv6"], "2001:db8::/64")
+
+    def test_ipv6_defaults_empty_and_in_empty_state(self):
+        self.assertEqual(deploy._empty_state()["server"]["ipv6"], "")
+        r = deploy.record_server("srv", "1.2.3.4", None, "cax21", "fsn1")
+        self.assertEqual(r["server"]["ipv6"], "")
+
+    def test_cli_flag(self):
+        with contextlib.redirect_stdout(io.StringIO()):
+            deploy.main([
+                "record-server", "--name", "s", "--ipv4", "1.2.3.4",
+                "--type", "cax21", "--datacenter", "fsn1",
+                "--ipv6", "2001:db8::/64",
+            ])
+        self.assertEqual(deploy.load_state()["server"]["ipv6"], "2001:db8::/64")
+
+
+class _FakeValidateClient:
+    config: dict = {}
+
+    def __init__(self, base_url, token, timeout=None):
+        self.cfg = _FakeValidateClient.config
+        self.calls = []
+        _FakeValidateClient.last = self
+
+    def get_version(self):
+        if self.cfg.get("version_error"):
+            raise self.cfg["version_error"]
+        return "4.7.6"
+
+    def list_servers(self):
+        return self.cfg.get("servers", [{"uuid": "srv-1", "name": "localhost"}])
+
+    def validate_server(self, uuid, install=False):
+        self.calls.append(("validate", uuid, install))
+        if self.cfg.get("validate_error"):
+            raise self.cfg["validate_error"]
+        return {"message": "Validation started."}
+
+    def get_server(self, uuid):
+        self.calls.append(("get_server", uuid))
+        seq = self.cfg.setdefault("reachable_seq", [True])
+        return {"uuid": uuid, "is_reachable": seq.pop(0) if seq else False}
+
+
+class ValidateServerTests(_ChdirTmp):
+    def setUp(self):
+        super().setUp()
+        Path(".env").write_text(
+            f"COOLIFY_URL=http://203.0.113.10:8000\nCOOLIFY_API_TOKEN={SECRET}\n"
+        )
+        _FakeValidateClient.config = {}
+        for target, value in (
+            ("CoolifyClient", _FakeValidateClient),
+        ):
+            patcher = mock.patch.object(deploy, target, value)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        sleeper = mock.patch.object(deploy.time, "sleep", lambda s: None)
+        sleeper.start()
+        self.addCleanup(sleeper.stop)
+
+    def test_happy_path_validates_and_persists_server_uuid(self):
+        _FakeValidateClient.config = {"reachable_seq": [False, True]}
+        r = deploy.validate_server(timeout_seconds=60, poll_interval=0)
+        self.assertEqual(r["status"], "ok")
+        self.assertEqual(r["coolify_version"], "4.7.6")
+        self.assertEqual(r["server_uuid"], "srv-1")
+        self.assertEqual(deploy.parse_env().get("SERVER_UUID"), "srv-1")
+        self.assertIn(("validate", "srv-1", False), _FakeValidateClient.last.calls)
+        self.assertNotIn(SECRET, json.dumps(r))
+
+    def test_api_disabled_403_explained(self):
+        _FakeValidateClient.config = {
+            "version_error": deploy.CoolifyError(403, "Forbidden")
+        }
+        r = deploy.validate_server(timeout_seconds=0)
+        self.assertEqual(r["status"], "error")
+        self.assertEqual(r["http_status"], 403)
+        self.assertIn("API access", r["error"])
+
+    def test_unreachable_times_out_with_ssh_hint(self):
+        _FakeValidateClient.config = {"reachable_seq": []}
+        r = deploy.validate_server(timeout_seconds=0, poll_interval=0)
+        self.assertEqual(r["status"], "timeout")
+        self.assertIn("prohibit-password", r["error"])
+        self.assertIn("fail2ban", r["error"])
+
+    def test_settings_is_reachable_older_shape(self):
+        self.assertTrue(deploy._server_reachable({"settings": {"is_reachable": True}}))
+        self.assertFalse(deploy._server_reachable({"settings": {"is_reachable": False}}))
+
+    def test_missing_env_is_error(self):
+        Path(".env").write_text("")
+        r = deploy.validate_server(timeout_seconds=0)
+        self.assertEqual(r["status"], "error")
+
+
+class CoolifyClientValidateTests(unittest.TestCase):
+    def test_validate_posts_install_flag(self):
+        seen = []
+
+        def fake_urlopen(req, timeout=None):
+            seen.append((req.get_method(), req.full_url, req.data))
+            return _FakeResponse({"message": "Validation started."})
+
+        client = coolify_client.CoolifyClient("http://c.example.com:8000", SECRET)
+        with mock.patch.object(coolify_client.urllib.request, "urlopen", fake_urlopen):
+            client.validate_server("srv-1")
+        self.assertEqual(seen[0][0], "POST")
+        self.assertEqual(seen[0][1], "http://c.example.com:8000/api/v1/servers/srv-1/validate")
+        self.assertEqual(json.loads(seen[0][2]), {"install": False})
+
+    def test_validate_falls_back_to_get_on_405(self):
+        seen = []
+
+        def fake_urlopen(req, timeout=None):
+            seen.append(req.get_method())
+            if req.get_method() == "POST":
+                raise urllib.error.HTTPError(
+                    req.full_url, 405, "Method Not Allowed", {}, io.BytesIO(b"{}")
+                )
+            return _FakeResponse({"message": "ok"})
+
+        client = coolify_client.CoolifyClient("http://c.example.com:8000", SECRET)
+        with mock.patch.object(coolify_client.urllib.request, "urlopen", fake_urlopen):
+            client.validate_server("srv-1")
+        self.assertEqual(seen, ["POST", "GET"])
+
+    def test_get_version_plain_text(self):
+        class _Raw(_FakeResponse):
+            def __init__(self):
+                self._raw = b"4.7.6"
+
+        client = coolify_client.CoolifyClient("http://c.example.com:8000", SECRET)
+        with mock.patch.object(
+            coolify_client.urllib.request, "urlopen", lambda req, timeout=None: _Raw()
+        ):
+            self.assertEqual(client.get_version(), "4.7.6")
+
+
+class CoolifyPayloadFormTests(unittest.TestCase):
+    """Coolify 4.7 validation forms (rehearsal F23): public repo URL,
+    Dockerfile path starting with '/', readable 422 details."""
+
+    def setUp(self):
+        import coolify_client
+        self.cc = coolify_client
+
+    def test_slug_expanded_to_github_https_url(self):
+        f = self.cc.public_repository_url
+        self.assertEqual(f("user/repo"), "https://github.com/user/repo")
+        self.assertEqual(f(" user/repo.git "), "https://github.com/user/repo")
+
+    def test_urls_and_ssh_forms_unchanged(self):
+        f = self.cc.public_repository_url
+        for v in ("https://github.com/u/r", "git@github.com:u/r.git", "ssh://git@h/u/r"):
+            self.assertEqual(f(v), v)
+
+    def test_public_app_payload_uses_url_and_absolute_dockerfile(self):
+        sent = {}
+        client = self.cc.CoolifyClient("https://c.example", "t")
+
+        def fake_post(endpoint, payload, name):
+            sent.update(payload, endpoint=endpoint)
+            return None
+        client._post_application = fake_post
+        client.create_application("p", "production", "app", "user/repo",
+                                  "main", "3000", "https://a.example", server_uuid="s")
+        self.assertEqual(sent["endpoint"], "/applications/public")
+        self.assertEqual(sent["git_repository"], "https://github.com/user/repo")
+        self.assertEqual(sent["dockerfile_location"], "/Dockerfile")
+
+    def test_error_details_lists_rejected_fields(self):
+        body = json.dumps({"message": "Validation failed.", "errors": {
+            "git_repository": ["must start with https://"],
+            "dockerfile_location": ["format is invalid."]}})
+        d = self.cc.error_details(body)
+        self.assertIn("git_repository: must start with https://", d)
+        self.assertIn("dockerfile_location: format is invalid.", d)
+
+    def test_error_details_fallbacks(self):
+        self.assertIsNone(self.cc.error_details(None))
+        self.assertEqual(self.cc.error_details('{"message": "Not found."}'), "Not found.")
+        self.assertEqual(self.cc.error_details("plain text"), "plain text")
+
+
+class DeployAppAdoptsOrphanTests(unittest.TestCase):
+    """A same-name app already in the user's own environment but missing from
+    local state (previous run failed before saving) is redeployed, not
+    duplicated (rehearsal F24)."""
+
+    def _run(self, env_apps):
+        from types import SimpleNamespace as NS
+        from unittest import mock
+        calls = {"create": 0, "deploy": []}
+
+        class Fake:
+            def __init__(self, *a, **k):
+                pass
+            def ensure_project(self, *a, **k):
+                return NS(uuid="proj")
+            def ensure_environment(self, *a, **k):
+                return NS(uuid="env", name="production")
+            def list_environment_applications(self, project_uuid, env_name):
+                return [NS(name=n, uuid=u) for n, u in env_apps]
+            def trigger_deploy(self, uuid, force=False):
+                calls["deploy"].append((uuid, force))
+            def create_application(self, **k):
+                calls["create"] += 1
+                return NS(uuid="new")
+            def list_servers(self):
+                return [NS(uuid="srv")]
+
+        saved = {}
+        with mock.patch.object(deploy, "CoolifyClient", Fake), \
+             mock.patch.object(deploy, "parse_env", return_value={
+                 "COOLIFY_URL": "https://c", "COOLIFY_API_TOKEN": "t",
+                 "SERVER_UUID": "srv"}), \
+             mock.patch.object(deploy, "load_state", return_value={"applications": []}), \
+             mock.patch.object(deploy, "save_state", side_effect=lambda st: saved.update(st)), \
+             mock.patch.object(deploy, "poll_health", return_value={"status": "healthy", "http_code": 200}):
+            res = deploy.deploy_app(
+                name="app-alice", project_name="app", deploy_user="alice",
+                subdomain="app-alice.example.org", github_repo="u/r",
+                branch="main", type_="static", port=80)
+        return res, calls
+
+    def test_orphan_is_adopted_and_redeployed(self):
+        res, calls = self._run([("other", "x"), ("app-alice", "orphan")])
+        self.assertEqual(res["status"], "healthy")
+        self.assertEqual(res["app_uuid"], "orphan")
+        self.assertFalse(res["created"])
+        self.assertEqual(calls["create"], 0)
+        self.assertEqual(calls["deploy"], [("orphan", True)])
+
+    def test_no_orphan_creates(self):
+        res, calls = self._run([("other", "x")])
+        self.assertTrue(res["created"])
+        self.assertEqual(calls["create"], 1)
+
+
+class TrainingReapEmptiesProjectTests(unittest.TestCase):
+    """Coolify refuses to delete a non-empty project and deletes apps
+    asynchronously: reap deletes the apps, then retries the project
+    (rehearsal F26)."""
+
+    def test_apps_deleted_then_project_retried(self):
+        from types import SimpleNamespace as NS
+        from unittest import mock
+        log = []
+
+        class Fake:
+            def __init__(self, *a, **k):
+                self.tries = 0
+            def list_projects(self):
+                return [NS(name="gse-alice", uuid="p1"), NS(name="gse", uuid="solo")]
+            def list_environments(self, uuid):
+                return [NS(name="production", uuid="e1")]
+            def list_environment_applications(self, uuid, env):
+                return [NS(name="app-alice", uuid="a1")]
+            def delete_application(self, uuid):
+                log.append(("app", uuid))
+            def delete_project(self, uuid):
+                self.tries += 1
+                if self.tries < 3:
+                    raise deploy.CoolifyError(400, "Bad Request",
+                        '{"message": "Project has resources, so it cannot be deleted."}')
+                log.append(("project", uuid))
+
+        with mock.patch.object(deploy, "CoolifyClient", Fake), \
+             mock.patch.object(deploy, "parse_env", return_value={
+                 "COOLIFY_URL": "https://c", "COOLIFY_API_TOKEN": "t"}), \
+             mock.patch.object(deploy, "load_state", return_value={"applications": []}), \
+             mock.patch.object(deploy, "save_state"), \
+             mock.patch.object(deploy.time, "sleep"):
+            res = deploy.training_reap(user="alice", all_users=False,
+                                       dry_run=False, confirm="alice")
+        self.assertEqual(res["status"], "ok")
+        self.assertEqual(res["deleted_projects"], ["gse-alice"])
+        self.assertEqual(res["deleted_applications"], ["gse-alice/app-alice"])
+        self.assertEqual(log, [("app", "a1"), ("project", "p1")])
+
+    def test_non_400_error_reported_with_reason(self):
+        from types import SimpleNamespace as NS
+        from unittest import mock
+
+        class Fake:
+            def __init__(self, *a, **k):
+                pass
+            def list_projects(self):
+                return [NS(name="gse-bob", uuid="p2")]
+            def list_environments(self, uuid):
+                return []
+            def delete_project(self, uuid):
+                raise deploy.CoolifyError(403, "Forbidden", '{"message": "Missing permission."}')
+
+        with mock.patch.object(deploy, "CoolifyClient", Fake), \
+             mock.patch.object(deploy, "parse_env", return_value={
+                 "COOLIFY_URL": "https://c", "COOLIFY_API_TOKEN": "t"}), \
+             mock.patch.object(deploy, "load_state", return_value={"applications": []}), \
+             mock.patch.object(deploy, "save_state"):
+            res = deploy.training_reap(user="bob", all_users=False,
+                                       dry_run=False, confirm="bob")
+        self.assertEqual(res["status"], "partial")
+        self.assertIn("Missing permission.", res["errors"][0])
 
 
 if __name__ == "__main__":

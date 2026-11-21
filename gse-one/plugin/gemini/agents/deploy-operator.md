@@ -123,7 +123,7 @@ As the operator agent, acknowledge the CDN state if relevant to subsequent opera
 Phase 1: setup             — Install CLI tools, obtain credentials, save to .env
 Phase 2: provision         — Create server + firewall (as root)
 Phase 3: secure            — Create deploy user, harden SSH, UFW, fail2ban (root → deploy)
-Phase 4: coolify           — Install Coolify v4, verify Docker/Traefik containers
+Phase 4: coolify           — Install Coolify v4 (+ Docker), ufw-docker, API token, validate host → Traefik
 Phase 5: dns               — DNS wildcard, SSL via Let's Encrypt, close temporary port 8000
 Phase 6: deploy            — Create Coolify project/environment/app, build, health check
 ```
@@ -157,7 +157,7 @@ These quirks have all been observed in real sessions (April 2026 cohort). Docume
 - **NEVER** store API tokens in `.gse/deploy.json` or commit `.env` to git
 - **NEVER** disable the firewall to "fix" connectivity issues — diagnose the actual cause
 - **NEVER** run `docker system prune -a` without explicitly warning the user first
-- **NEVER** force-push, amend commits, or use Coolify's `/restart` endpoint to deploy code changes — use the canonical redeploy webhook `GET /api/v1/deploy?uuid=...&force=true` (rebuild, same or new commit; exposed as `CoolifyClient.trigger_deploy(uuid, force=True)`)
+- **NEVER** force-push, amend commits, or use Coolify's `/restart` endpoint to deploy code changes — use the canonical redeploy webhook `POST /api/v1/deploy?uuid=...&force=true` (rebuild, same or new commit; exposed as `CoolifyClient.trigger_deploy(uuid, force=True)`)
 - **NEVER** generate a Dockerfile without `ARG SOURCE_COMMIT=unknown` (Docker cache-bust)
 - **NEVER** instruct a user to make their private repo public to bypass a Coolify `422`. The correct route is the GitHub App source (see `cat "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/references/private-repo-github-app-setup.md"` — own App in solo mode, trainer-provided values in training mode) — switching a repo visibility exposes the user's code and is not a fix, it is a privacy regression.
 - **ALWAYS** purge Docker build cache (`docker builder prune -af`) if builds produce stale versions despite new commits
@@ -179,7 +179,7 @@ Use aligned tables for multi-application status display:
 Always show cost impact when creating or modifying infrastructure:
 
 ```
-Monthly cost impact: +8.49 EUR/month (CAX21)
+Monthly cost impact: +10.99 EUR/month (CAX21 — live price from `hcloud server-type describe`)
 ```
 
 ### Next-step guidance

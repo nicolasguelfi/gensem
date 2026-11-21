@@ -6,25 +6,28 @@ advising users on server configuration.
 
 ## 1. Hetzner Cloud Server Types (EUR/month excl. VAT)
 
-> Last verified: 2026-04-22
+> Last verified: 2026-11-21 for CAX and CX (hetzner.com/cloud/cost-optimized, prices **including** the primary IPv4; `hcloud server-type describe` shows the price without it, e.g. CAX31 20.99 + 0.50). CCX not re-verified since 2026-04-22.
+> These tables are indicative and go stale: the Phase 2 Gate of `/gse:deploy` always displays the **live** price from `hcloud server-type describe <type> -o json`.
 
 ### CAX Series — ARM (Ampere Altra) — Best value
 
 | Type   | vCPU | RAM    | SSD     | Traffic | Price/mo | Indicative capacity |
 |--------|------|--------|---------|---------|----------|---------------------|
-| CAX11  | 2    | 4 GB   | 40 GB   | 20 TB   | ~4.49 €  | 3–5 small apps      |
-| CAX21  | 4    | 8 GB   | 80 GB   | 20 TB   | ~8.49 €  | 8–15 small apps     |
-| CAX31  | 8    | 16 GB  | 160 GB  | 20 TB   | ~16.49 € | 15–30 small apps    |
-| CAX41  | 16   | 32 GB  | 320 GB  | 20 TB   | ~31.99 € | 30–60 small apps    |
+| CAX11  | 2    | 4 GB   | 40 GB   | 20 TB   | ~6.49 €  | 3–5 small apps      |
+| CAX21  | 4    | 8 GB   | 80 GB   | 20 TB   | ~10.99 € | 8–15 small apps     |
+| CAX31  | 8    | 16 GB  | 160 GB  | 20 TB   | ~21.49 € | 15–30 small apps    |
+| CAX41  | 16   | 32 GB  | 320 GB  | 20 TB   | ~41.49 € | 30–60 small apps    |
 
 ### CX Series — x86 Shared (Intel/AMD)
 
 | Type  | vCPU | RAM    | SSD     | Price/mo  |
 |-------|------|--------|---------|-----------|
-| CX22  | 2    | 4 GB   | 40 GB   | ~5.09 €   |
-| CX32  | 4    | 8 GB   | 80 GB   | ~9.09 €   |
-| CX42  | 8    | 16 GB  | 160 GB  | ~21.49 €  |
-| CX52  | 16   | 32 GB  | 320 GB  | ~42.49 €  |
+| CX23  | 2    | 4 GB   | 40 GB   | ~5.99 €   |
+| CX33  | 4    | 8 GB   | 80 GB   | ~8.99 €   |
+| CX43  | 8    | 16 GB  | 160 GB  | ~16.49 €  |
+| CX53  | 16   | 32 GB  | 320 GB  | ~29.99 €  |
+
+(The former CX22/CX32/CX42/CX52 names are no longer offered for new servers.)
 
 ### CCX Series — Dedicated vCPU (guaranteed performance)
 
@@ -159,15 +162,23 @@ Credentials (tokens, SSH keys) never live in the state file; they live in
 | Stop | POST | `/api/v1/applications/{uuid}/stop` |
 | Get env vars | GET | `/api/v1/applications/{uuid}/envs` |
 | Set env var | POST | `/api/v1/applications/{uuid}/envs` |
-| Deploy (webhook) | GET | `/api/v1/deploy?uuid={uuid}` |
+| Deploy (webhook) | POST | `/api/v1/deploy?uuid={uuid}` (GET answers 405 since Coolify 4.7) |
 | List projects | GET | `/api/v1/projects` |
 | Create project | POST | `/api/v1/projects` |
 | Create environment | POST | `/api/v1/projects/{uuid}/environments` |
 | Delete project | DELETE | `/api/v1/projects/{uuid}` |
-| Set instance settings | PATCH | `/api/v1/settings/general` |
+| Coolify version (API reachability check) | GET | `/api/v1/version` |
+| Get server | GET | `/api/v1/servers/{uuid}` |
+| Validate server (starts the proxy) | POST | `/api/v1/servers/{uuid}/validate` (body `{"install": false}`; GET on versions before 4.7) |
+
+**Prerequisites (self-hosted, verified 2026-11-21 on Coolify 4.7.6):** the API is
+**disabled by default** — enable it in Settings → Advanced → API Access. Token
+permissions: `root`, or `read` + `write` + `deploy` + `read:sensitive`
+(runtime logs `GET /applications/{uuid}/logs` require `read:sensitive`; server
+validation requires `write` + `deploy`).
 
 **CRITICAL**: the canonical rebuild trigger for code updates is the deploy
-webhook — `GET /api/v1/deploy?uuid={uuid}&force=true` (what
+webhook — `POST /api/v1/deploy?uuid={uuid}&force=true` (what
 `CoolifyClient.trigger_deploy` calls). `/start` is the underlying endpoint
 (full rebuild: pull git, rebuild Docker, install deps). `/restart` = reuse
 existing container (no code update) — never use it for code updates.
@@ -208,11 +219,11 @@ to projects with external release dependencies.
 ## 9. Security Checklist
 
 - [ ] Non-root user with SSH key (`deploy`)
-- [ ] Root login disabled in `/etc/ssh/sshd_config`
-- [ ] Password authentication disabled
+- [ ] Root login refused from the internet (`sshd_config.d/00-gse-hardening.conf`), allowed by key only from Docker networks (`Match Address` block — Coolify manages its host as root)
+- [ ] Password authentication disabled (`sshd -T` confirms)
 - [ ] UFW active with ports 22, 80, 443 open only
-- [ ] `ufw-docker` installed (prevents Docker from bypassing UFW rules)
-- [ ] fail2ban active (sshd jail: 3 attempts → 1h ban)
+- [ ] `ufw-docker` installed after Docker (pinned commit + SHA-256), with `ufw route allow` for container ports 80, 443 (and 8080 until port 8000 is closed)
+- [ ] fail2ban active (sshd jail: 3 attempts → 1h ban; `ignoreip` covers Docker networks)
 - [ ] Unattended security upgrades enabled
 - [ ] Coolify dashboard behind HTTPS (port 8000 closed after domain setup)
 - [ ] No credentials in `.gse/deploy.json` or git

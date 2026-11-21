@@ -100,7 +100,7 @@ Prefer Recipe 2 first to get the UUID, then delete. Useful to clean up a failed 
 ## Recipe 6 — Force a rebuild/redeploy of an existing application
 
 ```bash
-curl -s -H "Authorization: Bearer $COOLIFY_API_TOKEN" \
+curl -s -X POST -H "Authorization: Bearer $COOLIFY_API_TOKEN" \
   "$COOLIFY_URL/api/v1/deploy?uuid=<APP-UUID>&force=true"
 ```
 

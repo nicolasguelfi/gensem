@@ -13,6 +13,7 @@ Arguments: $ARGUMENTS
 |--------------------|-------------|
 | (no args) | Deploy current project (detect situation, resume from last phase) |
 | --status | Show deployment status (server, app URL, health) |
+| --logs [--lines N] | Show the last N lines (default 100) of your deployed app's runtime logs — first thing to read when the app does not start or the health check fails |
 | --destroy | Tear down server and all data (Gate, confirm twice) |
 | --redeploy | Force rebuild and redeploy (skip infrastructure phases) |
 | --registrar `<name>` | Show DNS instructions for a specific registrar (`namecheap`, `gandi`, `ovh`, `cloudflare`) without re-running earlier phases |
@@ -54,7 +55,7 @@ Otherwise (first-time user), display:
 
 > Welcome to `/gse:deploy`. This command provisions infrastructure and deploys your project. First, let me understand your situation:
 >
->   (1) **Solo** — Deploy my own project to my own Hetzner server. (~1h first time, ~8.49 EUR/month ongoing. You'll need a Hetzner account and optionally a domain.)
+>   (1) **Solo** — Deploy my own project to my own Hetzner server. (~1h first time, ~11 EUR/month ongoing for the default CAX21 server. You'll need a Hetzner account and optionally a domain.)
 >
 >   (2) **Instructor** — Prepare a shared server for a training session. (~1h setup, then distribute a `.env.training` file to learners. Reap at course end.)
 >
@@ -148,17 +149,17 @@ The detection logic (which variables map to which starting phase) is documented 
 2. **Obtain Hetzner API token**
    - Guide the user step by step:
      *"Go to https://console.hetzner.cloud → select or create a project → Security → API Tokens → Generate API Token (Read & Write). Copy the token — it is shown only once."*
-   - Ask the user to paste the token
    - **Never display the token back in chat**
 
 3. **Domain name**
    - Ask: *"What domain will you use for deployment? (e.g., my-project.com)"*
+   - The domain may be decided later (typical for an instructor whose DNS is not ready yet): then skip it here — `detect` works without `DEPLOY_DOMAIN`, and Phase 5 — Configure DNS asks for it before configuring DNS.
 
 4. **Save credentials**
-   - Persist the token and domain via the deploy tool:
+   - **Secrets never go on a command line** (a command-line argument is visible to every local user in the process list and stays in the agent transcript). Preferred: ask the user to run, in their own terminal, `python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" env-set HETZNER_API_TOKEN --stdin` and paste the token at the hidden prompt — the token then never enters the chat. If the user pasted it in the chat instead, pipe it through the shell builtin `printf` (builtins do not appear in the process list):
      ```
-     python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" env-set HETZNER_API_TOKEN <token>
-     python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" env-set DEPLOY_DOMAIN <domain>
+     printf '%s\n' '<token>' | python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" env-set HETZNER_API_TOKEN --stdin
+     python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" env-set DEPLOY_DOMAIN <domain>   # skip if no domain yet (Step 3)
      ```
    - Check `.gitignore` contains `.env` — if not, add it and warn the user
    - If no `.gitignore` exists: Gate decision to create one
@@ -182,33 +183,35 @@ The detection logic (which variables map to which starting phase) is documented 
 1. **Read configuration**
    - Server type: `config.yaml → deploy.server_type` (default: `cax21`)
    - Datacenter: `config.yaml → deploy.datacenter` (default: `fsn1`)
-   - Server name: `gse-<project-name>` (sanitized, lowercase, hyphens only)
+   - Server name: `gse-<project-name>` (sanitized, lowercase, hyphens only). An instructor may pick a course name instead (e.g. `gse-<course>`); keep the `gse-` prefix — `--destroy` derives the firewall name `gse-fw-<name>` from it.
 
 2. **Check for existing server**
    - `hcloud server list -o columns=name,ipv4`
    - If a server with this name exists: skip provision, record IP
 
 3. **Gate decision: server creation**
+   - Read the **live** price first (the reference tables go stale — Hetzner changes prices): `hcloud server-type describe <type> -o json` → `prices[]` entry whose `location` is the datacenter → `price_monthly.net` (EUR excl. VAT; add ~0.50 EUR for the primary IPv4).
    - Display cost and configuration:
      *"Creating a Hetzner server:*
      *- Type: CAX21 (4 vCPU ARM, 8 GB RAM, 80 GB SSD)*
      *- Location: Falkenstein (fsn1)*
-     *- Monthly cost: ~8.49 EUR*
+     *- Monthly cost: {live price} EUR excl. VAT (+ ~0.50 EUR primary IPv4)*
      *Proceed?"*
    - Wait for explicit user confirmation
 
 4. **Generate SSH key** (if `~/.ssh/gse-deploy` does not exist)
    - `ssh-keygen -t ed25519 -f ~/.ssh/gse-deploy -N ""`
    - Upload: `hcloud ssh-key create --name gse-deploy --public-key-from-file ~/.ssh/gse-deploy.pub`
+   - Any other key path and Hetzner key name work (e.g. an instructor's course-dedicated key kept next to the course files instead of `~/.ssh`): `SSH_KEY` in `.env` (Step 8) records the path — substitute it for `~/.ssh/gse-deploy` in every `ssh -i` below, **double-quoted** if the path contains spaces (see `plugin/references/ssh-operations.md` — Paths with spaces).
 
-5. **Create server**
-   - `hcloud server create --name <name> --type <type> --location <datacenter> --image ubuntu-24.04 --ssh-key gse-deploy`
-   - Record IP address from output
+5. **Create firewall** (before the server, so the server is never exposed without it)
+   - `hcloud firewall create --name gse-fw-<name>` (instructors sharing one Hetzner project across courses: add `--label` pairs, e.g. `--label role=training`, here and in Step 6, to find and clean the course resources later)
+   - Add inbound rules, each for IPv4 and IPv6 (`--source-ips 0.0.0.0/0 --source-ips ::/0`): TCP 22 (SSH), 80 (HTTP), 443 (HTTPS), 8000 (Coolify setup, temporary), and ICMP (ping). Give each rule a description `<protocol>-<port>` (`icmp` for ICMP) so it can be deleted later (Phase 5 Step 5 — Close temporary port 8000). Example: `hcloud firewall add-rule gse-fw-<name> --direction in --protocol tcp --port 22 --source-ips 0.0.0.0/0 --source-ips ::/0 --description tcp-22`
+   - Coolify also publishes ports 6001/6002 (dashboard live updates and web terminal). Leaving them closed is fine for the API-driven `/gse:deploy` flow (the dashboard may show a realtime warning).
 
-6. **Create firewall**
-   - `hcloud firewall create --name gse-fw-<name>`
-   - Add rules: allow TCP 22 (SSH), 80 (HTTP), 443 (HTTPS), 8000 (Coolify setup, temporary)
-   - Apply to server: `hcloud firewall apply-to-resource gse-fw-<name> --type server --server <name>`
+6. **Create server**
+   - `hcloud server create --name <name> --type <type> --location <datacenter> --image ubuntu-24.04 --ssh-key gse-deploy --firewall gse-fw-<name>` (+ the same optional `--label` pairs)
+   - Record id, IPv4 and IPv6: `hcloud server describe <name> -o json` → `id`, `public_net.ipv4.ip`, `public_net.ipv6.ip` (an IPv6 /64 network — the server's address is `<network>::1`, used for optional AAAA records in Phase 5 — Configure DNS)
 
 7. **Verify SSH access**
    - `ssh -i ~/.ssh/gse-deploy -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10 root@<IP> "echo ok"`
@@ -217,7 +220,7 @@ The detection logic (which variables map to which starting phase) is documented 
 8. **Persist completion**
    ```
    python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" record-server \
-     --name <name> --ipv4 <IP> --id <id> --type <type> --datacenter <dc>
+     --name <name> --ipv4 <IP> --ipv6 <IPv6 network> --id <id> --type <type> --datacenter <dc>
    python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" env-set SERVER_IP <IP>
    python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" env-set SSH_USER root
    python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" env-set SSH_KEY ~/.ssh/gse-deploy
@@ -229,6 +232,8 @@ The detection logic (which variables map to which starting phase) is documented 
 ### Phase 3 — Secure (skip if `deploy.json` has `phases_completed.secure`)
 
 **Purpose:** Harden the server — non-root user, SSH hardening, firewall, intrusion detection.
+
+> **Command-chain note.** Each step below is one `&&` chain: if any command fails, the rest is skipped *and the ssh exit status is non-zero*. Always check that status and the command output; on failure stop, show the error to the user, and do not mark the phase complete.
 
 1. **Create deploy user**
    - ```
@@ -249,45 +254,52 @@ The detection logic (which variables map to which starting phase) is documented 
    - **CRITICAL: do not proceed if this fails** — root access will be disabled next
 
 3. **Harden SSH**
-   - Edit `/etc/ssh/sshd_config`:
-     - `PermitRootLogin no`
-     - `PasswordAuthentication no`
-     - `PubkeyAuthentication yes`
-   - `ssh deploy@<IP> "sudo systemctl restart sshd"`
+   - **Root login stays possible from Coolify's Docker networks only, by key only.** Coolify (Phase 4 — Install Coolify) manages its own host over SSH as `root`, from a Docker network (`10.x` / `172.16–31.x`) — a global `PermitRootLogin no` makes the host unreachable for Coolify and its Traefik proxy never starts (apps become undeployable). So: root login is refused from the internet, and allowed with an SSH key (never a password) from local Docker networks only.
+   - Settings go in a drop-in file read **first** (`00-` prefix — sshd keeps the first value it reads, so it wins over e.g. a cloud-init `PasswordAuthentication yes`), and the Docker-network exception is a `Match` block appended at the **end** of `sshd_config` (a `Match` block runs until the end of the file):
+     ```
+     ssh deploy@<IP> "printf '%s\n' 'PermitRootLogin no' 'PasswordAuthentication no' \
+         'KbdInteractiveAuthentication no' 'PubkeyAuthentication yes' \
+         | sudo tee /etc/ssh/sshd_config.d/00-gse-hardening.conf >/dev/null && \
+       (grep -q '^Match Address 10.0.0.0/8' /etc/ssh/sshd_config || \
+         printf '\n%s\n%s\n' 'Match Address 10.0.0.0/8,172.16.0.0/12,fd00::/8,127.0.0.1,::1' \
+           '    PermitRootLogin prohibit-password' | sudo tee -a /etc/ssh/sshd_config >/dev/null) && \
+       sudo sshd -t && sudo systemctl restart ssh"
+     ```
+     On Ubuntu 22.04+/Debian the systemd unit is `ssh` (`systemctl restart sshd` fails with "Unit sshd.service not found" and leaves the hardening unapplied).
+   - Verify (both must hold):
+     - `ssh deploy@<IP> "sudo sshd -T | grep -Ei '^(permitrootlogin|passwordauthentication) '"` → `permitrootlogin no`, `passwordauthentication no`
+     - `ssh deploy@<IP> "sudo sshd -T -C user=root,host=localhost,addr=10.0.0.2 | grep -i '^permitrootlogin'"` → `permitrootlogin prohibit-password`
 
 4. **Install UFW firewall**
    - ```
-     ssh deploy@<IP> "sudo apt-get update -qq && sudo apt-get install -y -qq ufw && \
+     ssh deploy@<IP> "sudo apt-get update -qq && \
+       sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq ufw && \
        sudo ufw default deny incoming && sudo ufw default allow outgoing && \
        sudo ufw allow 22/tcp && sudo ufw allow 80/tcp && \
        sudo ufw allow 443/tcp && sudo ufw allow 8000/tcp && \
        sudo ufw --force enable"
      ```
+   - Docker is not installed yet: the `ufw-docker` protection (Docker would otherwise bypass these rules) is installed right after Coolify, in Phase 4 Step 3 — Install ufw-docker.
 
-5. **Install ufw-docker** (prevents Docker from bypassing UFW rules)
-   - By default, Docker publishes containers to `0.0.0.0` and inserts iptables rules that bypass UFW. Without `ufw-docker`, a container exposing port `5432` to the host would be reachable from the internet even if UFW denies port `5432`. This is a real production risk.
-   - ```
-     ssh deploy@<IP> "sudo wget -O /usr/local/bin/ufw-docker \
-       https://github.com/chaifeng/ufw-docker/raw/master/ufw-docker && \
-       sudo chmod +x /usr/local/bin/ufw-docker && \
-       sudo ufw-docker install && \
-       sudo systemctl restart ufw"
+5. **Install fail2ban** (before Coolify, with Docker networks ignored)
+   - Coolify's own SSH connections come from Docker addresses; if one is ever refused (e.g. hardening mistake), fail2ban would ban Coolify itself and turn the error into a misleading "Connection refused". The jail therefore ignores local Docker networks:
      ```
-   - Verify: `ssh deploy@<IP> "sudo ufw-docker status"` (should report rules are active).
-
-6. **Install fail2ban**
-   - ```
-     ssh deploy@<IP> "sudo apt-get install -y -qq fail2ban && \
-       sudo systemctl enable fail2ban && sudo systemctl start fail2ban"
+     ssh deploy@<IP> "sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq fail2ban && \
+       printf '%s\n' '[DEFAULT]' 'ignoreip = 127.0.0.1/8 ::1 10.0.0.0/8 172.16.0.0/12 fd00::/8' \
+         '' '[sshd]' 'enabled = true' 'maxretry = 3' 'bantime = 1h' \
+         | sudo tee /etc/fail2ban/jail.local >/dev/null && \
+       sudo systemctl enable fail2ban && sudo systemctl restart fail2ban"
      ```
+   - Verify: `ssh deploy@<IP> "sudo fail2ban-client status sshd"` (jail active). If a Docker address was banned before this fix: `sudo fail2ban-client unban <address>`.
 
-7. **Automatic security updates**
+6. **Automatic security updates** (non-interactive — `dpkg-reconfigure` would wait for a keyboard answer over a non-tty SSH session)
    - ```
-     ssh deploy@<IP> "sudo apt-get install -y -qq unattended-upgrades && \
-       sudo dpkg-reconfigure -plow unattended-upgrades"
+     ssh deploy@<IP> "sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq unattended-upgrades && \
+       printf '%s\n' 'APT::Periodic::Update-Package-Lists \"1\";' 'APT::Periodic::Unattended-Upgrade \"1\";' \
+         | sudo tee /etc/apt/apt.conf.d/20auto-upgrades >/dev/null"
      ```
 
-8. **Persist completion**
+7. **Persist completion**
    ```
    python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" env-set SSH_USER deploy
    python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" record-phase secure
@@ -300,48 +312,80 @@ The detection logic (which variables map to which starting phase) is documented 
 **Purpose:** Install Coolify v4 (self-hosted PaaS with Traefik reverse proxy).
 
 1. **Install Coolify**
-   - `ssh deploy@<IP> "curl -fsSL https://cdn.coollabs.io/coolify/install.sh | sudo bash"`
+   - `ssh deploy@<IP> "curl -fsSL https://cdn.coollabs.io/coolify/install.sh | sudo bash"` (also installs Docker)
+   - Optional (instructor, unattended install): the Coolify installer can pre-create the admin account from the environment variables `ROOT_USERNAME`, `ROOT_USER_EMAIL`, `ROOT_USER_PASSWORD`, so the public registration page of Step 4 is never exposed. The password is then briefly visible in the server's process list — change it in the dashboard afterwards. Default path: the browser registration of Step 4.
 
 2. **Wait for readiness**
    - Poll `http://<IP>:8000` every 15 seconds, timeout 5 minutes
    - Show progress: *"Waiting for Coolify to start..."*
 
-3. **Guide browser setup (detailed)**
+3. **Install ufw-docker** (prevents Docker from bypassing UFW rules — requires Docker, hence after Step 1)
+   - By default, Docker publishes containers to `0.0.0.0` and inserts iptables rules that bypass UFW. Without `ufw-docker`, a container exposing port `5432` to the host would be reachable from the internet even if UFW denies port `5432`. This is a real production risk.
+   - Once `ufw-docker` is active, traffic to containers is filtered in the *forwarded* path: `ufw allow` (Phase 3 Step 4 — Install UFW firewall) no longer suffices, each published container port needs a `ufw route allow` rule. The rule names the port **inside** the container: Traefik listens on 80/443, the Coolify dashboard on 8080 (published as host port 8000). Without these rules, 80/443/8000 all time out from the internet.
+   - The script is pinned to a reviewed commit and checked by SHA-256 (it runs as root — never fetch a moving branch):
+     ```
+     ssh deploy@<IP> "sudo wget -qO /usr/local/bin/ufw-docker \
+         https://raw.githubusercontent.com/chaifeng/ufw-docker/020a8699f95592561f254d8d4ad1bb40d401dfc7/ufw-docker && \
+       echo '643e56b080567c567b4aa28650196849b2a2da5dd0473fd3e5216b0886035ab0  /usr/local/bin/ufw-docker' | sudo sha256sum -c - && \
+       sudo chmod +x /usr/local/bin/ufw-docker && \
+       sudo ufw-docker install && \
+       sudo ufw route allow proto tcp from any to any port 80 && \
+       sudo ufw route allow proto tcp from any to any port 443 && \
+       sudo ufw route allow proto udp from any to any port 443 && \
+       sudo ufw route allow proto tcp from any to any port 8080 && \
+       sudo systemctl restart ufw"
+     ```
+     If `sha256sum -c` fails, stop: the pinned file changed — do not run it (maintainers update the commit + hash after review).
+   - Verify: `ssh deploy@<IP> "sudo ufw-docker status"` (rules active) and, from the local machine, `http://<IP>:8000` answers again (Step 2 poll, one attempt).
+
+4. **Guide browser setup (detailed)**
    Walk the user through the Coolify onboarding. Tell them verbatim:
 
-   > Coolify is ready. Open `http://<IP>:8000` in your browser.
+   > Coolify is ready. Open `http://<IP>:8000` in your browser — do it now: until an admin account exists, anyone reaching this page can create it.
    >
-   > **3a. Create your admin account:**
+   > **4a. Create your admin account:**
    > - Fill in: *Email*, *Name*, *Password* (min 8 chars), *Confirm password*
    > - Click **Register**. You are now logged in.
    >
-   > **3b. Initial setup wizard:**
-   > - Coolify displays a *"Welcome"* screen. Click **Let's go!** or **Skip** through optional settings (root user email, instance name — you can change these later in Settings).
+   > **4b. Initial setup wizard:**
+   > - Coolify displays a *"Welcome"* screen. Click **Let's go!** or **Skip** through optional settings (root user email, instance name — you can change these later in Settings). If it asks which server to use, choose **This Machine** (localhost).
    >
-   > **3c. Create an API token:**
+   > **4c. Enable the API** (self-hosted Coolify ships with the API disabled — every API call fails until it is enabled):
+   > - **Settings** → **Advanced** → set **API Access** to enabled → **Save**.
+   >
+   > **4d. Create an API token:**
    > - In the left sidebar, click your profile icon (bottom left) → **Keys & Tokens** → **API Tokens** tab.
    > - Click **Create New Token**.
    > - Name it: `gse-one`
-   > - Permissions: check **Read**, **Write**, and **Deploy** (or the "Full Access" preset if available).
+   > - Permissions: check **root** (full access — simplest). Otherwise check at least **read**, **write**, **deploy** and **read:sensitive**: `read:sensitive` is required to read runtime logs (`/gse:deploy --logs` answers 403 without it — including for learners when this token is distributed by `--training-init`), and `write` + `deploy` to validate the server (Step 5).
    > - Click **Continue**. The token is displayed **only once** — copy it now.
    >
-   > **3d. Paste the token here.**
+   > **4e. Store the token** — in your own terminal (hidden prompt, the token never enters the chat): `python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" env-set COOLIFY_API_TOKEN --stdin`
 
-   Then persist:
+   Then persist the URL (and, only if the user pasted the token in the chat instead of 4e, store it via the builtin `printf` pipe — never as a command-line argument):
    ```
    python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" env-set COOLIFY_URL http://<IP>:8000
-   python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" env-set COOLIFY_API_TOKEN <token>
+   printf '%s\n' '<token>' | python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" env-set COOLIFY_API_TOKEN --stdin   # fallback only
    ```
 
-   **If the UI has changed** (Coolify iterates fast), adapt the step numbering to what the user describes. The invariants are: create account → find "API tokens" or equivalent → create token with full-access permissions → copy once. If a step path differs significantly, please consider submitting a PR to update this section (see README → Deployment → Maintaining upstream compatibility).
+   **If the UI has changed** (Coolify iterates fast), adapt the step numbering to what the user describes. The invariants are: create account → enable API access → find "API tokens" or equivalent → create token with full-access (or read + write + deploy + read:sensitive) permissions → copy once. If a step path differs significantly, please consider submitting a PR to update this section (see README → Deployment → Maintaining upstream compatibility).
 
-4. **Verify containers**
+5. **Validate the Coolify host server** (starts the Traefik proxy)
+   - Coolify starts its reverse proxy (`coolify-proxy`, Traefik) only once its own host server ("localhost") is validated — until then no app can be served. Invoke:
+     ```
+     python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" validate-server
+     ```
+     The tool checks the API (`GET /version`), resolves and persists `SERVER_UUID`, sends `POST /api/v1/servers/{uuid}/validate` (Coolify 4.7+ — older versions used GET; the tool falls back), and polls until the server is reachable (default 180 s). It returns `{status, server_uuid, coolify_version, ...}`; the token is never printed.
+   - `status == "error"` with `http_status` 403 → API access not enabled (Step 4c) or token without `write`/`deploy`; 401 → token rejected (redo Step 4d/4e).
+   - `status == "timeout"` → Coolify cannot SSH into its host as root: re-check Phase 3 Step 3 — Harden SSH (the `sshd -T -C …addr=10.0.0.2` check must print `prohibit-password`) and Phase 3 Step 5 — Install fail2ban (`sudo fail2ban-client status sshd` must not list a Docker address), then re-run `validate-server`.
+
+6. **Verify containers**
    - `ssh deploy@<IP> "sudo docker ps --format 'table {{.Names}}\t{{.Status}}'"` 
-   - Check: coolify, traefik, postgres containers running
+   - Check running: `coolify`, `coolify-db` (PostgreSQL), `coolify-redis`, `coolify-proxy` (Traefik — present only after Step 5)
 
-5. **Persist completion**
+7. **Persist completion**
    ```
-   python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" record-coolify --url http://<IP>:8000
+   python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" record-coolify --url http://<IP>:8000 --version <coolify_version from Step 5>
    python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" record-phase coolify
    ```
 
@@ -352,6 +396,7 @@ The detection logic (which variables map to which starting phase) is documented 
 **Purpose:** Point the domain to the server and enable SSL.
 
 1. **Guide DNS configuration**
+   - If `DEPLOY_DOMAIN` is not set yet (the domain was skipped in Phase 1 Step 3 — Domain name), ask for it now and persist it: `python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" env-set DEPLOY_DOMAIN <domain>`.
    - Tell the user (verbatim):
      > Add these DNS records at your domain registrar:
      > | Type | Name | Value        | TTL |
@@ -360,6 +405,8 @@ The detection logic (which variables map to which starting phase) is documented 
      > | A    | `*`  | `<server-IP>` | 300 |
      >
      > The wildcard `*` enables all subdomains (`project-a.domain.com`, `project-b.domain.com`, ...) to point to this server automatically — essential for the multi-app pattern.
+     >
+     > Optional IPv6: add the same two names as `AAAA` records pointing to `<server-IPv6>` (the `server.ipv6` network recorded in Phase 2, with `::1` as host part — e.g. `2001:db8:1:2::1`).
    - Ask the user which registrar they use; if one of the four below, display the registrar-specific subsection. Otherwise, provide the generic records and invite them to follow their registrar's documentation (you can also run `/gse:deploy --registrar <name>` later to re-display the steps).
 
    #### 1a. Namecheap
@@ -404,13 +451,11 @@ The detection logic (which variables map to which starting phase) is documented 
    The tool polls `dig` (system resolver + `@8.8.8.8` fallback every 15s). On `resolved`, proceed. On `timeout`, it returns a hint — display it to the user and exit the skill without marking the phase complete (so the user can re-run `/gse:deploy` once propagation completes).
 
 3. **Configure Coolify dashboard domain**
-   Use the Coolify API to set the dashboard FQDN to `coolify.<domain>`:
+   The Coolify API has no endpoint for the instance domain (only `/settings/email` — verified on Coolify 4.7.6). Set the dashboard FQDN to `coolify.<domain>` inside the Coolify container, then regenerate the proxy routing (the same two calls the UI's Settings → Save makes):
    ```
-   curl -X PATCH "http://<IP>:8000/api/v1/settings/general" \
-     -H "Authorization: Bearer $COOLIFY_API_TOKEN" \
-     -H "Content-Type: application/json" \
-     -d '{"instance_fqdn":"https://coolify.<domain>"}'
+   ssh deploy@<IP> 'sudo docker exec coolify php artisan tinker --execute="\$s = \App\Models\InstanceSettings::get(); \$s->fqdn = \"https://coolify.<domain>\"; \$s->save(); \App\Models\Server::find(0)->setupDynamicProxyConfiguration(); echo \$s->fqdn;"'
    ```
+   The command echoes the new URL. Fallback if it fails: the user opens `http://<IP>:8000` → **Settings** → **Instance's Domain** = `https://coolify.<domain>` → **Save**.
    Then update the env:
    ```
    python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" env-set COOLIFY_URL https://coolify.<domain>
@@ -429,8 +474,9 @@ The detection logic (which variables map to which starting phase) is documented 
    If SSL fails, check DNS propagation first (`dig coolify.<domain>` must return `<server-IP>`).
 
 5. **Close temporary port 8000**
-   - `ssh deploy@<IP> "sudo ufw delete allow 8000/tcp"`
-   - `hcloud firewall delete-rule gse-fw-<name> --direction in --protocol tcp --port 8000`
+   - `ssh deploy@<IP> "sudo ufw delete allow 8000/tcp && sudo ufw route delete allow proto tcp from any to any port 8080"` (the route rule is the `ufw-docker` path to the dashboard container — Phase 4 Step 3 — Install ufw-docker)
+   - `hcloud firewall delete-rule gse-fw-<name> --direction in --protocol tcp --port 8000 --source-ips 0.0.0.0/0 --source-ips ::/0 --description tcp-8000`
+   - `delete-rule` matches every field of the rule, description included: it must repeat the `--description` given at creation (Phase 2), otherwise hcloud answers "rule not found". Check with `hcloud firewall describe gse-fw-<name>` that only 22, 80, 443 and ICMP remain.
 
 6. **Persist domain completion**
    ```
@@ -561,11 +607,11 @@ The detection logic (which variables map to which starting phase) is documented 
    **What the tool does:**
    - Ensures a Coolify project (`gse-{DEPLOY_USER}` in training, `gse` in solo) exists.
    - Ensures a `production` environment exists within that project.
-   - Looks up `applications[]` in `.gse/deploy.json` by name. If a matching entry with `coolify.app_uuid` exists → triggers a redeploy (`GET /api/v1/deploy?uuid=...&force=true`). Otherwise, creates the app via `POST /api/v1/applications/public` — or `POST /api/v1/applications/private-github-app` when `COOLIFY_GITHUB_APP_UUID` is set in `.env` — resolving and sending `server_uuid` (from `.env SERVER_UUID`, else the sole server returned by `GET /api/v1/servers`, persisted back to `.env`), then triggers the initial deploy.
+   - Looks up `applications[]` in `.gse/deploy.json` by name. If a matching entry with `coolify.app_uuid` exists → triggers a redeploy (`POST /api/v1/deploy?uuid=...&force=true`). Otherwise, creates the app via `POST /api/v1/applications/public` — or `POST /api/v1/applications/private-github-app` when `COOLIFY_GITHUB_APP_UUID` is set in `.env` — resolving and sending `server_uuid` (from `.env SERVER_UUID`, else the sole server returned by `GET /api/v1/servers`, persisted back to `.env`), then triggers the initial deploy.
    - Polls the health endpoint (`/_stcore/health` for Streamlit, `/` for others) for `--health-timeout` seconds (the skill passes `config.yaml → deploy.health_check_timeout`, default 120 — the tool itself never reads config.yaml).
    - Records the application entry in `.gse/deploy.json → applications[]` with all fields (identification, source, runtime, Coolify UUIDs, resources, timestamps, status).
 
-   **Return JSON:** `{"status": "healthy|unhealthy|timeout|error", "url": "...", "app_uuid": "...", "created": true|false, "http_code": N}`.
+   **Return JSON:** `{"status": "healthy|unhealthy|timeout|error", "url": "...", "app_uuid": "...", "created": true|false, "http_code": N}`. On `error`, the result also carries `details`: Coolify's own reason (for a 422, the rejected fields and why) — show it to the user before any remedy. The tool sends a public repo as its full `https://github.com/<user/repo>` URL and the Dockerfile as `/Dockerfile`, the forms Coolify 4.7 validates.
 
    **Error branch — Coolify 422 on private GitHub repo.** If the tool returns `{"status": "error", "http_status": 422, ...}` and the user's repo is private (check via `gh repo view <user/repo> --json isPrivate` or ask the user), Coolify cannot clone via its public-repo endpoint. Do NOT suggest making the repo public — that is a privacy regression, not a fix. Instead, display this guidance verbatim (adapt tone to the detected `user_role`):
    > *"Your repo is private, so Coolify needs an authenticated source to clone it. In a training context, your trainer has typically pre-configured a Coolify 'GitHub App' source for this. Ask your trainer for two values: (a) the **GitHub App install link** (of the form `https://github.com/apps/<app-slug>/installations/new`) and (b) the **Coolify Source UUID** (a short alphanumeric string). Once you have both: (1) click the install link and install the App on your GitHub account, selecting only the repo you want to deploy; (2) run `deploy.py env-set COOLIFY_GITHUB_APP_UUID <uuid>`; (3) re-run this `deploy-app` command. Full procedure: `cat "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/references/private-repo-github-app-setup.md"` (section B)."*
@@ -576,9 +622,9 @@ The detection logic (which variables map to which starting phase) is documented 
 
 5. **Report**
    - If `status == "healthy"`: *"Your project is live at: https://{subdomain}"*
-   - If `status` is `unhealthy` or `timeout`: report failure, suggest checking the Coolify dashboard at `{COOLIFY_URL}`.
+   - If `status` is `unhealthy` or `timeout`: report failure and offer to read the app's runtime logs right away (`/gse:deploy --logs` — see the --logs Option section below); in solo mode, the Coolify dashboard at `{COOLIFY_URL}` also shows the build log.
    - If `status == "error"`: show the Coolify error message and suggest corrective action.
-   - Solo mode: append *"Server: {IP} ({server-type}), monthly cost: ~8.49 EUR"*.
+   - Solo mode: append *"Server: {IP} ({server-type}), monthly cost: ~{price shown at the Phase 2 Gate} EUR"*.
    - Training mode: append *"Deployed on shared training server."*
 
 6. **Verify deployed version matches repo HEAD (Inform-tier, pedagogical)**
@@ -625,6 +671,27 @@ When invoked with `--status`:
    and display the current status to the user.
 
 3. If no `.gse/deploy.json` exists (the tool will return an empty state): *"No deployment found. Run `/gse:deploy` to deploy."*
+
+### --logs Option
+
+> **Structure note (Meta-2).** Like `--status`, `--logs` is a disjoint read-only mode: it runs instead of the Step -1 → Phase 6 lifecycle, changes no state, and needs no Gate.
+
+**What logs are (explain this to beginners the first time).** While your app runs on the server, everything it prints — startup messages, `print()`/`console.log` output, error messages and stack traces — is recorded by the server. These records are the app's *runtime logs*. When the deployed app does not start, shows an error page, or fails the health check, the logs almost always contain the actual error (a missing module, a wrong port, a crash at startup). Reading them is the first debugging step — and in training mode it is the only way to see them, since learners have no Coolify dashboard account.
+
+When to propose it: after Phase 6 reports `unhealthy` or `timeout`, when the user says the live app "does not work", or when `--status` shows an unhealthy app.
+
+When invoked with `--logs` (optionally `--lines N`, default 100):
+
+1. Invoke:
+   ```
+   python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" logs --lines <N>
+   ```
+   The tool reads `COOLIFY_URL` / `COOLIFY_API_TOKEN` / `DEPLOY_USER` itself (never read `.env` here) and resolves the app of **this project for this user**: first from `.gse/deploy.json → applications[]` (entries owned by the current `DEPLOY_USER`, or without user in solo mode), else by looking only inside the user's own Coolify project (`gse-{DEPLOY_USER}` in training, `gse` in solo). It never reads another learner's app. If several of the user's apps are recorded, it asks for `--name <app-name>`. It prints the last N lines on stdout; the API token is never printed (it is even masked if it appears in the log text).
+2. Display the log lines to the user, then help interpret them (P9 Adaptive Communication): point at the first error or stack trace, explain it in plain words, and propose a fix (e.g., wrong port in the Dockerfile, missing dependency in `requirements.txt` / `package.json`, missing environment variable). After a fix is committed and pushed, propose `/gse:deploy --redeploy`.
+3. On failure the tool exits non-zero with a one-line message on stderr — relay it:
+   - `not_deployed` / `not_found` → the app does not exist (yet or anymore): propose `/gse:deploy`.
+   - `not_running` → no container is running (still building, build failed, or crashed): wait a minute and retry; if it persists, `/gse:deploy --redeploy` then `--logs` right after. A build failure produces no runtime logs — in solo mode, the build log is in the Coolify dashboard; in training mode, ask the instructor.
+   - `error` with 401 (token rejected) or 403 (token lacks Coolify's `read:sensitive` permission) → training: ask the instructor for a valid token; solo: create a new token in Coolify (Keys & Tokens) with `root` or `read:sensitive` (Phase 4 Step 4 — Guide browser setup) and store it with `deploy.py env-set COOLIFY_API_TOKEN --stdin` (hidden prompt, in the user's own terminal).
 
 ### --destroy Option
 
@@ -682,7 +749,7 @@ When invoked with `--destroy`:
 When invoked with `--redeploy`:
 
 1. Verify that `deploy.json → phases_completed.dns` is set (infrastructure is ready). If not, abort with *"Infrastructure not ready. Run /gse:deploy first to complete Phases 1-5."*
-2. Skip directly to Phase 6 (subdomain computation + `deploy-app` + report). The `deploy-app` subcommand auto-detects the existing application entry by name and triggers a forced rebuild via `GET /api/v1/deploy?uuid=...&force=true`.
+2. Skip directly to Phase 6 (subdomain computation + `deploy-app` + report). The `deploy-app` subcommand auto-detects the existing application entry by name and triggers a forced rebuild via `POST /api/v1/deploy?uuid=...&force=true`.
 3. Return the same JSON contract as a normal deploy: `{status, url, app_uuid, created: false, http_code}`.
 
 ### --registrar Option
@@ -705,7 +772,7 @@ When invoked with `--training-init`:
    python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/deploy.py" training-init [--output .env.training]
    ```
 3. The tool generates `.env.training` containing `COOLIFY_URL`, `COOLIFY_API_TOKEN`, `DEPLOY_DOMAIN`, and a `DEPLOY_USER=learnerXX` placeholder — plus `SERVER_UUID` and `COOLIFY_GITHUB_APP_UUID` when present in the instructor's `.env` (so the single handout also covers recent Coolify versions and learners with private repos; remind the instructor to set both before generating if the cohort needs them). It **excludes** `HETZNER_API_TOKEN`, `SERVER_IP`, SSH keys. A security warning is embedded as a comment.
-4. **Mandatory token step — before distributing anything:** instruct the instructor to generate a **dedicated Coolify API token for the course** (Coolify UI → Keys & Tokens) and re-run `--training-init` with it in `.env` if the current token is their personal one. State the risk explicitly: *"The token embedded in `.env.training` gives every learner WRITE access to ALL applications on the shared Coolify server — any learner can modify or delete other learners' apps (or yours). Use a course-dedicated token, and revoke it in the Coolify UI as soon as the course ends (`--training-reap` cleans the apps, not the token)."*
+4. **Mandatory token step — before distributing anything:** instruct the instructor to generate a **dedicated Coolify API token for the course** (Coolify UI → Keys & Tokens) and re-run `--training-init` with it in `.env` if the current token is their personal one. The course token must carry `root`, or at least `read`, `write`, `deploy` **and `read:sensitive`** — without `read:sensitive`, every learner's `/gse:deploy --logs` fails with 403. Store it with `deploy.py env-set COOLIFY_API_TOKEN --stdin`. State the risk explicitly: *"The token embedded in `.env.training` gives every learner WRITE access to ALL applications on the shared Coolify server — any learner can modify or delete other learners' apps (or yours). Use a course-dedicated token, and revoke it in the Coolify UI as soon as the course ends (`--training-reap` cleans the apps, not the token)."*
 5. Display the output path to the instructor and remind them:
    *"Distribute .env.training to your learners. They copy it to their project as .env and set DEPLOY_USER."*
    *"Mid-course incident recipe: if a learner's app is damaged or deleted (the shared token allows it), the learner just re-runs `/gse:deploy` — the app is recreated from their GitHub repo in ~5 minutes. No instructor intervention needed."*
@@ -736,13 +803,13 @@ Display a role-first narrative, then the Options table:
 
 > **Who are you?**
 >
-> - **Solo user** → Run `/gse:deploy` (no args). First run walks you through 6 phases (setup, provision, secure, Coolify, DNS, deploy). Expect ~1h first time, ~8.49 EUR/month ongoing.
+> - **Solo user** → Run `/gse:deploy` (no args). First run walks you through 6 phases (setup, provision, secure, Coolify, DNS, deploy). Expect ~1h first time, ~11 EUR/month ongoing (default CAX21 server).
 >
 > - **Instructor** → Run `/gse:deploy` once to set up a shared server. Then `/gse:deploy --training-init` to generate `.env.training` for distribution to learners. At course end, `/gse:deploy --training-reap --all`.
 >
 > - **Learner** → Copy the `.env.training` file your instructor sent into your project as `.env`, set `DEPLOY_USER=<your-id>`, then run `/gse:deploy`. Takes ~5 minutes.
 >
-> All commands support `--status` (inspect state), `--redeploy` (force rebuild), `--destroy` (tear down, double Gate), `--silent` (skip orientation for scripting).
+> All commands support `--status` (inspect state), `--logs` (read your app's runtime logs), `--redeploy` (force rebuild), `--destroy` (tear down, double Gate), `--silent` (skip orientation for scripting).
 
 Then display the full Options table.
 

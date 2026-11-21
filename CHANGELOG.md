@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.91.0] - 2026-11-21
+
+### Added
+- Added `/gse:deploy --logs [--lines N]`: shows the last N runtime log lines (default 100) of the user's own deployed app.
+- Added `deploy.py logs`: resolves only this project's app for the current `DEPLOY_USER` (state, then own Coolify project); token never printed.
+- Added clear `not_deployed` / `not_found` / `not_running` / 401 / 403 messages, with training- and solo-specific remedies.
+- Added `CoolifyClient.get_application_logs` (`GET /applications/{uuid}/logs?lines=N`) and `list_environment_applications`.
+- Added a beginner explanation of runtime logs to `deploy.md`; Phase 6 now offers `--logs` on unhealthy or timeout results.
+- Added mocked-HTTP tests for log resolution, ownership scoping, error mapping, `--lines` and token redaction.
+- Added `deploy.py validate-server`: checks API access, validates Coolify's host server (POST, GET fallback) so Traefik starts.
+- Added `deploy.py env-set KEY --stdin` (hidden prompt or pipe) and `record-server --ipv6`.
+
+### Fixed
+- Fixed instructor-path blockers: `ufw-docker` now installed after Docker, with `ufw route allow` rules for 80/443/8080.
+- Fixed SSH hardening locking Coolify out: root by key from Docker networks only; `systemctl restart ssh` on Ubuntu 24.04.
+- Fixed fail2ban banning Coolify (Docker networks in `ignoreip`); unattended-upgrades setup no longer interactive.
+- Fixed Phase 4 omissions: enable API access, token needs `read:sensitive` for logs, `record-coolify --version` passed.
+- Fixed tokens passed as CLI arguments, unpinned `ufw-docker` (commit + SHA-256), stale Hetzner prices (live Gate price).
+- Fixed Phase 5: dashboard domain set inside Coolify (no API endpoint exists); firewall rules named so `delete-rule` finds them.
+- Fixed learner deploys rejected by Coolify 4.7: full repo URL, `/Dockerfile`, POST deploy webhook; errors now carry Coolify's reason.
+- Fixed `deploy-app` duplicating an app left unrecorded by a failed run; `training-reap` now deletes apps before projects.
+- Rehearsal frictions F1–F27 with verdicts: `docs/post-audit-reports/2026-11-21-instructor-deploy-rehearsal.md`.
+
 ## [0.90.1] - 2026-11-11
 
 ### Fixed

@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.91.1] - 2026-11-21
+
+### Fixed
+- Fixed spec §13.3 Team Usage promising task assignment and concurrent-access handling that no template, activity or tool implements; known limits now listed.
+- Removed the `GSE_USER` environment variable and `.gse/current-user` file from user detection (never implemented; contrary to the configuration policy).
+- Aligned the implementation design (team matching, concurrent access) with the same statement.
+
 ## [0.91.0] - 2026-11-21
 
 ### Added

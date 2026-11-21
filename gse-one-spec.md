@@ -2790,43 +2790,32 @@ Upgrading from Micro → Lightweight → Full is possible at any time via `/gse:
 
 ### 13.3 Team Usage
 
-For projects with multiple developers, GSE-One adapts its state management:
+GSE-One is designed for one developer working with an AI agent (§1.2 — Agile Software Engineering Foundations). **Team collaboration is not supported as a mode in this version.** What exists today is limited to per-user profiles; everything else a team needs is listed below as *not implemented*, so that nobody relies on it.
 
-**Per-user profiles:** In a team, each developer has their own HUG profile:
+**Implemented — per-user profiles.** With `/gse:hug --team` (or when several git contributors are detected), each developer has their own HUG profile:
 
 ```
 .gse/
 ├── profiles/
 │   ├── alice.yaml               # Alice's expertise, language, learning goals
 │   └── bob.yaml                 # Bob's expertise, language, learning goals
-├── profile.yaml                 # Fallback for solo mode (symlink to active user)
+├── profile.yaml                 # Active profile (copy of the current user's file)
 └── ...
 ```
 
-**User detection (in priority order):**
-1. If `.gse/current-user` file exists → use its content
-2. If `GSE_USER` environment variable is set → use its value
-3. If `git config user.name` returns a value → use it
-4. If none → ask the user (Inform: "Who are you?")
+**User detection:** the active user is the value of `git config user.name`; if it is empty, the agent asks (Inform: "Who are you?"). No environment variable is read (configuration policy: durable state lives in project files, never in the environment).
 
-**Matching:** Username is matched against filenames in `.gse/profiles/` (case-insensitive, spaces replaced by hyphens). If no match → propose creating a new profile.
+**Matching:** the name is matched against filenames in `.gse/profiles/` (case-insensitive, spaces replaced by hyphens). If no match → the agent proposes creating a new profile.
 
-**Role assignment in plans:** Sprint tasks can be assigned to team members:
+**Shared vs. personal:** configuration, decisions, and sprint artefacts are committed; checkpoints are gitignored.
 
-```yaml
-- id: TASK-003
-  title: Implement user authentication
-  assignee: alice                # optional — team member responsible
-  reviewer: bob                  # optional — team member who will review
-```
+**Not implemented in this version (known limits for several people on one project):**
+- **No task assignment.** Backlog items carry no assignee or reviewer; nothing records who works on what.
+- **Single-user state files.** `.gse/status.yaml` mixes project state with one person's session state, `.gse/plan.yaml` has one workflow cursor per sprint, and TASK identifiers are sequential in one `.gse/backlog.yaml`: two people working on separate branches will produce merge conflicts and duplicate identifiers.
+- **No pull-request integration.** `/gse:deliver` merges locally; it does not open or wait for a pull request.
+- **No roles.** Every session may run every activity and take every decision.
 
-**Shared vs. personal:** Configuration, decisions, and sprint artefacts are **shared** (committed). Checkpoints are **personal** (gitignored).
-
-**Concurrent access:** When multiple team members work on the same project:
-- Each member works in their own worktree/branch — no file-level conflicts during production
-- `.gse/backlog.yaml` may be modified concurrently. Git merge handles this at commit level. If a conflict occurs, the agent detects it on next pull and proposes resolution (Gate: keep mine / keep theirs / merge manually)
-- `.gse/decisions.md` is append-only — concurrent additions don't conflict
-- Each member's checkpoint is in their own profile — no conflict
+A team that shares a repository today should give each person their own project folder (or their own fork) and integrate through their forge's pull requests, outside GSE-One.
 
 ### 13.4 Non-Code Projects
 

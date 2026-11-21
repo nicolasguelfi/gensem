@@ -2460,21 +2460,12 @@ Making Policy a first-class pyramid column forces its explicit allocation during
 Use the spec §8.1 range table. Agent selects within range based on context, presents as Inform. One point captures **coupled effort + complexity for the AI + user pair** (spec P10 / §8.1) with an indicative temporal anchor of 1 pt ≈ 1 pair-session hour. For maintenance work (refactoring, tests, docs, renaming, bug-fixing), apply the **Cost Assessment Grid for Maintenance Work** from spec Appendix B: four criteria (fan-out, review burden, rework risk, coupling) → 0 pt / 1 pt / 2-5 pt per item. The pre-v0.34 "zero-cost items" blanket rule is deprecated — agents must size maintenance activities case-by-case.
 
 **Team matching algorithm:**
-User detection in priority order:
-1. `.gse/current-user` file → use content
-2. `GSE_USER` env var → use value
-3. `git config user.name` → use value
-4. Ask user (Inform)
-Match case-insensitive, spaces→hyphens against `.gse/profiles/`.
+User detection: `git config user.name`; if empty, ask the user (Inform). No environment variable is read (configuration policy). Match case-insensitive, spaces→hyphens against `.gse/profiles/`.
 
 **Minimum viable project size:**
 In lightweight mode detection: add note that for truly one-off tasks, don't use GSE-One.
 
-**Concurrent access:**
-- Each team member works in own worktree → no file conflicts during production
-- `backlog.yaml` conflicts handled by git merge; agent detects on pull, proposes resolution (Gate)
-- `decisions.md` is append-only → no conflicts
-- Checkpoints are per-user → no conflicts
+**Concurrent access:** not supported in this version. The state files are single-user (`status.yaml` session fields, one `plan.yaml` workflow cursor, sequential TASK identifiers in one `backlog.yaml`); see spec §13.3 Team Usage — "Not implemented in this version" for the known limits.
 
 ### 5.18 `/gse:deploy` — Application Deployment Activity
 

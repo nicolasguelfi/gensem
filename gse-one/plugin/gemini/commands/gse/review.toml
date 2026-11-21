@@ -43,7 +43,7 @@ On option 1: invoke the mode-appropriate opening sequence inline; after promotio
 Before reviewing any TASK, verify test execution:
 
 1. **Check test evidence** — For each TASK with `status: review` (i.e., produced and awaiting review), read `test_evidence` in `backlog.yaml`.
-2. **If test evidence is absent or `status: skipped`** — **Hard guardrail: block review.** Report: "Tests were not run for this task. Tests must pass before review." For beginners: "I need to verify that what I built works correctly before I check my own work. Let me run the tests first." Then execute tests for this TASK and return to review only after tests pass.
+2. **If test evidence is absent or `status: skipped`** — **Hard guardrail: block review.** Report: "Tests were not run for this task. Tests must pass before review." For beginners: "I need to verify that what I built works correctly before I check my own work. Let me run the tests first." Gate: **Run the tests now** (default) — execute tests for this TASK and return to review only after tests pass / **Override — proceed anyway** (the user gives a one-sentence reason, recorded as a DEC- naming the guardrail; orchestrator — Blocks and their exits) — review without test evidence; the missing evidence becomes a HIGH finding of the review / **Discuss**.
 3. **If test evidence `status: fail`** — **Soft guardrail: warn and continue.** Report: "Tests are currently failing for this task. Review will proceed, but test failures will be included as findings." Add a RVW- finding with severity HIGH for the failing tests.
 4. **If test evidence `status: pass`** — Proceed to Step 1.
 

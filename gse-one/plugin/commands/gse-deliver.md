@@ -113,7 +113,7 @@ Verify delivery readiness:
    - If uncommitted changes exist: report and present Gate: **Commit** / **Stash** / **Discard** / **Discuss**
 
 4. **Requirements coverage (REQ→TST traceability)** — For each REQ- in `docs/sprints/sprint-{NN}/reqs.md`, verify that at least one TST- artefact traces to it:
-   - **Uncovered REQ with priority `must`** → **Hard guardrail: block delivery.** Report: "Requirement REQ-{NNN} ({description}) has no test covering it. Tests must be written before delivery." For beginners: "One of the things the app should do hasn't been verified yet. I need to add a check for it first."
+   - **Uncovered REQ with priority `must`** → **Hard guardrail: block delivery.** Report: "Requirement REQ-{NNN} ({description}) has no test covering it. Tests must be written before delivery." For beginners: "One of the things the app should do hasn't been verified yet. I need to add a check for it first." Gate: **Add the test now** (default) / **Override — proceed anyway** (the user gives a one-sentence reason, recorded as a DEC- naming the guardrail; orchestrator — Blocks and their exits) — the requirement is delivered untested and listed as a known limit in the release notes / **Discuss**.
    - **Uncovered REQ with priority `should` or `could`** → **Soft guardrail: warn.** Report: "Requirement REQ-{NNN} has no test. This is acceptable but noted." Add a RVW- finding.
    - **All must-priority REQs covered** → Proceed.
 

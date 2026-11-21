@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.92.0] - 2026-11-22
+
+*First lightness release: no stop without an exit, a real quick path, light modes that do what they announce.*
+
+### Added
+- Added `/gse:task --quick`: short branch from `main`, the change, tests green, one merge question; allowed after delivery, never writes into a frozen sprint.
+- Added a fourth Sprint Freeze option, *Quick fix*, when the requested work is a small change.
+- Added the exit rule: every Hard guardrail offers *Override — proceed anyway*, recorded as a DEC-; only Emergency guardrails stay absolute.
+- Added CLAUDE.md Meta-4 — Lightness discipline (exit and cost of every new stop; no configuration switch without a reader).
+
+### Changed
+- Changed produce, review, deliver and tests Hard stops to present remedy / Override / Discuss instead of a dead end.
+- Changed Micro mode: `/gse:go` sets `git.strategy: none`, so its direct commits are no longer refused by the protect-main hook.
+- Changed Lightweight branching to the sprint integration branch `/gse:plan` already creates; removed the contradictory "branch from main" path.
+
+### Fixed
+- Fixed four configuration switches documented but never applied (`always_gate`, `tier_bias`, `guardrails.sensitivity`, `lifecycle.phases`): the orchestrator now applies them.
+- Fixed the orchestrator citing a `/gse:task --quick` flag that did not exist.
+
 ## [0.91.2] - 2026-11-21
 
 ### Fixed

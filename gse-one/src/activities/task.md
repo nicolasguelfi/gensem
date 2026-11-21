@@ -14,6 +14,7 @@ Arguments: $ARGUMENTS
 | `--type TYPE`      | Force artefact type (canonical enum per spec §P6 — Artefact ID allocation): `code` \| `requirement` \| `design` \| `test` \| `doc` \| `config` \| `import` \| `spike`. Default: inferred from description (see Step 1). |
 | `--complexity N`   | Override complexity estimate (1-5) |
 | `--no-review`      | Mark task as not requiring review (for trivial tasks) |
+| `--quick`          | Quick path for a small change (at most 1 point, nothing security-sensitive): short branch from `main`, the change, tests re-run and green, one merge question. Allowed even when the sprint is frozen — see Quick path below |
 | `--spike`          | Create a spike (exploratory experiment). Complexity-boxed (max 3 points), non-deliverable, bypasses REQS/TESTS guardrails, must produce a DEC- |
 | `--help`           | Show this command's usage summary |
 
@@ -26,6 +27,31 @@ Before executing, read:
 4. `.gse/profile.yaml` — user expertise level
 
 ## Workflow
+
+### Quick path — `--quick` (replaces Steps 0-6.5)
+
+**Purpose.** A small fix — a typo, a missing import, a one-line bug fix, a doc fix — costs minutes, not a sprint. The quick path keeps the two protections that matter (the change is isolated on a branch until it is merged; the project's tests prove nothing broke) and drops the rest of the ceremony. It runs in every mode and even when the current sprint is frozen: it never writes into a sprint, it records a pool TASK delivered on its own.
+
+**Q1 — Eligibility (no question).** Estimate the change. It is eligible when **all** hold: at most 1 complexity point; one concern; no security-sensitive area (authentication, authorisation, cryptography, secrets, input validation of untrusted data); no data migration or deletion; no new dependency. If not eligible, say why in one line and continue with the normal path (Step 0 — Sprint Freeze Check onwards, which proposes a successor sprint when the sprint is frozen). Never stretch the quick path to fit a larger change.
+
+**Q2 — Branch.** Create `gse/quick/{short-name}` from `main` (branch only, no worktree, whatever `git.strategy` says; with `git.strategy: none` work on the current branch). Git identity preflight as for any commit.
+
+**Q3 — The change, test first when behaviour changes.** A bug report follows the Root-Cause Discipline (Read → Symptom → Hypothesis + Evidence → Patch). When the change alters behaviour, add or update one test that fails before the change and passes after. Then run the project's test command (the one `/gse:tests --run` uses) on the whole suite.
+- All green → continue.
+- A test fails because of the change and the fix is not obvious → stop the quick path: keep the branch, say so, and propose the normal path. Never weaken or delete a test to get green.
+- The project has no automated tests at all → say so; this fact is part of the Q5 question.
+
+**Q4 — Record.** On the branch, append one TASK to `.gse/backlog.yaml`: `sprint: null`, `origin: ad-hoc`, `origin_ref: quick`, `artefact_type` inferred (Step 1 rules), `complexity: 1` (or `0` for a doc-only change), `requires_review: false`, `test_evidence` filled from the run (`status`, `timestamp`, `pass_rate`, `summary`), `status: delivered`, `delivered_at` and `completed_at` set to now, `git.branch: gse/quick/{short-name}`. Commit the change, the test and this entry together: `fix|docs|chore: {summary} (quick, TASK-{ID})`.
+
+**Q5 — The one question (Gate).**
+> Merge `gse/quick/{short-name}` into `main`? {N} file(s), +{a}/−{b} lines; tests: {passed}/{total} green {or: "this project has no automated tests"}.
+> 1. **Merge** (recommended) — `git checkout main && git merge --no-ff gse/quick/{short-name}`, then delete the branch.
+> 2. **Keep the branch** — not merged; I set the TASK back to `status: done` on the branch (one commit) so nothing claims it was delivered.
+> 3. **Discuss**
+
+With no automated tests, option 1 is an Override (one-sentence reason, recorded as a DEC-).
+
+**Q6 — Close.** One Inform line: what changed, the test result, the merge commit. No tag, no release notes, no health recomputation, no scope reconciliation, no Inform-tier decision summary; the next `/gse:deliver` or `/gse:status` shows the quick TASK in the backlog history. If the user wants a version tag for it, that is a separate, explicit request.
 
 ### Step 0 — Sprint Freeze Check (Hard guardrail)
 
@@ -41,13 +67,15 @@ Before any other work, verify the current sprint is writeable. This preflight im
    > 1. **Start next sprint now** (recommended, default) — I'll run the next-sprint opening sequence: in Lightweight mode `/gse:plan --strategic`; in Full mode `/gse:collect` > `/gse:assess` > `/gse:plan --strategic`. Once Sprint S{NN+1} is active, I'll execute your task there.
    > 2. **Cancel** — Abort this `/gse:task` invocation. No changes will be made.
    > 3. **Discuss** — Explore the trade-offs of opening a new sprint vs. cancelling.
+   > 4. **Quick fix** — *only when the task is a small change eligible for the Quick path (Q1)*: run it as `/gse:task --quick`; it does not write into the frozen sprint.
 
 4. On option 1:
    - Invoke the mode-appropriate opening sequence inline (read `config.yaml → lifecycle.mode` to decide).
    - After `/gse:plan --strategic` completes, re-read `.gse/status.yaml → current_sprint` (it now holds `{NN+1}`) and re-read `.gse/plan.yaml → status` (it now holds `active`).
    - Proceed to Step 1 in the new sprint context.
 5. On option 2: stop execution. No state change.
-6. On option 3: explain the Sprint Freeze invariant briefly (*"A delivered sprint is immutable — complementary work goes into a successor sprint, often named 'Sprint N+1 — Complementary tasks'."*), then re-present the Gate (options 1-3 only).
+6. On option 3: explain the Sprint Freeze invariant briefly (*"A delivered sprint is immutable — complementary work goes into a successor sprint, often named 'Sprint N+1 — Complementary tasks'."*), then re-present the Gate (options 1-4; option 4 only when the task is eligible for the Quick path).
+7. On option 4: run the Quick path (Q1 onwards) with the same description.
 
 ### Step 1 — Task Analysis
 

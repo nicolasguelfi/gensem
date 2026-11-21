@@ -46,9 +46,9 @@ If `--all` is specified, each TASK is delegated to its own sub-agent **sequentia
 
 ## Workflow
 
-### Step 0 — Pre-production Guardrails (Hard — cannot be skipped)
+### Step 0 — Pre-production Guardrails (Hard — each stop names its exit)
 
-Before starting ANY task, verify these conditions. If any check fails, **STOP and do not proceed**.
+Before starting ANY task, verify these conditions. If a check fails, stop and present its Gate: the remedy (default), **Override — proceed anyway** (the user gives a one-sentence reason, recorded as a DEC- naming the guardrail; orchestrator — Blocks and their exits), or Discuss. Never proceed silently.
 
 **Sprint Freeze Check** (applied before all other Step 0 guardrails) — Read `.gse/plan.yaml`. If absent (Micro mode), skip this check. If `plan.yaml.status == active`, proceed to the numbered guardrails below. If `plan.yaml.status ∈ {completed, abandoned}`, the current sprint is **frozen**: do NOT transition any TASK forward and do NOT write to `backlog.yaml`. Present the Sprint Freeze Gate:
 
@@ -58,19 +58,20 @@ Before starting ANY task, verify these conditions. If any check fails, **STOP an
 > 1. **Start next sprint now** (recommended, default) — I'll run the next-sprint opening sequence: in Lightweight mode `/gse:plan --strategic`; in Full mode `/gse:collect` > `/gse:assess` > `/gse:plan --strategic`. Once Sprint S{NN+1} is active, I'll carry the planned production work into it.
 > 2. **Cancel** — Abort this `/gse:produce` invocation. No changes will be made.
 > 3. **Discuss** — Explore the trade-offs.
+> 4. **Quick fix** — *only when the requested work is a small change (at most 1 point, nothing security-sensitive)*: run `/gse:task --quick` instead; it does not write into the frozen sprint.
 
-On option 1: invoke the mode-appropriate opening sequence inline; after promotion, re-read `.gse/status.yaml → current_sprint` and `.gse/plan.yaml → status`, then proceed to the numbered guardrails below in the new sprint context. On option 2: stop execution. On option 3: explain the Sprint Freeze invariant, then re-present the Gate.
+On option 4: hand over to `/gse:task --quick` with the user's request. On option 1: invoke the mode-appropriate opening sequence inline; after promotion, re-read `.gse/status.yaml → current_sprint` and `.gse/plan.yaml → status`, then proceed to the numbered guardrails below in the new sprint context. On option 2: stop execution. On option 3: explain the Sprint Freeze invariant, then re-present the Gate.
 
 **Standard guardrails (applied after Sprint Freeze passes):**
 
-1. **Requirements check (Full and Lightweight)** — Verify that `docs/sprints/sprint-{NN}/reqs.md` exists and contains at least one REQ- artefact traced to the TASK about to start. If missing: report "Requirements not defined for this task. I need to write down what the app should do first." Then run REQS. **Exception:** Micro mode and `artefact_type: spike` — skip this check.
+1. **Requirements check (Full and Lightweight)** — Verify that `docs/sprints/sprint-{NN}/reqs.md` exists and contains at least one REQ- artefact traced to the TASK about to start. If missing: report "Requirements not defined for this task. I need to write down what the app should do first." Gate: **Run REQS** (default) / **Override — proceed anyway** (the user gives a one-sentence reason, recorded as a DEC- naming the guardrail; orchestrator — Blocks and their exits) / **Discuss**. **Exception:** Micro mode and `artefact_type: spike` — skip this check.
 2. **Test strategy check (mode-differentiated):**
-   - **Full mode:** Verify that a test strategy exists (`docs/sprints/sprint-{NN}/test-strategy.md` or `tests` in `.gse/plan.yaml.workflow.completed`). If missing → **Hard guardrail.** Report "Test strategy not defined. I need to describe how we'll verify each feature works." Then run TESTS `--strategy`.
+   - **Full mode:** Verify that a test strategy exists (`docs/sprints/sprint-{NN}/test-strategy.md` or `tests` in `.gse/plan.yaml.workflow.completed`). If missing → **Hard guardrail.** Report "Test strategy not defined. I need to describe how we'll verify each feature works." Gate: **Run TESTS `--strategy`** (default) / **Override — proceed anyway** (the user gives a one-sentence reason, recorded as a DEC- naming the guardrail; orchestrator — Blocks and their exits) / **Discuss**.
    - **Lightweight mode:** If no test strategy exists → **Soft guardrail (Inform).** Auto-generate a minimal test strategy based on `config.yaml → project.domain` (default test pyramid, no formal artefact). Log in `plan.yaml.coherence` as auto-generated. Continue without blocking.
    - **Micro mode:** Skip this check.
    **Exception: `artefact_type: spike`** — skip this check in all modes.
 3. **Preview check (web/mobile only)** — If `config.yaml → project.domain` is `web` or `mobile` and no preview artefact exists (`docs/sprints/sprint-{NN}/preview.md` or equivalent), present a Gate: "A preview was not done for this project. For a visual project, it's recommended to validate the look before coding." Options: **Proceed without preview** / **Run preview first** / **Discuss**. For beginners: "Before I build, it's helpful to show you a sketch of what the app will look like — want me to do that first?" **Exception: `artefact_type: spike`** — skip this check.
-4. **Upstream test-review findings check** (spec §6.5) — If `docs/sprints/sprint-{NN}/review.md` exists, scan for unresolved findings tagged `[STRATEGY]` or `[TST-SPEC]` with severity HIGH. If any exist, **Hard guardrail: block production**. Report: "Tests were reviewed upstream and HIGH findings remain open. Resolve them first — writing code against an incorrect test plan wastes the sprint." List the open findings and their IDs. Redirect the user to `/gse:fix --severity HIGH --task TASK-upstream` or manual resolution of the strategy/spec. **Exception: `artefact_type: spike`** — skip this check.
+4. **Upstream test-review findings check** (spec §6.5) — If `docs/sprints/sprint-{NN}/review.md` exists, scan for unresolved findings tagged `[STRATEGY]` or `[TST-SPEC]` with severity HIGH. If any exist, **Hard guardrail: block production** — Gate: **Resolve the findings first** (default) / **Override — proceed anyway** (the user gives a one-sentence reason, recorded as a DEC- naming the guardrail; orchestrator — Blocks and their exits) (accepting the risk of coding against a disputed test plan) / **Discuss**. Report: "Tests were reviewed upstream and HIGH findings remain open. Resolve them first — writing code against an incorrect test plan wastes the sprint." List the open findings and their IDs. Redirect the user to `/gse:fix --severity HIGH --task TASK-upstream` or manual resolution of the strategy/spec. **Exception: `artefact_type: spike`** — skip this check.
 
 **Decision tier override:**
 5. **Supervised mode** — If `profile.decision_involvement` is `supervised`, ALL technical choices in this TASK are escalated to **Gate-tier** decisions. This includes: library/dependency selection, data format, folder structure, persistence strategy, API design, naming conventions. The agent MUST present options and wait for user confirmation — it MUST NOT make these choices silently.
@@ -145,21 +146,16 @@ Emit the note ONCE per activity invocation, before the first branch/worktree cre
 #### Strategy: `branch-only`
 
 1. Determine base branch:
-   - If sprint integration branch `gse/sprint-{NN}/integration` exists (full mode): branch from it.
-   - If no sprint branch exists (Lightweight mode): branch from `main` directly.
+   - The sprint integration branch `gse/sprint-{NN}/integration` (created by `/gse:plan` Step 6 — Git Integration, in Full and Lightweight modes alike): branch from it.
+   - Fallback, only if it does not exist (a plan written before that step ran): create it from `main` first (`git branch gse/sprint-{NN}/integration main`), then branch from it — never commit sprint work on `main` (the protect-main hook refuses it; `/gse:deliver` merges the integration branch into `main`).
 2. Create feature branch:
    ```
-   # Full mode:
    git branch gse/sprint-{NN}/{type}/{name} gse/sprint-{NN}/integration
    git checkout gse/sprint-{NN}/{type}/{name}
-
-   # Lightweight mode (no sprint branch):
-   git branch gse/{type}/{name} main
-   git checkout gse/{type}/{name}
    ```
 3. Update the TASK in `backlog.yaml`:
    - `status: in-progress`
-   - `git.branch: gse/sprint-{NN}/{type}/{name}` (full) or `gse/{type}/{name}` (lightweight)
+   - `git.branch: gse/sprint-{NN}/{type}/{name}`
    - `git.branch_status: active`
 
 #### Strategy: `none`

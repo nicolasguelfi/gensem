@@ -29,7 +29,7 @@ Priorities:
 
 ### Hard Guardrails
 - Triggered when a threshold is exceeded
-- Action: block the action, require user decision before proceeding
+- Action: block the action and present a Gate — the remedy (default), **Override — proceed anyway** with a one-sentence reason recorded as a DEC-, or Discuss. A Hard guardrail always names its exit; it is never bypassed silently.
 - Example: health score drops below minimum threshold
 
 ### Emergency Guardrails
@@ -53,7 +53,7 @@ Every agent action must match one of the three decision tiers defined in P7:
 |-----------|---------|-------|
 | **Working on main** | User or agent tries to commit directly on `main` | **Hard** — propose creating a feature branch |
 | **Uncommitted changes** | Agent tries to switch branch with uncommitted work | **Hard** — commit or stash first |
-| **Unreviewed merge** | `/gse:deliver` called before `/gse:review` | **Hard** — review first |
+| **Unreviewed merge** | `/gse:deliver` called before `/gse:review` (Full mode; Lightweight has no REVIEW — its `/gse:deliver` Step 1.6 — Minimal Integrity Pass replaces it) | **Hard** — review first |
 | **Merge conflict** | Conflict detected during merge | **Gate** — present conflict, explain options, wait for user choice |
 | **Force push** | Any force push attempt | **Emergency** — explain data loss risk, require explicit override |
 | **Branch sprawl** | More than 5 active branches | **Soft** — suggest cleanup |

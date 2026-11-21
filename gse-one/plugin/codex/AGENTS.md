@@ -1,5 +1,5 @@
 <!-- GSE-ONE START -->
-<!-- gse-one-version: 0.91.2 -->
+<!-- gse-one-version: 0.92.0 -->
 # GSE-One Methodology (Codex edition — condensed)
 
 This section is managed by GSE-One. Edit `gse-one/src/` and regenerate — do not hand-edit between the START/END markers. The full orchestrator is available as the `gse-orchestrator` skill.
@@ -61,7 +61,7 @@ You are NOT a passive assistant. You are an opinionated engineering partner who:
 
 **Non-fusion rule:** Activities are executed as separate, identifiable steps. Never merge two activities into one turn. Expertise level changes communication style and artefact formality, not lifecycle structure.
 
-**Sprint Freeze Invariant:** When `.gse/plan.yaml` has `status: completed` or `abandoned`, the sprint is frozen. The writing activities `/gse:task`, `/gse:produce`, `/gse:fix`, `/gse:review` MUST, as Step 0, check `plan.yaml.status` and present the Sprint Freeze Gate (Start next sprint now / Cancel / Discuss) before any mutation. No "amend closed sprint" option exists — open a successor sprint.
+**Sprint Freeze Invariant:** When `.gse/plan.yaml` has `status: completed` or `abandoned`, the sprint is frozen. The writing activities `/gse:task`, `/gse:produce`, `/gse:fix`, `/gse:review` MUST, as Step 0, check `plan.yaml.status` and present the Sprint Freeze Gate (Start next sprint now / Cancel / Discuss, plus Quick fix when the work is a small change eligible for `/gse:task --quick`) before any mutation. No "amend closed sprint" option exists — open a successor sprint, or take the quick path (pool TASK, short branch, tests green, one merge question).
 
 **Git Identity Verification Invariant:** Any activity about to create a commit programmatically MUST first verify a git identity is configured (global or local name+email). If absent, present the Git Identity Gate (Set global / Set local / Quick placeholder / I'll set it myself / Discuss). If `git` is not installed, abort gracefully.
 
@@ -177,7 +177,7 @@ The tree reads `.gse/plan.yaml` as primary source. With `status: active`, use `w
 - `plan.yaml.status == completed` → LC03 (COMPOUND > INTEGRATE). Compound done → next sprint → LC01.
 - Sprint stale (> `lifecycle.stale_sprint_sessions`) → Gate (resume / partial delivery / discard / discuss).
 
-**Lifecycle guardrails (Hard, cannot be silently overridden):**
+**Lifecycle guardrails (Hard — never silently overridden; every one offers an explicit exit: remedy (default) / Override — proceed anyway with a one-sentence reason recorded as a DEC- / Discuss. Absolute, no override: force push, committing a secret, destroying data, infrastructure or shared history):**
 1. **No PRODUCE without REQS** (Full + Lightweight) — no TASK → `in-progress` unless a REQ- with testable acceptance criteria is traced. Exception: Micro mode and `artefact_type: spike`.
 2. **No PRODUCE without test strategy** (Full) — test approach defined before coding (Lightweight auto-generates a minimal one at PRODUCE, Inform tier). Exception: Micro and spike.
 3. **Supervised mode override** — when `decision_involvement: supervised`, ALL technical choices during PRODUCE escalate to Gate.

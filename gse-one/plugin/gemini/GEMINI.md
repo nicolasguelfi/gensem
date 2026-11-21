@@ -1,5 +1,5 @@
 <!-- GSE-ONE START -->
-<!-- gse-one-version: 0.91.2 -->
+<!-- gse-one-version: 0.92.0 -->
 # GSE-One Methodology (Gemini edition)
 
 This section is managed by GSE-One. Edit `gse-one/src/` and regenerate — do not hand-edit between the START/END markers.
@@ -67,7 +67,7 @@ Rationale: users rely on GSE-One to provide structure. Proposing alternatives at
 - `/gse:fix`
 - `/gse:review`
 
-The Gate offers exactly three options — *Start next sprint now* (default) / *Cancel* / *Discuss*. No "amend closed sprint" option exists; the sanctioned pattern is to open a successor sprint. Option 1 invokes the mode-appropriate opening sequence inline (`/gse:plan --strategic` in Lightweight; `/gse:collect` > `/gse:assess` > `/gse:plan --strategic` in Full), which increments `.gse/status.yaml → current_sprint` and creates a fresh `.gse/plan.yaml` with `status: active`.
+The Gate offers three options — *Start next sprint now* (default) / *Cancel* / *Discuss* — plus a fourth, **Quick fix**, when the requested work is a small change eligible for `/gse:task --quick` (at most 1 point, nothing security-sensitive). No "amend closed sprint" option exists; the sanctioned patterns are a successor sprint or, for a small change, the quick path. The quick path does not write into the frozen sprint: it records a pool TASK (`sprint: null`, `origin: ad-hoc`, `origin_ref: quick`) delivered on its own. Option 1 invokes the mode-appropriate opening sequence inline (`/gse:plan --strategic` in Lightweight; `/gse:collect` > `/gse:assess` > `/gse:plan --strategic` in Full), which increments `.gse/status.yaml → current_sprint` and creates a fresh `.gse/plan.yaml` with `status: active`.
 
 **Exempt activities** (no Sprint Freeze preflight required): `/gse:compound`, `/gse:integrate`, `/gse:pause`, `/gse:resume`, `/gse:go`, `/gse:status`, `/gse:health`, `/gse:backlog`, `/gse:learn`, `/gse:hug`, `/gse:collect`, `/gse:assess`, `/gse:plan --strategic`, `/gse:deploy`, `/gse:deliver`.
 
@@ -444,14 +444,24 @@ Evaluate states **in order** — the first matching row wins.
 
 This is **not a new activity** — it is a documented use of the existing PLAN + REQS + PRODUCE + DELIVER cycle. The pedagogical insert exists because, in observed sessions, users facing a post-delivery bug defaulted to direct commits on `main` (bypassing review) or felt the methodology had no answer for them. Both are now framed: the answer is "open a tiny successor sprint", and the orchestrator says so the first time the situation arises.
 
-Edge case — if the bug is **trivial** (one-line typo, missing import, doc fix) and the user explicitly invokes `/gse:task --quick` or equivalent, the existing ad-hoc TASK channel applies (the spec §14.3 — Sprint Freeze (Hard) lifecycle guardrail still requires opening a successor sprint or rejecting the operation; the methodology does NOT offer a hidden "patch main directly" escape hatch). The pedagogy above remains the canonical path.
+**Small fix — the quick path.** If the bug is **small** (at most 1 point: a typo, a missing import, a one-line fix, a doc fix) and touches nothing security-sensitive, offer `/gse:task --quick` next to the successor sprint: a short branch from `main`, the fix, the project's tests re-run and green (one new or updated test when behaviour changes), then one question — merge into `main`? It does not write into the frozen sprint (pool TASK, delivered on its own) and never commits on `main` directly (the merge does). Anything larger keeps the successor-sprint path above.
 
 ### Lifecycle guardrails (Hard)
 
-These guardrails **block** progression and cannot be overridden silently:
+These guardrails **block** progression and cannot be overridden silently — they can be overridden **explicitly**, per the exit rule below.
 
-1. **No PRODUCE without REQS (Full and Lightweight)** — No TASK can move to `in-progress` unless at least one REQ- artefact with testable acceptance criteria is traced to it. In Full mode, the quality assurance checklist (Step 7) must also have been run. REQS is test-driven: acceptance criteria ARE the future validation test specifications. For beginners: "Before I start building, I need to understand what you need, write down exactly what the app should do, and have you confirm." **Exception:** Micro mode and `artefact_type: spike` — spikes bypass REQS and TESTS guardrails (they are complexity-boxed experiments, max 3 points, non-deliverable, must produce a DEC-).
-2. **No PRODUCE without test strategy (Full only)** — The test approach (pyramid, verification from DESIGN + validation from REQS acceptance criteria, coverage targets) must be defined before coding starts. Test strategy comes AFTER DESIGN and PREVIEW. In Lightweight mode, a minimal test strategy is auto-generated at PRODUCE time (Soft guardrail — Inform tier). For beginners: "Before I build, I'll describe how we'll verify each feature works correctly." **Exception:** Micro mode and `artefact_type: spike`.
+**Blocks and their exits (spec §9.1 — every Hard guardrail names its exit).** A Hard guardrail stops the action and presents a Gate whose options are: the remedy (default), **Override — proceed anyway**, and Discuss. On Override the user gives a one-sentence reason; it is recorded as a DEC- naming the guardrail (Gate tier), and the deviation stays visible (`/gse:status`, the dashboard, the release notes of the delivery it affects). The agent never pre-selects Override, never takes it on the user's behalf (the autonomous profile included), and never bypasses a guardrail silently. **Absolute — no override (Emergency tier):** a force push; committing a secret or credential; destroying data, infrastructure or shared history (these keep their existing explicit confirmations). Every other stop in an activity — missing requirements or test strategy before PRODUCE, open HIGH test-review findings, absent test evidence before REVIEW or DELIVER, an untested `must` requirement, coverage below the minimum, the budget — offers this exit.
+
+1. **No PRODUCE without REQS (Full and Lightweight)** — No TASK can move to `in-progress` unless at least one REQ- artefact with testable acceptance criteria is traced to it. In Full mode, the quality assurance checklist (Step 7) must also have been run. REQS is test-driven: acceptance criteria ARE the future validation test specifications. For beginners: "Before I start building, I need to understand what you need, write down exactly what the app should do, and have you confirm." Exit: Override (DEC-). **Exception:** Micro mode and `artefact_type: spike` — spikes bypass REQS and TESTS guardrails (they are complexity-boxed experiments, max 3 points, non-deliverable, must produce a DEC-).
+2. **No PRODUCE without test strategy (Full only)** — The test approach (pyramid, verification from DESIGN + validation from REQS acceptance criteria, coverage targets) must be defined before coding starts. Test strategy comes AFTER DESIGN and PREVIEW. In Lightweight mode, a minimal test strategy is auto-generated at PRODUCE time (Soft guardrail — Inform tier). For beginners: "Before I build, I'll describe how we'll verify each feature works correctly." Exit: Override (DEC-). **Exception:** Micro mode and `artefact_type: spike`.
+
+### Configuration switches the orchestrator applies
+
+Read at every activity start from `.gse/config.yaml`; each changes behaviour as stated (a switch with no effect must not exist — see CLAUDE.md Meta-4 — Lightness discipline):
+- `decisions.always_gate` — decisions in these categories (`security`, `data-model`, `external-dependency`, `merge-strategy`, …) are always Gate tier, whatever the P7 scoring says.
+- `decisions.tier_bias` — `hands-off` resolves borderline decisions one tier lower (Gate → Inform, never for `always_gate` categories or irreversible actions); `hands-on` one tier higher (Inform → Gate); `balanced` applies P7 as is.
+- `guardrails.sensitivity` — `auto` follows the expertise calibration of spec §9.4 — Calibration; `strict` triggers Soft and Hard guardrails as for a beginner, `standard` as for an intermediate, `relaxed` as for an expert. Emergency guardrails always trigger.
+- `lifecycle.phases.LC02.<activity>: false` — that activity is skipped in the sprint workflow (one Inform line when the sprint plan is built), e.g. `tests: false` for a documentation project (spec §13.4 — Non-Code Projects).
 
 ### Decision tier override
 
@@ -561,7 +571,7 @@ Rationale: invariant 2 is the operational fix for the silent coach drift observe
 
 - **Full mode** (complex projects — persistence, multi-component, CI, many dependencies): LC01 > LC02 > LC03, worktree isolation, 8 health dimensions, full P7 tiers. Planning state: `.gse/plan.yaml` with full workflow tracking.
 - **Lightweight mode** (simple projects — few dependencies, single component, no persistence): PLAN > REQS > PRODUCE > DELIVER, branch-only, Auto+Gate only, 3 health dimensions, no complexity budget. REQS with reduced ceremony (no quality checklist, no coverage analysis). Test strategy auto-generated at PRODUCE time (Soft guardrail). Planning state: `.gse/plan.yaml` with reduced workflow `[plan, reqs, produce, deliver]`. User can upgrade anytime.
-- **Micro mode** (trivial projects — scripts, one-off tasks, experiments): PRODUCE > DELIVER, direct commit, 1 state file (`.gse/status.yaml`), Gate only (security/destructive), no health, no budget, no REQS/TESTS guardrails. Planning state: **no `plan.yaml`** — orchestrator falls back to file-existence checks. For quick scripts and one-off tasks.
+- **Micro mode** (trivial projects — scripts, one-off tasks, experiments): PRODUCE > DELIVER, direct commit (`/gse:go` sets `git.strategy: none` when Micro is chosen, which the protect-main hook honours), 1 state file (`.gse/status.yaml`), Gate only (security/destructive), no health, no budget, no REQS/TESTS guardrails. Planning state: **no `plan.yaml`** — orchestrator falls back to file-existence checks. For quick scripts and one-off tasks.
 - **Adopt mode** (existing project): non-destructive scan, sprint 0 baseline, optional annotation. Mode is determined by complexity assessment on first `/gse:go` after adoption.
 
 **Mode selection:** Modes are determined by a **complexity assessment** (7 structural signals: dependencies, persistence, entry points, multi-component, CI/CD, git maturity, tests). The assessment recommends a mode, presented as a Gate decision — the user confirms or overrides. Source file count is not a complexity signal — it is used only as a triviality pre-filter for Micro mode detection. See `/gse:go` Step 6 for the full protocol.

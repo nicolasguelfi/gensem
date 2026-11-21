@@ -230,7 +230,7 @@ Present the recommendation with rationale adapted to user expertise:
 3. Discuss
 
 After the user confirms, set `config.yaml → lifecycle.mode` and proceed:
-- **Micro** → start PRODUCE
+- **Micro** → also set `config.yaml → git.strategy: none` (Micro commits directly; the protect-main hook honours this setting — say so in one Inform line), then start PRODUCE
 - **Lightweight** → start PLAN
 - **Full** → start LC01 (`COLLECT` > `ASSESS` > `PLAN`)
 
@@ -241,7 +241,7 @@ After the user confirms, set `config.yaml → lifecycle.mode` and proceed:
 | Selection | Complex project (persistence, multi-component, CI, many deps) | Simple project (few deps, single component, no persistence) | Trivial project (script, one-off, experiment) |
 | Lifecycle | LC01 > LC02 > LC03 | PLAN > REQS > PRODUCE > DELIVER | PRODUCE > DELIVER |
 | `.gse/` state | 4 files (config, profile, status, backlog) + plan.yaml | 4 files + plan.yaml | 1 file (`status.yaml` with inline profile + task list) |
-| Git strategy | `worktree` (sprint + feature branches) | `branch-only` (single feature branch from main) | direct commit (no branch creation) |
+| Git strategy | `worktree` (sprint + feature branches) | `branch-only` (sprint branch + one feature branch per task, no worktrees) | direct commit (`git.strategy: none`, no branch creation) |
 | Sprint artefacts | Full set (plan-summary, reqs, design, tests, review, compound) | reqs.md only | None |
 | Health dashboard | 8 dimensions | 3 (test_pass_rate, review_findings, git_hygiene) | None |
 | Complexity budget | Tracked | Not tracked | Not tracked |

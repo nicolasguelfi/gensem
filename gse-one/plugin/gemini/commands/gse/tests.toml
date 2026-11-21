@@ -169,6 +169,7 @@ When code coverage drops below the configured minimum (`config.yaml → testing.
 GUARDRAIL [HARD]: Code coverage is {current}% (minimum: {minimum}%).
 Add tests before proceeding to DELIVER.
 ```
+Gate: **Add tests** (default) / **Override — proceed anyway** (the user gives a one-sentence reason, recorded as a DEC- naming the guardrail; orchestrator — Blocks and their exits) — the coverage shortfall is listed in the release notes / **Discuss**. Lowering `testing.coverage.minimum` in `config.yaml` is a separate, durable choice, not an override.
 
 The same applies to requirements coverage:
 - 100% for `must` priority requirements

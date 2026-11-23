@@ -23,6 +23,8 @@ permission:
     "git grep *": allow
     "git rev-parse *": allow
     "git worktree list *": allow
+    "git merge-base *": allow
+    "git stash list *": allow
     "git branch --show-current *": allow
     "git branch --list *": allow
     "git branch -a *": allow

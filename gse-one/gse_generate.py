@@ -97,7 +97,7 @@ OC_REVIEWER_AGENTS = (
 )
 OC_REVIEWER_STEPS = 25  # 15 was hit by the devil-advocate on the 2026-11-23 bench
 _GIT_READ = ("log", "diff", "show", "status", "blame", "ls-files", "ls-tree", "grep", "rev-parse",
-             "worktree list", "branch --show-current", "branch --list", "branch -a", "branch -r",
+             "worktree list", "merge-base", "stash list", "branch --show-current", "branch --list", "branch -a", "branch -r",
              "branch -v", "branch -vv", "branch --all", "branch --format", "branch --contains", "branch --merged")
 OC_REVIEWER_SHELL_ALLOW = (
     ("cd *", "pwd *", "echo *", "printf *")

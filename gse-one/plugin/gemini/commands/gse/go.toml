@@ -140,7 +140,7 @@ Evaluate states **in order** — the first matching row wins.
 **Decision tier override:**
 3. **Supervised mode** — When `decision_involvement: supervised`, ALL technical choices during PRODUCE are escalated to **Gate-tier** decisions. The agent presents options and waits for user confirmation.
 
-Present the proposal and wait for user confirmation before executing.
+Present the proposal and wait for user confirmation before executing. When a sprint is active, open the proposal with one progress line (Inform, no extra question), as `/gse:resume` does: *"Sprint S{NN}: {done}/{total} tasks done, last test run {passed}/{total} passing, {open_findings} open review findings, budget {used}/{budget} points."* — read from `backlog.yaml`, the latest `test_evidence`, `review.md` and `plan.yaml.budget`; omit the parts that do not exist yet.
 
 ### Step 4 — Stale Sprint Detection
 

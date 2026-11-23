@@ -183,7 +183,7 @@ The git strategy (worktree/branch-only/none) is read from `config.yaml`.
 
 ### Step 5 — Execute Task
 
-1. Execute the work described in the task
+1. Execute the work described in the task. If it is a code task that traces a REQ with Given/When/Then criteria and `testing.strategy` resolves to `atdd`, write and commit its failing acceptance test first, as `/gse:produce` Step 3.1 — Acceptance Test First (test commit `gse(sprint-{NN}/test)`; the code commit keeps the `task` scope below); an ad-hoc task with no acceptance criteria is `test-after`.
 2. Commit at logical checkpoints:
    ```
    gse(sprint-{NN}/task): {description}

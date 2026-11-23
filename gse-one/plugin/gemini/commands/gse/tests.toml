@@ -183,9 +183,9 @@ The agent's testing behavior adapts to the user's level (`profile.yaml → dimen
 
 | Level | Agent's Testing Behavior |
 |-------|------------------------|
-| **Beginner** | The agent writes all tests, executes them, and shows visual results. "8 tests pass, 2 fail — here are the screenshots." No jargon. The user sees evidence, not code. |
+| **Beginner** | The agent writes all tests, executes them, and shows visual results. "8 tests pass, 2 fail — here are the screenshots." No jargon. The user sees evidence, not code — except the acceptance test of each feature, shown in plain language before the code is written and confirmed by the user (`testing.strategy` `atdd`/`auto`, `/gse:produce` Step 3.1 — Acceptance Test First). |
 | **Intermediate** | The agent proposes the test strategy, writes the tests, explains what each test verifies in plain language. The user can modify tests. Technical terms introduced progressively (P14). |
-| **Advanced** | The agent discusses strategy (TDD vs test-after), proposes the test pyramid, co-writes tests with the user. Coverage targets are negotiated. |
+| **Advanced** | The agent discusses strategy (acceptance test first vs test-after — recorded as `testing.strategy` in `.gse/config.yaml`), proposes the test pyramid, co-writes tests with the user. Coverage targets are negotiated. |
 | **Expert** | Full collaboration. The agent proposes advanced techniques (property-based testing, mutation testing, contract testing). The user drives, the agent assists. |
 
 ### Step 2 — Setup (`--setup`)
@@ -246,18 +246,18 @@ Test file naming: `tests/{level}/test_{component}_{feature}.py` (Python example)
 
 Test structure:
 ```python
-# TST-007: Verify rate limiter rejects requests over threshold
-# Traces: REQ-007 (rate limiting), DES-003 (RateLimiter component)
-def test_rate_limiter_rejects_over_threshold():
-    """Given a user at the rate limit, when they send another request,
-    then the request is rejected with 429."""
-    limiter = RateLimiter(max_requests=100, window_seconds=60)
-    for _ in range(100):
-        limiter.record_request(user_id="test-user")
-    
-    result = limiter.check_request(user_id="test-user")
-    assert result.allowed is False
-    assert result.retry_after > 0
+# TST-007: filterByMonth returns only March books
+# Traces: REQ-003 (filter books by month read), scenario 1
+def test_filter_by_month_returns_only_march_books():
+    """Given 5 books read across 3 months,
+    when filtering by "March 2026",
+    then only the 2 March books appear."""
+    books = [book("2026-01-12"), book("2026-03-02"), book("2026-03-28"),
+             book("2026-02-15"), book("2026-01-30")]
+
+    result = filter_by_month(books, year=2026, month=3)
+
+    assert [b.read_on for b in result] == ["2026-03-02", "2026-03-28"]
 ```
 
 #### TST specs review pass (spec §6.5 — TST-SPEC tier)

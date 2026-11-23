@@ -22,7 +22,7 @@ Arguments: $ARGUMENTS
 
 Before executing, read:
 1. `.gse/status.yaml` — current sprint and lifecycle state
-2. `.gse/config.yaml` — project configuration, especially `git.strategy` (worktree/branch-only/none)
+2. `.gse/config.yaml` — project configuration, especially `git.strategy` (worktree/branch-only/none) and `testing.strategy` (auto/atdd/test-after — Step 3.1)
 3. `.gse/backlog.yaml` — sprint tasks, their status, and assignment
 4. `.gse/profile.yaml` — user expertise level (affects test generation behavior)
 5. `docs/sprints/sprint-{NN}/reqs.md` — requirements for the current sprint (**mandatory**)
@@ -69,7 +69,7 @@ On option 4: hand over to `/gse:task --quick` with the user's request. On option
    - **Lightweight mode:** If no test strategy exists → **Soft guardrail (Inform).** Auto-generate a minimal test strategy based on `config.yaml → project.domain` (default test pyramid, no formal artefact). Log in `plan.yaml.coherence` as auto-generated. Continue without blocking.
    - **Micro mode:** Skip this check.
    **Exception: `artefact_type: spike`** — skip this check in all modes.
-3. **Preview check (web/mobile only)** — If `config.yaml → project.domain` is `web` or `mobile` and no preview artefact exists (`docs/sprints/sprint-{NN}/preview.md` or equivalent), present a Gate: "A preview was not done for this project. For a visual project, it's recommended to validate the look before coding." Options: **Proceed without preview** / **Run preview first** / **Discuss**. For beginners: "Before I build, it's helpful to show you a sketch of what the app will look like — want me to do that first?" **Exception: `artefact_type: spike`** — skip this check.
+3. **Preview check (web/mobile only, once per sprint)** — If `config.yaml → project.domain` is `web` or `mobile` and no preview artefact exists (`docs/sprints/sprint-{NN}/preview.md` or equivalent), present a Gate at the first TASK of the sprint only (once answered, later TASKs of the same sprint do not ask again — **Proceed without preview** is recorded in `plan.yaml → workflow.skipped` as `{activity: preview, reason: …}`, and the check is skipped while `preview` is listed there): "A preview was not done for this project. For a visual project, it's recommended to validate the look before coding." Options: **Proceed without preview** / **Run preview first** / **Discuss**. For beginners: "Before I build, it's helpful to show you a sketch of what the app will look like — want me to do that first?" **Exception: `artefact_type: spike`** — skip this check.
 4. **Upstream test-review findings check** (spec §6.5) — If `docs/sprints/sprint-{NN}/review.md` exists, scan for unresolved findings tagged `[STRATEGY]` or `[TST-SPEC]` with severity HIGH. If any exist, **Hard guardrail: block production** — Gate: **Resolve the findings first** (default) / **Override — proceed anyway** (the user gives a one-sentence reason, recorded as a DEC- naming the guardrail; orchestrator — Blocks and their exits) (accepting the risk of coding against a disputed test plan) / **Discuss**. Report: "Tests were reviewed upstream and HIGH findings remain open. Resolve them first — writing code against an incorrect test plan wastes the sprint." List the open findings and their IDs. Redirect the user to `/gse:fix --severity HIGH --task TASK-upstream` or manual resolution of the strategy/spec. **Exception: `artefact_type: spike`** — skip this check.
 
 **Decision tier override:**
@@ -120,7 +120,7 @@ Read `config.yaml` field `git.strategy` and branch accordingly.
 
 **Beginner adaptation (P9):** replace the technical note with plain language — e.g., *"I'm using separate folders for each task (default setup — say 'I'd prefer a simpler setup' if you want to change)."*
 
-Emit the note ONCE per activity invocation, before the first branch/worktree creation. Do not repeat on subsequent TASKs of the same sprint.
+Emit the note ONCE per activity invocation, before the first branch/worktree creation. Do not repeat on subsequent TASKs of the same sprint. Add the `testing.strategy` line of Step 3.1 — Acceptance Test First to the same note (one more line, no question).
 
 #### Strategy: `worktree` (default)
 
@@ -180,8 +180,9 @@ Produce the artefact according to the task specification:
 1. Read the task description and acceptance criteria from `backlog.yaml`
 2. If the task references requirements (REQ-NNN), read them from the requirements artefact
 3. If the task references design decisions (DES-NNN), read them from the design artefact
-4. Execute the work, creating or modifying files as specified
-5. **Pre-commit self-review (P16 — before every commit):**
+4. **Resolve the test mode** of this TASK from `config.yaml → testing.strategy` (see Step 3.1 — Acceptance Test First). With `atdd`, run Step 3.1 before writing any production code; with `test-after`, go straight to item 5.
+5. Execute the work, creating or modifying files as specified
+6. **Pre-commit self-review (P16 — before every commit):**
    Before committing, the agent MUST run these 5 checks on the changes about to be committed:
    - **(a) Hallucination hunt** — verify that all referenced APIs, libraries, and functions actually exist in the versions used
    - **(b) Assumption check** — list any assumptions made during implementation; flag those not validated by a REQ-
@@ -189,7 +190,7 @@ Produce the artefact according to the task specification:
    - **(d) Edge cases** — have boundary conditions been considered (empty input, max values, concurrent access, error states)?
    - **(e) Temporal validity** — are the dependency versions, API endpoints, and syntax current and not deprecated?
    If any check fails, fix before committing. If uncertain, flag as a finding for REVIEW.
-6. Commit at logical checkpoints using the convention:
+7. Commit at logical checkpoints using the convention:
    ```
    gse(sprint-{NN}/{type}): description
 
@@ -197,6 +198,31 @@ Produce the artefact according to the task specification:
    Task: TASK-{ID}
    Traces: [REQ-NNN, DES-NNN] (if applicable)
    ```
+
+#### Step 3.1 — Acceptance Test First (`testing.strategy`)
+
+GSE-One is acceptance-test-driven (ATDD): every requirement carries Given/When/Then acceptance criteria (`/gse:reqs`). With `atdd`, those criteria also drive production: the **acceptance test** of the TASK (does the feature the user asked for exist and behave as the REQ says?) is written and seen failing **before** the code. Unit and integration tests (is the code free of errors?) are still written with the code, as before. This is not the textbook unit-level TDD cycle: no unit-test-first micro-steps, no separate refactor commit.
+
+**Resolve the mode** from `config.yaml → testing.strategy`:
+
+| Value | Applied to this TASK |
+|---|---|
+| `atdd` | Acceptance test first (below) for every TASK of `artefact_type: code` that traces a REQ with Given/When/Then criteria (a code TASK without criteria falls back to `test-after`). |
+| `test-after` | Code first, then tests (Step 4). |
+| `auto` (default) | `atdd` when the TASK is `artefact_type: code` AND traces a REQ with Given/When/Then criteria; `test-after` otherwise (config, docs, spikes, imports, no criteria) and always in Micro mode. |
+
+Announce the resolved mode in the Step 2 config note (once per activity, Inform), e.g. *"Config applied: `testing.strategy` = `auto` → acceptance test first for code tasks with acceptance criteria."* Beginner wording: *"For each feature, I first write the check that proves it works, show you that it fails, then build the feature."* **Exit:** if the user says "no test first for this task", apply `test-after` to that TASK only (no DEC- needed).
+
+**With `atdd`, before item 5 of Step 3:**
+
+1. **Write the acceptance test(s).** One test per Given/When/Then scenario the TASK covers. If `/gse:tests` Step 3 — Write Tests already wrote the test for a declared TST-NNN, use it as is and go to the expected-fail check; if the TST-NNN is only declared, write it and keep its ID in the test name or a comment; otherwise derive the test from the criterion and name it after the REQ (e.g., REQ-003 scenario 1 → `TST-007: filterByMonth returns only March books`). The test checks the exact conditions of the criterion — not what the code will happen to do. Use the project's existing test framework and the lowest level that can check the criterion (a domain-level test is fine when the criterion does not involve the UI).
+2. **Expected-fail check (not a canonical run).** Run only these tests. They must fail **for the right reason** — the behaviour is missing (assertion fails, function or module not found), not a typo or a broken test setup. If a test passes already, tell the two cases apart: the test is too weak (it would pass without the feature) → strengthen it; the behaviour already exists (delivered by an earlier TASK) → Inform the user, keep the test as a regression test, and produce this TASK as `test-after`. Never weaken a correct test so that it fails. This check writes **no** TCP report, **no** `test_evidence`, and does not trigger the Step 4 failure Gate.
+3. **Commit the failing test:** `gse(sprint-{NN}/test): acceptance test for REQ-NNN` with the usual `Sprint:` / `Task:` / `Traces:` trailers (the trailers keep the test file in scope for Step 4.5).
+4. **Show the test (P7 tier).** Default **Inform**: one short block — the scenario, the test name, and the failure line — then continue. **Gate** instead when `profile.yaml → dimensions.it_expertise` is `beginner`, `config.yaml → decisions.tier_bias` is `hands-on`, or `profile.yaml → dimensions.decision_involvement` is `supervised`: *"Here is the test that will prove the feature works. It fails now because the feature does not exist yet. Is it the right check?"* — **Continue** (default) / **Change the test** / **Discuss**.
+5. **Write the code** (item 5), plus the unit/integration tests it needs. **Do not modify the acceptance test** committed in step 3: before the code commit, `git diff --quiet <test-commit> -- <test files>` must be clean. If the agent concludes the acceptance test itself is wrong, it stops and says so (Gate: **Fix the test** / **Keep it** / **Discuss**) — it never silently edits it to make the code pass.
+6. **Commit the code** (item 7) with the TASK's type scope — usually `gse(sprint-{NN}/feat): …` — once the acceptance test passes locally; the canonical run of Step 4 then records the evidence.
+
+Cost per TASK in `atdd`: one more commit and one short test run; plus one question per TASK when the display is a Gate (beginner, hands-on, supervised). `/gse:task --quick` keeps its single commit (it already writes the test first when behaviour changes).
 
 ### Step 4 — Test Execution (After Production)
 
@@ -208,7 +234,7 @@ PRODUCE invokes the **canonical test run** defined in spec §6.3. The seven cano
 3. In `supervised` mode: require **double confirmation** ("This is unusual — please confirm again").
 4. **Do not invoke** the canonical run.
 
-**Pre-condition B — no tests exist** and the artefact type warrants testing. Read `profile.yaml → dimensions.it_expertise`:
+**Pre-condition B — no tests exist** and the artefact type warrants testing (`test-after` mode only — in `atdd` mode the acceptance tests were written in Step 3.1). Read `profile.yaml → dimensions.it_expertise`:
 - **beginner**: Auto-generate tests, inform user ("I've created tests for this task.")
 - **intermediate**: Propose ("This task should have tests. Shall I generate them?")
 - **expert**: Propose with options ("No tests found. Options: generate unit tests / generate integration tests / skip / discuss")
@@ -289,6 +315,7 @@ After the canonical test run succeeds and before Finalize, compare what was deli
    - Test Campaign Summary (already shown inline during Step 4 — reiterate at summary time)
    - Manual testing procedure (from Step 6)
    - Remaining sprint budget (for intermediate/expert; hidden for beginner)
+   - Sprint progress, one line: *"Sprint S{NN}: {done}/{total} tasks produced, {passed}/{total} tests passing."* (all levels — the user's running view of the sprint, no question)
    - Next task suggestion (if any)
 
 ### Step 5.5 — Inform-Tier Decisions Summary (Creator-Activity Closure, spec P16)

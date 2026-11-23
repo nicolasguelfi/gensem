@@ -71,7 +71,7 @@ Rules for decomposition:
 - Each component has a single, well-defined responsibility
 - Dependencies flow from volatile to stable (never reverse)
 - Components communicate through explicit interfaces (no direct field access)
-- Circular dependencies are forbidden (hard guardrail)
+- Circular dependencies are forbidden (hard guardrail — Gate: **Break the cycle** (default) / **Override — proceed anyway**, one-sentence reason recorded as a DEC- naming the guardrail / **Discuss**; orchestrator — Blocks and their exits)
 - When a heavy UI or I/O framework is in scope (Streamlit, React, Next.js, Django, Flask, FastAPI, …), the agent (via the `architect` checklist) checks whether a framework-free domain module is warranted and, if so, proposes a DEC + a policy test enforcing the import boundary
 
 ### Step 2.5 — Shared State Identification
@@ -194,7 +194,7 @@ Check the design for structural quality:
 | Check | Rule |
 |-------|------|
 | **Coverage** | Every requirement is addressed by at least one component |
-| **Circular dependencies** | No circular dependency chains (HARD STOP if found) |
+| **Circular dependencies** | No circular dependency chains (Hard guardrail if found — exit: Override recorded as a DEC-, see Step 2 rules) |
 | **Interface completeness** | Every component has a defined interface |
 | **Error handling** | Every interface method defines its error cases |
 | **Decision records** | Every significant choice has a DEC record |

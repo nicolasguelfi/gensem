@@ -21,7 +21,7 @@ Arguments: $ARGUMENTS
 
 Before executing, read:
 1. `.gse/status.yaml` — current sprint and lifecycle state
-2. `.gse/config.yaml` — git strategy, `tag_on_deliver`, `post_tag_hook`, `backup_retention_days`
+2. `.gse/config.yaml` — git strategy, `tag_on_deliver`, `cleanup_on_deliver`, `post_tag_hook`, `backup_retention_days`
 3. `.gse/backlog.yaml` — all tasks and their statuses (must all be `done`, `reviewed`, or `delivered`)
 
 ## Workflow
@@ -99,7 +99,7 @@ Verify delivery readiness:
 
 1. **Review status** — Check that all sprint TASKs are ready for delivery (`backlog.yaml` TASK `status: reviewed` or `status: done` — both are terminal "ready to merge" statuses per spec §12.3 Status lifecycle). If any task has `status: in-progress`, `status: planned`, `status: review`, or `status: fixing`:
    - Report: "Task TASK-{ID} is not complete (status: {status})."
-   - Present Gate: **Wait** / **Deliver partial** / **Discuss**
+   - Present Gate: **Wait** / **Deliver partial** / **Override — deliver anyway** (for `review` or `fixing` only: the user gives a one-sentence reason, recorded as a DEC- naming the guardrail; the unreviewed TASK is listed in the release notes — orchestrator — Blocks and their exits) / **Discuss**
    - **Lightweight exception — `status: review` is expected, not incomplete.** Lightweight has no `/gse:review`, so a produced TASK can only be at `review` when it reaches DELIVER. In Lightweight mode, do NOT report or Gate a TASK at `status: review`: it is a delivery candidate, and Step 1.6 — Minimal Integrity Pass is what moves it to `reviewed`. The Gate above still applies in Lightweight to `in-progress`, `planned` and `fixing`.
 
 2. **Merge conflict detection** — For each feature branch, check for conflicts:
@@ -153,6 +153,8 @@ Read `docs/sprints/sprint-{NN}/test-strategy.md` if it exists. Identify **declar
 **Guardrail 3 — Stale test evidence** (per spec §9.3.1).
 
 - **Stale evidence** (`test_evidence.timestamp` predates latest feature-branch commit) → Soft guardrail: warn, suggest re-running. Non-blocking.
+
+**Sprint test summary (Inform, always shown).** When the three guardrails pass, show one block before going on — no question: *"Tests before delivery: {N} TASKs, {passed}/{total} tests passing in the latest runs, levels run: {levels}, acceptance tests: {n_acceptance} covering {n_req} REQs."* For beginners: *"Everything you asked for has been checked: {n_req} features, all tests pass."* This is the user's checkpoint on test results before the merge question of Step 3.
 
 This step enforces the three canonical Test-Specific Guardrails defined in spec §9.3.1 and the contract of spec §6.3 — Test Execution and Evidence, canonical run step 5 — *"Write `test_evidence` on each covered TASK"*. It is the consumer of the `test_evidence` field and the test-strategy / test-reports coherence check.
 
@@ -215,7 +217,7 @@ If `config.yaml` field `tag_on_deliver` is `true` (and `--skip-tag` was not spec
    ```
    git tag -a v{version} -m "Release v{version} — Sprint {NN}"
    ```
-4. **Remote backup prompt** — If no git remote is configured (`git remote` returns empty):
+4. **Remote backup prompt (first delivery only)** — If no git remote is configured (`git remote` returns empty) AND this is the project's first delivery (no earlier `docs/sprints/*/release.md`; this check runs even with `--skip-tag` or `tag_on_deliver: false`):
    ```
    Your project has no remote. Push to GitHub/GitLab to protect
    your work against local disk failure?
@@ -223,11 +225,11 @@ If `config.yaml` field `tag_on_deliver` is `true` (and `--skip-tag` was not spec
    2. Not now
    3. Discuss
    ```
-   This is an Inform-tier suggestion, not a blocker.
+   It is a question, not a blocker, asked once per project. On later deliveries without a remote, show one Inform line instead: *"Reminder: no remote backup yet — `/gse:deliver` can set one up if you ask."*
 
 ### Step 5 — Cleanup
 
-Unless `--skip-cleanup` was specified:
+Applied when `config.yaml → git.cleanup_on_deliver` is `true` (default) and `--skip-cleanup` was not given; otherwise branches and worktrees are kept and one Inform line says so. No question is asked — `git branch -d` refuses an unmerged branch, and the delivery tag keeps the history.
 
 1. **Delete merged feature branches**:
    ```
@@ -239,10 +241,7 @@ Unless `--skip-cleanup` was specified:
    git worktree remove .worktrees/sprint-{NN}-{type}-{name}
    ```
 
-3. **Sprint branch cleanup** — Present Gate:
-   - **Delete** — `git branch -d gse/sprint-{NN}/integration` (merged, safe)
-   - **Keep** — Retain for reference
-   - Default: delete if fully merged
+3. **Sprint branch cleanup** — Only if Step 3 — Merge Sprint into Main merged the sprint: `git branch -d gse/sprint-{NN}/integration` and one Inform line *"Deleted the merged sprint branch (to keep sprint branches: set `git.cleanup_on_deliver: false`)."* If the merge was deferred, the branch is kept and the line says so.
 
 4. **Update TASKs** in `backlog.yaml`:
    - `status: delivered`
@@ -257,7 +256,7 @@ Generate release notes at `docs/sprints/sprint-{NN}/release.md` using the **auth
 - **Overview** — one-paragraph summary of the sprint delivery
 - **What's New** — delivered TASKs distributed across the template's Features / Improvements / Bug Fixes bullet subsections, each bullet citing the TASK/REQ ids it implements
 - **Quality Summary** — fill the template table rows: test coverage, tests passed, review findings open, health score (from `status.yaml → health`), security findings
-- **Known Issues** — unresolved findings or accepted risks (with their DEC- reference) and workarounds
+- **Known Issues** — unresolved findings or accepted risks (with their DEC- reference) and workarounds, and TASKs delivered unreviewed through the Step 1 — Pre-flight Checks Override (with their DEC- reference)
 - **Sprint History** — append the current sprint's goal and completed item count
 
 Do not invent an ad-hoc skeleton — the template is the single authority for structure.

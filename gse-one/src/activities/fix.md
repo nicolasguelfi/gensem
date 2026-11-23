@@ -103,6 +103,7 @@ For each finding (RVW-NNN), apply the **Root-Cause Discipline** protocol (spec P
    - **Hypothesis:** the hypothesized root cause of the symptom.
    - **Evidence test:** a concrete test that would validate or invalidate the hypothesis (command to run, file to inspect, unit test to execute, or user action to perform).
    - **Confidence:** P15 tag (Verified / High / Moderate / Low).
+   - **Regression test first (`testing.strategy` resolves to `atdd`, finding in code):** the evidence test IS an automated test that reproduces the defect — a **regression test** (it checks the reported behaviour, not an implementation detail). Write it, run it (not a canonical run: no TCP, no `test_evidence`), and confirm it fails for the reason stated in the symptom. It reproduces the symptom; it does not replace the hypothesis check — the hypothesis still needs its own evidence before 3.4. Commit it alone: `gse(sprint-{NN}/test): regression test for RVW-{NNN}` with `Sprint:` / `Traces: RVW-{NNN}` trailers. It stays in the suite, so the defect cannot come back unnoticed. Resolution of `auto` follows `/gse:produce` Step 3.1 — Acceptance Test First; with `test-after`, or when the defect cannot be reproduced by an automated test (visual glitch, environment), keep the free-form evidence test above.
 5. Run the evidence test (execute the command, inspect the file, request the user to perform the action).
 6. Evaluate the result:
    - **Confirms the hypothesis** → proceed to 3.4.
@@ -121,7 +122,7 @@ For each finding (RVW-NNN), apply the **Root-Cause Discipline** protocol (spec P
    Root cause: {one-line summary of the confirmed root cause}
    Evidence: {what confirmed the hypothesis — command output, test result, etc.}
    ```
-9. Verify the fix resolves the finding (re-run the relevant check if possible; ask the user if no automated check exists).
+9. Verify the fix resolves the finding (re-run the relevant check if possible; ask the user if no automated check exists). With a regression test from 3.3, it must now pass, and the test file must be unchanged since its `test` commit (`git diff --quiet <test-commit> -- <test file>`).
 
 #### 3.5 Failed-patch counter and devil-advocate escalation
 

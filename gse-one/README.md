@@ -16,7 +16,7 @@ GSE-One is designed for users of **any expertise level** — from beginners buil
 **v0.14.0 highlights:**
 - **Interactive QCM** — clickable options (AskUserQuestion / Cursor clarifying questions) instead of numbered text lists
 - **Language-first onboarding** — multilingual language question before anything else, with system locale detection
-- **Test-driven requirements** — every requirement includes testable acceptance criteria (Given/When/Then)
+- **Test-driven requirements** — every requirement includes testable acceptance criteria (Given/When/Then); by default each code task starts from its acceptance test, run and seen failing before the code (`testing.strategy`)
 - **Lifecycle guardrails** — no coding without requirements and test strategy (REQS → DESIGN → PREVIEW → TESTS → PRODUCE)
 - **Beginner output filter** — all jargon translated to plain language for non-IT users
 - **Three project modes** — Micro (< 3 files), Lightweight (3-4), Full (≥ 5)

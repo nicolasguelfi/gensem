@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.93.0] - 2026-11-23
+
+*Acceptance test first: the Given/When/Then criteria now drive production, not only the requirements.*
+
+### Added
+- Added `/gse:produce` Step 3.1 — Acceptance Test First: the code TASK's acceptance test is written, seen failing, committed (`test` scope), then the code (`feat`).
+- Added the regression test first in `/gse:fix` for code findings: the evidence test reproduces the defect and is committed before the patch.
+- Added a sprint progress line to `/gse:go` proposals and to each produced TASK, and a test summary before delivery (Inform, no question).
+
+### Changed
+- Changed `testing.strategy` to `auto | atdd | test-after`, now read by PRODUCE, FIX and TASK; `auto` = `atdd` for code tasks with acceptance criteria.
+- Changed the failing-test display to Inform, a Gate for beginners, `tier_bias: hands-on` or `supervised`.
+- Changed the preview check to once per sprint, the remote-backup question to the first delivery, and sprint-branch cleanup to follow `git.cleanup_on_deliver`.
+- Changed the circular-dependency stop and the unreviewed-task delivery stop to offer *Override — proceed anyway*, recorded as a DEC-.
+
+### Fixed
+- Fixed the `/gse:tests` TST-007 example so it matches the canonical REQ-003 `filterByMonth` scenario.
+
 ## [0.92.1] - 2026-11-22
 
 ### Fixed

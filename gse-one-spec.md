@@ -367,7 +367,7 @@ GSE-One inherits agile principles but adapts them for a context that standard ag
 | Daily Standup (team sync) | **Recovery check** at each `/gse:go` | No team to sync; the agent checks for unsaved work instead |
 | Sprint Review (stakeholder demo) | `/gse:review` with **devil's advocate** | The agent reviews its own work and challenges its own assumptions (P16) |
 | Sprint Retrospective (process improvement) | `/gse:compound` (3 axes: project, methodology, competencies) | Deeper than a retrospective — includes knowledge transfer and methodology feedback |
-| User Stories | **Test-driven requirements** (REQ- with Given/When/Then acceptance criteria) | Acceptance criteria = validation test specifications, ensuring every requirement is testable |
+| User Stories | **Test-driven requirements** (REQ- with Given/When/Then acceptance criteria) | Acceptance criteria = validation test specifications, ensuring every requirement is testable; with `testing.strategy: atdd`/`auto`, each code TASK starts by turning them into an executable acceptance test seen failing before the code (ATDD, §6.3 — Test Execution and Evidence, "Acceptance test first") |
 | Definition of Done (manual checklist) | **Lifecycle guardrails** (REQS → TESTS → PRODUCE → REVIEW, automatically enforced) | No manual checklist — the agent blocks progression if prerequisites are missing |
 | Velocity (story points per sprint) | **Complexity points** consumed per sprint | Same concept, measured in complexity cost rather than abstract story points |
 | Pair Programming (XP) | **Human + AI agent** collaboration | The agent is the permanent pair partner, adapting its level of autonomy to the user's preference |
@@ -1130,7 +1130,7 @@ When applying a fix to a reported defect — either during `/gse:fix` processing
 
 1. **Read** — the source files relevant to the reported defect MUST have been opened in the current turn. A patch on code the agent has not just read is forbidden.
 2. **Symptom** — the agent states the defect in specific, observable terms ("the toggle button's background color does not change when clicked", not "the toggle does not work"). If the report is vague, the agent requests one concrete observable fact (console error line, screenshot, specific user interaction sequence) before proceeding.
-3. **Hypothesis + Evidence test** — the agent writes in the chat: (a) the hypothesized root cause, (b) a test that would validate or invalidate the hypothesis, (c) a confidence tag per P15 (Verified / High / Moderate / Low). The agent then runs the evidence test. If the result contradicts the hypothesis, the agent returns to this step with a new hypothesis. No patch is attempted yet.
+3. **Hypothesis + Evidence test** — the agent writes in the chat: (a) the hypothesized root cause, (b) a test that would validate or invalidate the hypothesis, (c) a confidence tag per P15 (Verified / High / Moderate / Low). With `testing.strategy` resolving to `atdd` and a defect in code, the evidence test is an automated regression test reproducing the defect, committed alone before the patch. The agent then runs the evidence test. If the result contradicts the hypothesis, the agent returns to this step with a new hypothesis. No patch is attempted yet.
 4. **Patch** — only after the evidence test confirms the hypothesis, the agent applies the fix. The commit trailer includes the root-cause summary and the confirming evidence.
 
 **Failed-patch counter and devil-advocate escalation:**
@@ -1281,7 +1281,7 @@ The agent also creates backlog items **automatically** during other activities (
 | `/gse:design` | **Design** | Define architecture decisions, component decomposition, interface contracts, **shared state identification** (state that must be consistent across components/pages — mandatory section with an explicit disclaimer if none), and technical choices. Produces design artefacts traced to requirements. All significant choices are logged to the decision journal |
 | `/gse:preview` | **Preview** | Simulate and show what the planned artefacts will look like before building them. Two variants are officially supported and chosen at activity start via a Gate: **(a) static description** (default, any domain) — wireframes, API contracts, component diagrams, user story walkthroughs written into the preview artefact, throwaway; **(b) scaffold-as-preview** (recommended for web/mobile) — minimal runnable project (framework scaffold) that becomes the base for the following `/gse:produce`, with placeholder code marked by `PREVIEW:` comments (idiomatic per language: `//`, `#`, `<!-- -->`) for later replacement. The variant choice is adapted to the project domain (web/mobile → scaffold recommended; api/cli/library/scientific → static recommended). **Sprint-level skip:** PREVIEW is legitimately skipped when the current sprint contains no user-visible or demonstrable task (foundation sprints doing infrastructure only) — recorded in `plan.yaml → workflow.skipped`, no deviation. Preview-ahead (previewing future-sprint tasks from the current sprint) is explicitly NOT supported — PREVIEW is just-in-time. See Section 5. |
 | `/gse:tests` | **Tests** | Define test strategy, write tests, set up test environment, execute test campaigns, and produce test evidence. Covers verification (unit, integration), validation (acceptance, E2E, visual), **policy** (static structural enforcement: architecture layering, license compliance, conventions — see Section 6), and dynamic constraints (accessibility, performance, compatibility). Adapts the test pyramid to the project domain. Installs required tools (test frameworks, browsers, coverage tools). Produces test campaign reports with screenshots and optional video. See Section 6 |
-| `/gse:produce` | **Produce** | **Create feature branch + worktree** for the task, then execute the production plan in the isolated worktree. All code, tests, and docs are committed to the feature branch. Tests are executed after production and results are attached as evidence. |
+| `/gse:produce` | **Produce** | **Create feature branch + worktree** for the task, then execute the production plan in the isolated worktree. All code, tests, and docs are committed to the feature branch. With `testing.strategy` `atdd` (or `auto` on a code task with acceptance criteria), the task's acceptance test is written, run and seen failing, and committed before the code; tests are then executed after production and results are attached as evidence. |
 | `/gse:deliver` | **Deliver** | **Merge** reviewed feature branches into the sprint branch, merge sprint branch into `main`, tag release, generate changelog. **Optionally deploy:** if `git.post_tag_hook` is configured, execute the deployment command after tagging. If deployment fails, propose rollback (Gate). Clean up branches and worktrees (see Section 10.3) |
 
 ### 3.7 Quality
@@ -1678,11 +1678,20 @@ Each entry point invokes the canonical run with its own pre/post-conditions:
 
 | Activity | When called | Pre-conditions specific to this activity | Post-conditions specific to this activity |
 |----------|-------------|------------------------------------------|-------------------------------------------|
-| `/gse:produce` (auto) | After code is produced for a TASK | Gate on `--skip-tests` (logs DEC-); auto-generates tests if absent (per expertise); failure triggers Fix/Skip/Discuss Gate | Task `test_evidence.status` feeds the review guardrail |
+| `/gse:produce` (auto) | After code is produced for a TASK | Gate on `--skip-tests` (logs DEC-); auto-generates tests if absent (per expertise, `test-after` only); failure triggers Fix/Skip/Discuss Gate. The earlier expected-fail check of the acceptance test (`atdd`) is not a canonical run: no TCP, no `test_evidence` | Task `test_evidence.status` feeds the review guardrail |
 | `/gse:tests --run` | Explicit run | Tests must already exist (no generation) | Campaign report is the primary output |
 | `/gse:tests --run TST-NNN` | Explicit single-test run | TST-NNN must be defined | Scoped campaign (only the one test) |
 | `/gse:tests --run --level unit` | Explicit scoped run | Level must exist in test strategy | Scoped campaign (only the level) |
 | `/gse:tests --visual` | Visual-only run | Visual testing must be configured | Screenshot analysis is mandatory |
+
+#### Acceptance test first (`testing.strategy`)
+
+GSE-One is acceptance-test-driven (ATDD) at two levels: the requirements carry Given/When/Then criteria (§3, REQS), and, by default, each code TASK is produced from them.
+
+- **Values.** `atdd`: every code TASK whose REQ carries Given/When/Then criteria starts with its acceptance test; a code TASK without criteria falls back to `test-after`. `test-after`: code first, then tests. `auto` (default): `atdd` for code TASKs tracing a REQ with criteria, `test-after` otherwise (config, docs, spikes, imports) and always in Micro mode.
+- **Sequence (`atdd`).** (1) Write one acceptance test per covered scenario, or reuse the TST-NNN already written by `/gse:tests`. (2) Expected-fail check: run only those tests; they must fail because the behaviour is missing. This check is **not** a canonical run — no TCP, no `test_evidence`, no failure Gate. If a test passes already, either it is too weak (strengthen it) or the behaviour exists (keep the test as a regression test, Inform, and produce the TASK as `test-after`). (3) Commit the failing test alone: `gse(sprint-NN/test)` with `Sprint:`/`Task:`/`Traces:`. (4) Show it — Inform by default; Gate for a beginner, with `decisions.tier_bias: hands-on`, or with `decision_involvement: supervised`. (5) Write the code and its unit/integration tests without modifying the acceptance test (checked with `git diff` before the code commit); if the agent believes the test is wrong, it stops and asks. (6) Commit the code with the TASK's type scope, then the canonical run of this section records the evidence.
+- **FIX.** For a code defect, the evidence test of the Root-Cause Discipline (P16) is an automated regression test reproducing the defect, committed alone before the patch.
+- **Exit and cost.** The user can say "no test first for this task" (`test-after` for that TASK). Cost per TASK: one commit and one short test run, plus one question per TASK when the display is a Gate. `/gse:task --quick` keeps its single commit.
 
 #### Test campaign report
 
@@ -1763,9 +1772,9 @@ Reviewing tests happens at **three distinct moments**, each targeting a differen
 
 | Level | Agent's testing behavior |
 |-------|------------------------|
-| **Beginner** | The agent writes all tests, executes them, and shows visual results. "8 tests pass, 2 fail — here are the screenshots." No jargon. The user sees evidence, not code. |
+| **Beginner** | The agent writes all tests, executes them, and shows visual results. "8 tests pass, 2 fail — here are the screenshots." No jargon. The user sees evidence, not code — except each feature's acceptance test, shown in plain language before the code (`testing.strategy` `atdd`/`auto`). |
 | **Intermediate** | The agent proposes the test strategy, writes the tests, explains what each test verifies in plain language. The user can modify tests. Technical terms introduced progressively (P14). |
-| **Advanced** | The agent discusses strategy (TDD vs test-after), proposes the test pyramid, co-writes tests with the user. Coverage targets are negotiated. |
+| **Advanced** | The agent discusses strategy (acceptance test first vs test-after — `testing.strategy`), proposes the test pyramid, co-writes tests with the user. Coverage targets are negotiated. |
 | **Expert** | Full collaboration. The agent proposes advanced techniques (property-based testing, mutation testing, contract testing). The user drives, the agent assists. |
 
 ---
@@ -2122,6 +2131,11 @@ Traces: <artefact IDs>
 
 **Examples:**
 ```
+gse(sprint-03/test): acceptance test for REQ-007 (failing)
+
+Sprint: 3
+Traces: REQ-007
+
 gse(sprint-03/feat): implement user authentication flow
 
 Sprint: 3
@@ -2163,7 +2177,7 @@ Safety tags are prefixed `gse-backup/` and retained for 30 days (configurable vi
 
 **Cleanup:** Old backup tags are cleaned up during `/gse:deliver` (delete tags older than `backup_retention_days`).
 
-**Project backup:** GSE-One relies on git as the safety net. To protect against local disk failure, the agent proposes pushing to a remote during `/gse:deliver` if no remote is configured: "Your project has no remote. Push to GitHub/GitLab to protect your work?" (Inform tier).
+**Project backup:** GSE-One relies on git as the safety net. To protect against local disk failure, the agent proposes pushing to a remote at the first `/gse:deliver` if no remote is configured: "Your project has no remote. Push to GitHub/GitLab to protect your work?" (a question, not a blocker); later deliveries without a remote show a one-line Inform reminder.
 
 ```yaml
 # In config.yaml → git:
@@ -2724,7 +2738,7 @@ github:
 
 testing:
   framework: auto                      # auto-detect | pytest | jest | vitest | go-test | ...
-  strategy: auto                       # auto | tdd | test-after
+  strategy: auto                       # auto | atdd | test-after — atdd: acceptance test first, per code TASK; auto: atdd for code tasks with acceptance criteria, test-after otherwise and in Micro mode
   pyramid: auto                        # auto (from project.domain) | custom
   dependency_audit: true               # run dependency audit during /gse:tests
   audit_tool: auto                     # auto-detect | npm-audit | pip-audit | ...

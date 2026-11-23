@@ -118,6 +118,11 @@ The version control presentation adapts to the user's expertise level. Beginners
     ```
     Examples:
     ```
+    gse(sprint-03/test): acceptance test for REQ-007 (failing)
+
+    Sprint: 3
+    Traces: REQ-007
+
     gse(sprint-03/feat): implement user authentication flow
 
     Sprint: 3
@@ -129,6 +134,7 @@ The version control presentation adapts to the user's expertise level. Beginners
     Traces: RVW-005
     ```
     Commit at logical checkpoints: after each file is complete, after each test passes, before switching sub-tasks.
+    With `testing.strategy: atdd` (or `auto` on a code task with acceptance criteria), the failing acceptance test is committed alone (`test` scope) before the code (`feat` scope) — see `/gse:produce` Step 3.1 — Acceptance Test First.
 
 ## Lifecycle Integration (Spec 10.3)
 

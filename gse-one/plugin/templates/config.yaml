@@ -96,7 +96,7 @@ github:
 # --- Section 11: Testing ---
 testing:
   framework: auto                      # auto-detect | pytest | jest | vitest | go-test | ...
-  strategy: auto                       # auto | tdd | test-after
+  strategy: auto                       # auto | atdd | test-after — atdd: acceptance test first, per code TASK; auto: atdd for code tasks with acceptance criteria, test-after otherwise and in Micro mode
   pyramid: auto                        # auto (from project.domain) | custom
   dependency_audit: true               # run dependency audit during /gse:tests
   audit_tool: auto                     # auto-detect | npm-audit | pip-audit | ...

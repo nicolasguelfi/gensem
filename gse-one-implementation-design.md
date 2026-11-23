@@ -483,7 +483,7 @@ If `git.cleanup_on_deliver` is true:
    ```bash
    git worktree remove .worktrees/sprint-<N>-feat-<name>
    ```
-3. Optionally delete sprint branch (Gate — user may want to keep for history).
+3. Delete the sprint integration branch if Step 3 merged it (`git branch -d`, no question, one Inform line; `cleanup_on_deliver: false` keeps every branch).
 4. Update each delivered TASK in `.gse/backlog.yaml`: `status: delivered`, `git.branch_status: deleted`, `git.worktree_status: removed`.
 
 #### Step 6 — Generate Release Notes
@@ -1062,7 +1062,9 @@ PRODUCE invokes the **canonical test run** (spec §6.3) as its test execution ph
 
 **Pre-condition — `--skip-tests`:** Gate decision, DEC- logged, `test_evidence.status: skipped` on the TASK, canonical run is NOT invoked.
 
-**Pre-condition — no tests exist:** per expertise level, auto-generate (beginner), propose (intermediate), or offer options (expert). After generation, invoke the canonical run.
+**Before the code — acceptance test first (`testing.strategy`, `/gse:produce` Step 3.1 — Acceptance Test First):** the mode is resolved per TASK — `atdd`, `test-after`, or `auto` (`atdd` for `artefact_type: code` tracing a REQ with Given/When/Then criteria; `test-after` otherwise and in Micro mode). With `atdd`: write one acceptance test per covered scenario (reusing TST-NNN from `/gse:tests` when declared), run only those tests and require a failure for the right reason (expected-fail check — writes no TCP and no `test_evidence`), commit `gse(sprint-NN/test)` with `Traces:`, show it (Inform; Gate for beginner, `tier_bias: hands-on`, `supervised`), then write the code without changing that test (`git diff --quiet <test-commit> -- <test files>` before the `gse(sprint-NN/feat)` commit). Cost: one commit and one short run per TASK.
+
+**Pre-condition — no tests exist (`test-after` only):** per expertise level, auto-generate (beginner), propose (intermediate), or offer options (expert). After generation, invoke the canonical run.
 
 **Post-condition — canonical run returns `status: fail`:** Gate decision (Fix / Skip / Discuss). Fix re-invokes the canonical run.
 
@@ -1552,7 +1554,7 @@ The discipline materializes as a 4-step sub-protocol applied inside any fix flow
 |------|--------------|---------------------|
 | **1. Read** | Open the relevant source file(s) via the Read tool in the current turn. Agent records which files were read. | A file must have been read in the current turn (not in a previous turn, not cached from context compaction) before it can be patched. |
 | **2. Symptom** | Extract observable fact from the report. If report is vague, prompt the user for ONE concrete piece of evidence (console error, screenshot, specific interaction). | Empty/vague symptoms are not acceptable — the agent cannot proceed to step 3 without a specific observable. |
-| **3. Hypothesis + Evidence** | Write in chat: hypothesis, proposed test, P15 confidence tag. Run the test (execute a command, inspect a file, run a unit test, ask the user to perform a concrete action). | If evidence contradicts → loop back to step 3 with a new hypothesis. If evidence confirms → proceed to step 4. Do NOT skip to step 4 without a confirming test result. |
+| **3. Hypothesis + Evidence** | Write in chat: hypothesis, proposed test, P15 confidence tag. Run the test (execute a command, inspect a file, run a unit test, ask the user to perform a concrete action). With `testing.strategy` resolving to `atdd` and a defect in code: an automated regression test reproducing the defect, committed alone (`gse(sprint-NN/test)`) before the patch. | If evidence contradicts → loop back to step 3 with a new hypothesis. If evidence confirms → proceed to step 4. Do NOT skip to step 4 without a confirming test result. |
 | **4. Patch** | Apply the fix. Commit trailer MUST include `Root cause:` and `Evidence:` lines. | Commit is refused if these trailer lines are absent (can be enforced by a future pre-commit hook — for now, relies on the activity writing the commit message). |
 
 **Counter persistence:**

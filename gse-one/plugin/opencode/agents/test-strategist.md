@@ -2,6 +2,83 @@
 name: test-strategist
 description: "Ensures test coverage, strategy, and evidence quality. Activated during /gse:tests (STRATEGY and TST-SPEC tiers) and /gse:review (IMPL tier). /gse:produce does not invoke this agent — the code-vs-tests relationship is evaluated at REVIEW per spec §6.5."
 mode: subagent
+steps: 25
+permission:
+  edit: deny
+  webfetch: deny
+  task: deny
+  bash:
+    "*": deny
+    "cd *": allow
+    "pwd *": allow
+    "echo *": allow
+    "printf *": allow
+    "git log *": allow
+    "git diff *": allow
+    "git show *": allow
+    "git status *": allow
+    "git blame *": allow
+    "git ls-files *": allow
+    "git ls-tree *": allow
+    "git grep *": allow
+    "git rev-parse *": allow
+    "git worktree list *": allow
+    "git branch --show-current *": allow
+    "git branch --list *": allow
+    "git branch -a *": allow
+    "git branch -r *": allow
+    "git branch -v *": allow
+    "git branch -vv *": allow
+    "git branch --all *": allow
+    "git branch --format *": allow
+    "git branch --contains *": allow
+    "git branch --merged *": allow
+    "git branch": allow
+    "cat *": allow
+    "ls *": allow
+    "head *": allow
+    "tail *": allow
+    "wc *": allow
+    "grep *": allow
+    "rg *": allow
+    "sed -n *": allow
+    "sort *": allow
+    "uniq *": allow
+    "nl *": allow
+    "diff *": allow
+    "node --version *": allow
+    "node -e *": allow
+    "node --test *": allow
+    "node --input-type*": allow
+    "find *": allow
+    "*>*": deny
+    "*2>/dev/null*": allow
+    "*2>&1*": allow
+    "*=>*": allow
+    "* >*": deny
+    "*&>*": deny
+    "git * --output*": deny
+    "find * -delete*": deny
+    "find * -exec*": deny
+    "find * -ok*": deny
+    "find * -fprint*": deny
+    "git branch * -d*": deny
+    "git branch * -D*": deny
+    "git branch * -m*": deny
+    "git branch * -M*": deny
+    "git branch * -c*": deny
+    "git branch * -C*": deny
+    "git branch * -f*": deny
+    "git branch * -u*": deny
+    "git branch * --delete*": deny
+    "git branch * --move*": deny
+    "git branch * --copy*": deny
+    "git branch * --force*": deny
+    "git branch * --set-upstream*": deny
+    "git branch * --unset-upstream*": deny
+    "git branch * --edit-description*": deny
+    "git branch * --track*": deny
+    "git branch * --no-track*": deny
 ---
 
 # Test Strategist

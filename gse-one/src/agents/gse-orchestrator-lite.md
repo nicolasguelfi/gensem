@@ -121,7 +121,7 @@ The context window is finite. Heavy activities are delegated to sub-agents with 
 
 - **Inline** (orchestrator context): HUG, GO, COLLECT, ASSESS, PLAN, STATUS, HEALTH, PAUSE, RESUME, BACKLOG, LEARN, REQS, DESIGN, PREVIEW, TESTS, DELIVER, INTEGRATE.
 - **Isolated** (sub-agent, fresh context): PRODUCE (per TASK), COMPOUND.
-- **Parallel isolated** (multiple sub-agents): REVIEW.
+- **Parallel isolated** (multiple sub-agents): REVIEW — read-only reviewers, launched together when possible; wait for the N reports; only the orchestrator writes `review.md`.
 
 **Delegation protocol:** mini-checkpoint to `.gse/checkpoints/` → context brief (only what's needed: SKILL/command instructions, relevant state files, sprint artefacts, TASK description) → platform delegation → result integration (read updated state from disk, summarize per P9) → failure handling (restore checkpoint, Gate: retry/skip/pause/discuss).
 

@@ -108,7 +108,7 @@ The coding agent's behavior is shaped by two layers of instructions:
 - The **system prompt** — a platform-provided, generally non-modifiable set of instructions that defines the agent's core identity, safety constraints, and capabilities. It is the foundation layer, always present and not visible to the user.
 - The **context** — the set of skills, rules, conversation history, and tool outputs loaded into the agent's working memory. The context is finite (bounded by the LLM's context window) and dynamically managed: the platform selectively injects artifacts based on inclusion rules and compacts older content when the window fills.
 
-A coding agent can **spawn subagents** — child instances that run their own independent reasoning loops with isolated context. Subagents can execute in parallel, use different LLM models, and return their results to the parent. This enables task decomposition: the parent agent delegates specialized work to subagents while continuing its own reasoning.
+A coding agent can **spawn subagents** — child instances that run their own independent reasoning loops with isolated context. Subagents can execute in parallel, use different LLM models, and return their results to the parent — synchronously on some platforms, in the background on others (opencode ≥ 2.3: every subagent runs in the background and reports when it goes idle). This enables task decomposition: the parent agent delegates specialized work to subagents while continuing its own reasoning.
 
 #### Agent
 
@@ -308,7 +308,7 @@ GSE-One delivers its methodology as a **single plugin directory** (`plugin/`) th
 | Artifact | Files | Claude Code | Cursor | opencode |
 |----------|-------|:-----------:|:------:|:--------:|
 | Skills (24) | `skills/<name>/SKILL.md` | Loaded | Loaded | Via `opencode/skills/` |
-| Specialized agents (10) | `agents/<name>.md` | Loaded | Loaded | Via `opencode/agents/` (`mode: subagent`) |
+| Specialized agents (10) | `agents/<name>.md` | Loaded | Loaded | Via `opencode/agents/` (`mode: subagent`; the 7 reviewers read-only) |
 | Orchestrator (identity) | `agents/gse-orchestrator.md` | Via `settings.json` → `"agent"` | Not installed | Not installed |
 | Orchestrator (identity) | `rules/gse-orchestrator.mdc` | Ignored | `alwaysApply: true` | Ignored |
 | Orchestrator (identity) | `opencode/AGENTS.md` | Ignored | Ignored | Loaded (always-on, worktree root) |
@@ -1288,7 +1288,7 @@ The agent also creates backlog items **automatically** during other activities (
 
 | Command | Activity | Description |
 |---------|----------|-------------|
-| `/gse:review` | **Review** | Review operates on the **branch diff** (`git diff sprint-branch...feature-branch`), not just file state. Complete review of all artefact types in the current sprint. Includes **devil's advocate** perspective on the agent's own productions (P16): hunts hallucinations, challenges assumptions, verifies libraries/APIs exist. Updates health score |
+| `/gse:review` | **Review** | Review operates on the **branch diff** (`git diff sprint-branch...feature-branch`), not just file state. Complete review of all artefact types in the current sprint. Includes **devil's advocate** perspective on the agent's own productions (P16): hunts hallucinations, challenges assumptions, verifies libraries/APIs exist. Review perspectives run as independent, read-only sub-agents launched together when the tool allows it; the orchestrator waits for all N reports and alone writes `review.md` (inline review only when the runtime cannot spawn, traced `Review execution: inline-degraded`). Updates health score |
 | `/gse:fix` | **Fix** | Create a fix branch from the reviewed branch, apply fixes in an isolated worktree, with traceability to review items |
 
 ### 3.8 Deployment
@@ -3370,6 +3370,7 @@ The constants below are NOT methodological choices — they are snapshots of the
 | Era-bound constant | Where it lives | Why it is time-bound | Likely evolution |
 |---|---|---|---|
 | Sub-agent parallelism "up to 8" | spec §1.1.1 execution loop; orchestrator Context Architecture; review.md Step 2 — Parallel Review via Sub-agents | Current runtime concurrency limits | Higher caps or dynamic scheduling |
+| opencode ≥ 2.3 background subagents; reviewer read-only `permission` keys (`edit`, `bash`, `task`, `steps`), legacy object form translated by opencode 2.x | review.md Step 2 — Parallel Review via Sub-agents; orchestrator Sub-agent delegation protocol; `gse_generate.py` opencode builders | One platform's execution model and permission schema (validated on 2.4.1) | Permission schema V2 only (`permissions:` list); explicit wait or join tool |
 | Cursor ≥2.4 for `AskQuestion` | spec §P4; orchestrator P4 bullet | Version gate of one platform feature | Becomes universal, gate removable |
 | Interactive tool names (`AskUserQuestion` / `AskQuestion` / `question`) | spec §P4; orchestrator P4 bullet | Vendor API naming | Renames; the abstract `AskUser` alias is the stable layer |
 | Interactive tool limit "≤4-5 options" | spec §P4 | Current widget UX caps | Larger or scrollable widgets |

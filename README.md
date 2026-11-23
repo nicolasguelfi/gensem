@@ -367,10 +367,10 @@ gse-one/
 │   └── opencode/                     # opencode subtree
 │       ├── skills/                   # 24 skills (name: injected)
 │       ├── commands/                 # 24 /gse-<name>.md
-│       ├── agents/                   # 10 specialized (mode: subagent)
+│       ├── agents/                   # 10 specialized (mode: subagent), reviewers read-only
 │       ├── plugins/gse-guardrails.ts # Native TS guardrails plugin
 │       ├── AGENTS.md                 # Orchestrator body (markered)
-│       └── opencode.json             # Default permissions
+│       └── opencode.json             # Default permissions (+ subagent allowlist)
 │
 └── install.py                        # Cross-platform installer (5 platforms)
 ```

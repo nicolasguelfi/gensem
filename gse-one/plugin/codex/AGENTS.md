@@ -1,5 +1,5 @@
 <!-- GSE-ONE START -->
-<!-- gse-one-version: 0.93.1 -->
+<!-- gse-one-version: 0.93.2 -->
 # GSE-One Methodology (Codex edition — condensed)
 
 This section is managed by GSE-One. Edit `gse-one/src/` and regenerate — do not hand-edit between the START/END markers. The full orchestrator is available as the `gse-orchestrator` skill.
@@ -122,7 +122,7 @@ The context window is finite. Heavy activities are delegated to sub-agents with 
 
 - **Inline** (orchestrator context): HUG, GO, COLLECT, ASSESS, PLAN, STATUS, HEALTH, PAUSE, RESUME, BACKLOG, LEARN, REQS, DESIGN, PREVIEW, TESTS, DELIVER, INTEGRATE.
 - **Isolated** (sub-agent, fresh context): PRODUCE (per TASK), COMPOUND.
-- **Parallel isolated** (multiple sub-agents): REVIEW.
+- **Parallel isolated** (multiple sub-agents): REVIEW — read-only reviewers, launched together when possible; wait for the N reports; only the orchestrator writes `review.md`.
 
 **Delegation protocol:** mini-checkpoint to `.gse/checkpoints/` → context brief (only what's needed: SKILL/command instructions, relevant state files, sprint artefacts, TASK description) → platform delegation → result integration (read updated state from disk, summarize per P9) → failure handling (restore checkpoint, Gate: retry/skip/pause/discuss).
 

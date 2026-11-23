@@ -7,7 +7,21 @@
     "question": "allow",
     "bash": {
       "git push --force *": "deny",
-      "rm -rf /*": "deny"
+      "rm -rf / *": "deny"
+    },
+    "task": {
+      "*": "deny",
+      "architect": "allow",
+      "coach": "allow",
+      "code-reviewer": "allow",
+      "deploy-operator": "allow",
+      "devil-advocate": "allow",
+      "guardrail-enforcer": "allow",
+      "requirements-analyst": "allow",
+      "security-auditor": "allow",
+      "test-strategist": "allow",
+      "ux-advocate": "allow",
+      "general": "allow"
     }
   }
 }

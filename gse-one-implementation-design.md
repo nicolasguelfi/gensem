@@ -154,7 +154,7 @@ Key differences:
 - Cursor has `commands` and `rules` fields; Claude declares `skills` and an `agents` file array (the former `displayName` was dropped in v0.85.x — undocumented in Cursor's manifest reference)
 - Claude loads methodology via `settings.json` → agent reference; Cursor loads via `rules/`
 
-**opencode manifest** (`opencode.json`) — opencode differs from Claude/Cursor: it does not declare `skills`/`agents`/`hooks` at top level (those are discovered from well-known directories), and it must contain schema-valid keys only — opencode ≥ 1.17 fatally rejects unknown root keys (`Unrecognized key`), which is why the Axe 2 repository metadata lives in the registry-target `gse.json`, not here. Instead, `opencode.json` declares a `permission` block with methodology defaults: `skill: { "*": "allow" }` (all GSE-One skills enabled), `question: "allow"` (native interactive-question tool — supports P4 interactive mode QCM across runtimes, cf. spec §14.3 — Activity Execution Fidelity Invariant), and a short `bash` denylist (`git push --force`, `rm -rf /`). Removing any of these from the default silently degrades functionality — notably, removing `question` forces QCM interactions into per-call permission prompts or text fallback.
+**opencode manifest** (`opencode.json`) — opencode differs from Claude/Cursor: it does not declare `skills`/`agents`/`hooks` at top level (those are discovered from well-known directories), and it must contain schema-valid keys only — opencode ≥ 1.17 fatally rejects unknown root keys (`Unrecognized key`), which is why the Axe 2 repository metadata lives in the registry-target `gse.json`, not here. Instead, `opencode.json` declares a `permission` block with methodology defaults: `skill: { "*": "allow" }` (all GSE-One skills enabled), `question: "allow"` (native interactive-question tool — supports P4 interactive mode QCM across runtimes, cf. spec §14.3 — Activity Execution Fidelity Invariant), a short `bash` denylist (`git push --force *`, and `rm -rf / *` — which blocks `rm -rf /` with or without arguments but not `rm -rf /tmp/x`; the pre-0.93.2 `rm -rf /*` matched every absolute path and is removed by the installer), and a `task` allowlist (opencode's subagent permission: `*` denied, the 10 GSE-One agents and the built-in `general` used by PRODUCE allowed; nested depth left at opencode's default of 1). Removing any of these from the default silently degrades functionality — notably, removing `question` forces QCM interactions into per-call permission prompts or text fallback.
 
 ### 3.3 Mono-Plugin Architecture
 
@@ -1086,7 +1086,7 @@ The canonical run produces TCP-NNN campaign, `test_evidence` update on the TASK,
 ````markdown
 ### Devil's Advocate — [AI-INTEGRITY] pass after the [IMPL] tier (added to review skill)
 
-After the standard quality review (the `[IMPL]` tier per spec §6.5), activate the devil-advocate agent — in a freshly spawned sub-agent context (Claude Code: Agent tool; Cursor: subagent; opencode: subagent), context brief only, inline fallback traced as `DA execution: inline-degraded` per review.md Step 3:
+After the standard quality review (the `[IMPL]` tier per spec §6.5), activate the devil-advocate agent — in a freshly spawned sub-agent context (Claude Code: Agent tool; Cursor: subagent; opencode: subagent), context brief only (the reviewer perspectives likewise run as sub-agents, `Review execution: isolated | inline-degraded` recorded in `review.md`), inline fallback traced as `DA execution: inline-degraded` per review.md Step 3:
 
 1. **Scope:** Only the agent's own productions from this sprint (not user-written code)
 
@@ -2711,7 +2711,7 @@ The installer:
 
 Hooks on opencode are delivered as a **native TypeScript plugin** (`plugins/gse-guardrails.ts`) transpiled from `hooks/hooks.claude.json` at generation time — the same guardrail logic, expressed in opencode's `tool.execute.before/after` hook API.
 
-Specialized agents ship under `opencode/agents/` with `mode: subagent` frontmatter and the `tools:` list translated from string form to opencode's object form. Skills and commands are generated under `opencode/skills/<name>/SKILL.md` and `opencode/commands/gse-<name>.md` respectively.
+Specialized agents ship under `opencode/agents/` with `mode: subagent` frontmatter. The 7 Reviewer-archetype agents also get `steps: 25` and a read-only `permission:` block — `edit`, `webfetch` and `task` denied, shell limited to reading, git queries and running `node` / `find` to check a finding (maintainer's decision: `node` can still write from its own code, so for it read-only rests on the written rule), redirections (`>`), `tee`, `--output` and `find -delete/-exec` refused — because since opencode 2.3 subagents run in the background and the rule "only the orchestrator writes `review.md`" must hold by permission, not by wording alone (validated on opencode 2.4.1 with `opencode debug agents` and live denial tests, 2026-11-23). Skills and commands are generated under `opencode/skills/<name>/SKILL.md` and `opencode/commands/gse-<name>.md` respectively.
 
 ### 6.4 Generation and Parity
 
@@ -2944,7 +2944,7 @@ The `marketplace.json` install path is `"plugin"` (not `"dist/claude"`), reflect
 |------|-------|--------|---------|
 | 1 | `src/agents/gse-orchestrator.md` (body) | `plugin/agents/gse-orchestrator.md` + `plugin/rules/gse-orchestrator.mdc` + `plugin/opencode/AGENTS.md` (wrapped in markers) | Body identical across 3 outputs, frontmatter/wrapper differs |
 | 2 | `src/activities/*.md` (24) | `plugin/skills/<name>/SKILL.md` + `plugin/commands/gse-<name>.md` + `plugin/opencode/skills/<name>/SKILL.md` + `plugin/opencode/commands/gse-<name>.md` | Shared body; opencode skills inject `name:` frontmatter |
-| 3 | `src/agents/*.md` (10 specialized) | `plugin/agents/<name>.md` + `plugin/opencode/agents/<name>.md` (with `mode: subagent`) | Shared body; opencode agents translate `tools:` to object form |
+| 3 | `src/agents/*.md` (10 specialized) | `plugin/agents/<name>.md` + `plugin/opencode/agents/<name>.md` (with `mode: subagent`) | Shared body; opencode agents get `mode: subagent`, reviewers also `steps:` + read-only `permission:` |
 | 4 | `src/templates/*` (29) | `plugin/templates/*` | Shared across platforms via `~/.gse-one` registry |
 | 5 | `src/references/*.md` | `plugin/references/*.md` | Shared — consulted by agents at runtime |
 | 6 | Constants | `plugin/.claude-plugin/plugin.json` + `plugin/.cursor-plugin/plugin.json` + `plugin/opencode/opencode.json` | Three manifests |

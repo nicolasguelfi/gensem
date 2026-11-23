@@ -1,5 +1,5 @@
 <!-- GSE-ONE START -->
-<!-- gse-one-version: 0.93.1 -->
+<!-- gse-one-version: 0.93.2 -->
 # GSE-One Methodology (opencode edition)
 
 This section is managed by GSE-One. Edit `gse-one/src/` and regenerate — do not hand-edit between the START/END markers.
@@ -284,7 +284,7 @@ The LLM context window is a finite resource. A full sprint (COLLECT → COMPOUND
 |---|---|---|
 | **Inline** (orchestrator context) | HUG, GO, COLLECT, ASSESS, PLAN, STATUS, HEALTH, PAUSE, RESUME, BACKLOG, LEARN, REQS, DESIGN, PREVIEW, TESTS (`--strategy`), DELIVER, INTEGRATE | Run directly in the main conversation |
 | **Isolated** (sub-agent, fresh context) | PRODUCE (per TASK), COMPOUND | Delegated to a sub-agent — the sub-agent reads state from files, does its work, and returns a summary |
-| **Parallel isolated** (multiple sub-agents) | REVIEW | Each review perspective runs as a separate sub-agent in parallel |
+| **Parallel isolated** (multiple sub-agents) | REVIEW | Each review perspective runs as a separate, read-only sub-agent, launched together when the tool allows it; the orchestrator waits for the N reports and alone writes `review.md` |
 
 ### Sub-agent delegation protocol
 
@@ -301,6 +301,7 @@ Before spawning a sub-agent for an isolated activity:
 3. **Platform-specific delegation:**
    - **Claude Code:** Use the `Agent` tool. For PRODUCE with worktree strategy, use `isolation: "worktree"` to give the sub-agent its own git worktree.
    - **Cursor:** Spawn a subagent (up to 8 in parallel for REVIEW).
+   - **opencode:** Start a subagent (`general` for PRODUCE, the GSE-One agent for a review perspective). Since opencode 2.3 every subagent runs in the background and reports when it goes idle: wait for the report before step 4.
 
 4. **Result integration** — When the sub-agent returns, the orchestrator:
    - Reads the updated state files from disk (the sub-agent wrote them)

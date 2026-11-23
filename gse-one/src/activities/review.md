@@ -69,6 +69,11 @@ Before reviewing any TASK, verify test execution:
 3. Spawns review sub-agents **in parallel**:
    - **Claude Code:** Multiple `Agent` tool calls in a single message (parallel execution)
    - **Cursor:** Multiple subagents (up to 8 in parallel)
+   - **opencode:** One subagent call per perspective, all in the same turn; since opencode 2.3 they run in the background and each reports when it goes idle
+
+**Guarantee, whatever the platform:** the reviewers are independent — launch them together when the tool allows it, one after the other otherwise. Wait for the N reports before merging: list the reviewers you launched, tick each report as it arrives (on opencode, one background result per reviewer), and do not write findings into `review.md` nor commit it until every one is ticked. Only the orchestrator writes `review.md`; reviewers return findings and change no file (on opencode their permissions forbid edits, and shell commands other than reading, git queries and running `node` or `find` to check a finding).
+
+**Delegation is mandatory; fallback and trace.** Each perspective MUST run as a sub-agent — reviewing in the main conversation loses the fresh context and, on opencode, the read-only permissions. Only if the runtime cannot spawn a sub-agent, review inline AND emit an Inform note (*"[Inform] Review perspectives running inline — sub-agent spawn unavailable on this runtime."*). In both cases, record the mode at the top of `review.md`: `Review execution: isolated` or `Review execution: inline-degraded` (same pattern as `DA execution:` in Step 3 — Devil's Advocate).
 
 **Each sub-agent receives:**
 - Its specialized agent definition (from `plugin/agents/`)
@@ -77,7 +82,7 @@ Before reviewing any TASK, verify test execution:
 - `profile.yaml` (for P9 adaptation)
 - Instructions to return findings in the RVW-NNN format
 
-**After all sub-agents return**, the orchestrator merges all findings into a single `review.md`, deduplicates, and proceeds to Step 3 (Devil's Advocate).
+**After all N sub-agents have reported**, the orchestrator merges all findings into a single `review.md`, deduplicates, and proceeds to Step 3 (Devil's Advocate).
 
 #### Sub-agents to spawn in parallel:
 
@@ -136,7 +141,7 @@ Focus of this pass — **alimentation** (are the written tests meaningful?):
 
 #### Finding merge protocol
 
-After all parallel sub-agents return:
+After all parallel sub-agents have reported (a missing report is waited for, never merged as "no findings"):
 1. Collect all findings from each sub-agent
 2. Deduplicate: if two agents report the same issue (same file, same line range, same category), keep the higher-severity finding and note both perspectives
 3. Assign sequential RVW-NNN IDs to the merged findings

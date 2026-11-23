@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.93.2] - 2026-11-23
+
+*opencode 2.3+ runs every subagent in the background: the review guarantees now hold by permission, not by wording alone.*
+
+### Added
+- Added read-only permissions to the 7 opencode reviewer agents: no edit, web fetch or subagent; shell limited to reading, git queries, node and find; 25 steps.
+- Added a subagent allowlist to `opencode.json`: only the 10 GSE-One agents and `general` (production) can be started.
+- Added `--verify` checks for the reviewer permissions and the subagent allowlist.
+
+### Changed
+- Changed `/gse:review` Step 2 into a platform-independent guarantee: reviewers launched together when possible, all N reports awaited, only the orchestrator writes `review.md`.
+- Changed the orchestrator delegation protocol, spec and design to cover opencode background subagents.
+- Changed `/gse:review`: perspectives must run as sub-agents; an inline review is traced `Review execution: inline-degraded`.
+
+### Fixed
+- Fixed the opencode `rm -rf /*` deny matching every absolute path: now `rm -rf / *`; the installer drops the old entry.
+
 ## [0.93.1] - 2026-11-23
 
 ### Changed

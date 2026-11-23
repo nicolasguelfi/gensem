@@ -1482,6 +1482,11 @@ def _merge_opencode_json(target_file, source_file):
     else:
         target = {}
 
+    # The former default `rm -rf /*` denied every absolute path (temporary-folder
+    # cleanup included); it is replaced by `rm -rf / *` — drop the old GSE-One entry.
+    old_bash = target.get("permission", {}).get("bash")
+    if isinstance(old_bash, dict) and old_bash.get("rm -rf /*") == "deny":
+        del old_bash["rm -rf /*"]
     merged = _deep_merge(target, source)
     if merged.pop("gse", None) is not None:
         ok(f"Removed legacy root 'gse' key from {target_file} (fatal on opencode >= 1.17)")
@@ -1518,7 +1523,7 @@ def _strip_opencode_json_marker(target_file):
         del data["gse"]
     # Remove our specific bash denies only if they match exactly
     perms = data.get("permission", {}).get("bash", {})
-    for key in ("git push --force *", "rm -rf /*"):
+    for key in ("git push --force *", "rm -rf / *", "rm -rf /*"):
         if perms.get(key) == "deny":
             del perms[key]
     if perms == {}:
@@ -1527,6 +1532,9 @@ def _strip_opencode_json_marker(target_file):
         data["permission"].pop("skill", None)
     if data.get("permission", {}).get("question") == "allow":
         data["permission"].pop("question", None)
+    task = data.get("permission", {}).get("task")
+    if isinstance(task, dict) and task.get("*") == "deny" and task.get("general") == "allow":
+        data["permission"].pop("task", None)
     if data.get("permission") == {}:
         del data["permission"]
     # If only the schema remains → delete the file

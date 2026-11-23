@@ -80,6 +80,53 @@ SPECIALIZED_AGENTS = [
     "deploy-operator.md",
 ]
 
+# opencode only: the 7 Reviewer-archetype agents (CLAUDE.md > Agent archetypes) run
+# read-only. Since opencode 2.3 subagents always run in the background, so the
+# guarantee that only the orchestrator writes review.md must not rest on prompt
+# wording alone. Validated on opencode 2.4.1 (2026-11-23): `edit: deny` removes the
+# write/edit/patch tools, `task: deny` removes the subagent tool, and the shell
+# allowlist below lets reviewers read and query git while refusing redirections
+# (`cat x > f`), `tee`, `--output` and any other command (second bench, same
+# day: echo, sed -n and 2>/dev/null had to be allowed — reviewers use them). The legacy `permission:`
+# object form is used on purpose: opencode 2.x translates it to the V2
+# `permissions:` list (checked with `opencode debug agents`), and it matches
+# the form used in opencode.json.
+OC_REVIEWER_AGENTS = (
+    "architect", "code-reviewer", "security-auditor", "requirements-analyst",
+    "devil-advocate", "ux-advocate", "test-strategist",
+)
+OC_REVIEWER_STEPS = 25  # 15 was hit by the devil-advocate on the 2026-11-23 bench
+_GIT_READ = ("log", "diff", "show", "status", "blame", "ls-files", "ls-tree", "grep", "rev-parse",
+             "worktree list", "branch --show-current", "branch --list", "branch -a", "branch -r",
+             "branch -v", "branch -vv", "branch --all", "branch --format", "branch --contains", "branch --merged")
+OC_REVIEWER_SHELL_ALLOW = (
+    ("cd *", "pwd *", "echo *", "printf *")
+    + tuple(f"git {c} *" for c in _GIT_READ)  # no `git -C * x *`: the wildcard would let `git -C d commit -m "log"` through
+    + ("git branch", "cat *", "ls *", "head *", "tail *", "wc *", "grep *", "rg *", "sed -n *", "sort *", "uniq *", "nl *",
+       "diff *",
+       "node --version *",
+       # Running code to check a finding (maintainer's decision, 2026-11-23): node can still
+       # write from inside its own code — read-only then rests on the written rule.
+       "node -e *", "node --test *", "node --input-type*", "find *")
+)
+# Evaluated after the allows (last match wins). Any `>` is refused, then the two
+# harmless stderr forms are given back, then every redirection preceded by a
+# space (`> f`, `>f`, `>> f`, `&> f`) is refused again (`=>` arrow functions in
+# `node -e` are kept). Residual gap, accepted:
+# a redirection glued to the previous word (`cat a>f`).
+OC_REVIEWER_SHELL_LAST = (
+    ("*>*", "deny"), ("*2>/dev/null*", "allow"), ("*2>&1*", "allow"), ("*=>*", "allow"),
+    ("* >*", "deny"), ("*&>*", "deny"), ("git * --output*", "deny"),
+    ("find * -delete*", "deny"), ("find * -exec*", "deny"), ("find * -ok*", "deny"), ("find * -fprint*", "deny"),
+) + tuple((f"git branch * {o}*", "deny") for o in (  # listing forms only: no delete / move / copy / upstream
+    "-d", "-D", "-m", "-M", "-c", "-C", "-f", "-u", "--delete", "--move", "--copy", "--force",
+    "--set-upstream", "--unset-upstream", "--edit-description", "--track", "--no-track"))
+# Subagents any opencode agent may start: the 10 GSE-One agents plus `general`,
+# the built-in agent that /gse:produce delegates a TASK to (orchestrator
+# Sub-agent delegation protocol). Nested depth stays at opencode's default
+# (experimental.subagent_depth = 1: a subagent cannot start another one).
+OC_SUBAGENT_ALLOW = tuple(sorted(a[:-3] for a in SPECIALIZED_AGENTS)) + ("general",)
+
 PLUGIN_DESCRIPTION = (
     "GSE-One — AI engineering companion for structured SDLC management. "
     "24 commands, adaptive risk analysis, unified backlog, knowledge transfer, "
@@ -725,6 +772,9 @@ def _oc_translate_agent_frontmatter(content: str) -> str:
     """Return the agent content with opencode-compatible frontmatter.
 
     - Adds `mode: subagent` if absent.
+    - For the Reviewer-archetype agents (OC_REVIEWER_AGENTS), adds `steps:` and
+      a read-only `permission:` block (no edit, no web fetch, no subagent,
+      shell limited to reading and git queries).
 
     Note (Meta-2): a `tools: [A, B]` list translation used to live here,
     emitting the boolean-object `tools:` form — deprecated by opencode >= 1.1.1
@@ -744,6 +794,15 @@ def _oc_translate_agent_frontmatter(content: str) -> str:
     # Add mode if missing
     if not re.search(r'^mode:\s*', fm, re.MULTILINE):
         fm = fm.rstrip("\n") + "\nmode: subagent\n"
+
+    name = re.search(r'^name:\s*(\S+)', fm, re.MULTILINE)
+    if name and name.group(1) in OC_REVIEWER_AGENTS and "permission:" not in fm:
+        shell = ['    "*": deny']
+        shell += [f'    "{p}": allow' for p in OC_REVIEWER_SHELL_ALLOW]
+        shell += [f'    "{p}": {e}' for p, e in OC_REVIEWER_SHELL_LAST]
+        fm = (fm.rstrip("\n") + f"\nsteps: {OC_REVIEWER_STEPS}\n"
+              "permission:\n  edit: deny\n  webfetch: deny\n  task: deny\n  bash:\n"
+              + "\n".join(shell) + "\n")
 
     return f"---{fm}---{body}"
 
@@ -967,8 +1026,13 @@ def _oc_build_config_json(oc: Path) -> None:
             "question": "allow",
             "bash": {
                 "git push --force *": "deny",
-                "rm -rf /*": "deny"
-            }
+                # `rm -rf / *` blocks `rm -rf /` with or without arguments, not
+                # `rm -rf /tmp/x` (the former `rm -rf /*` matched every absolute path)
+                "rm -rf / *": "deny"
+            },
+            # opencode 2.x `task` = the V2 `subagent` action: only GSE-One's
+            # agents and `general` (production) can be started as subagents.
+            "task": {"*": "deny", **{a: "allow" for a in OC_SUBAGENT_ALLOW}},
         }
     }
     write_file(oc / "opencode.json", json.dumps(config, indent=2) + "\n")
@@ -1638,6 +1702,18 @@ def verify() -> None:
         ok_exists = path.exists()
         print(f"    {name}: {'OK' if ok_exists else 'MISSING'}")
         if not ok_exists: errors.append(f"opencode: missing {name}")
+
+    # Reviewer agents read-only + subagent allowlist (opencode 2.3+ background subagents)
+    ro_missing = [a for a in OC_REVIEWER_AGENTS
+                  if not re.search(r"^permission:\n  edit: deny\n", (oc / "agents" / f"{a}.md").read_text(encoding="utf-8")
+                                   .split("---", 2)[1], re.MULTILINE)]
+    if ro_missing:
+        errors.append(f"opencode: reviewer agents without read-only permission: {', '.join(ro_missing)}")
+    else:
+        print(f"    Reviewers read-only: all {len(OC_REVIEWER_AGENTS)}")
+    oc_task = json.loads((oc / "opencode.json").read_text(encoding="utf-8")).get("permission", {}).get("task", {})
+    if oc_task.get("*") != "deny" or any(oc_task.get(a) != "allow" for a in OC_SUBAGENT_ALLOW):
+        errors.append("opencode: opencode.json permission.task must deny '*' and allow the GSE-One agents + general")
 
     # Skill frontmatter `name:` check (required by opencode loader)
     missing_name = []

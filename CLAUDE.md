@@ -35,7 +35,7 @@ Common to all 11 agents: YAML frontmatter with `name` + `description`; opening `
 
 ### Build pipeline — mandatory for every commit to main
 Every commit to main MUST follow this full pipeline:
-1. **Bump** `VERSION` (patch for fixes, minor for features)
+1. **Bump** `VERSION` — **patch only** (third number: `0.93.0` → `0.93.1`), whatever the change; see Versioning — Version freeze
 2. **Update `CHANGELOG.md`** — add a `## [X.Y.Z] - YYYY-MM-DD` block at the top with `### Added/Changed/Fixed/Removed` sections per Keep a Changelog convention
 3. **Generate** — `cd gse-one && python3 gse_generate.py --verify`
 4. **Add all** — VERSION, CHANGELOG.md, manifests, all regenerated files in `plugin/`
@@ -131,6 +131,7 @@ This is done by `_localize_registry_resolution()` — the FINAL step of `gse_gen
 **Curl-based entry point (since v0.62.7):** end users install via a POSIX-sh bootstrap `install.sh` at the repo root, served at `https://raw.githubusercontent.com/nicolasguelfi/gensem/main/install.sh`. The bootstrap detects the platforms present on PATH (claude, cursor, opencode, codex, gemini): exactly one → auto-picked; several → it fails fast asking for `GSE_PLATFORM` (one agent per project is the norm; `GSE_PLATFORM=all` opts into everything). The mode is NOT detected — it defaults to `project`, overridable via `GSE_MODE=machine` or `GSE_MODE=sandbox`. It resolves the release tarball and delegates to `install.py` — it does not duplicate install logic. Shell-level env-var overrides (`GSE_PLATFORM`, `GSE_MODE`, `GSE_VERSION`, `GSE_PROJECT_DIR`) let advanced users bypass auto-detection; they are documented for end users in README's "Environment variables" section. The registry invariant and the per-mode registry table above remain authoritative for all resolution; `install.sh` simply auto-selects one of those modes at run time. Maintainers adding a new install mode update the table and `install.py` — `install.sh` inherits the change automatically through the delegation.
 
 ### Versioning
+- **Version freeze — the second number never moves without the maintainer's explicit decision (rule set in stone, 2026-11-23).** Every release bumps the third number only: `0.93.0` → `0.93.1` → `0.93.2` …, for fixes and for features alike. Moving to `0.94.0` (or `1.0.0`) is decided explicitly by the maintainer, in their own words, for that release; never infer it from the size of the change, from a version matrix, or from a peer session. **Why:** v0.93.0 was cut as a minor bump without being asked (the release should have been 0.92.2); the maintainer reserves the minor/major numbers for deliberate milestones. **How to apply:** before Step 1 of the build pipeline, read `VERSION` and add one to the third number; if a change seems to call for more, ask, and default to the patch bump.
 - Bump `VERSION` file, then run the generator — it propagates to both plugin.json manifests.
 - Commit style: `feat:`, `fix:`, `docs:` prefixes. Check recent `git log` for conventions.
 
@@ -337,7 +338,7 @@ This phase detected 4 false positives out of 12 clusters in the first post-audit
 
 **Phase 3 — Cluster-based application.** Apply fixes grouped by cluster theme (same cause root), not by file. A cluster may touch multiple files atomically — that's fine. The benefit is a commit message that tells a coherent story ("TASK state machine drift", "invocation contract drift", "decisions.md path unification") rather than a flat list of unrelated edits. Each cluster → one or more files → one commit message rationale.
 
-**Phase 4 — Version bump + CHANGELOG + regen + commit + push.** Apply the full build pipeline per the `Build pipeline` rule. Use the version bump matrix:
+**Phase 4 — Version bump + CHANGELOG + regen + commit + push.** Apply the full build pipeline per the `Build pipeline` rule. **Since 2026-11-23 every bump is a patch bump (Versioning — Version freeze); the matrix below is historical and only tells which releases would have deserved a milestone — a minor or major bump needs the maintainer's explicit decision.**
 
 | Release scope | Bump | Example |
 |---|:-:|---|

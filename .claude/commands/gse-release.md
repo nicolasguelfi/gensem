@@ -1,6 +1,6 @@
 ---
 description: "Run the mandatory GSE-One build pipeline for a commit to main: VERSION bump, CHANGELOG entry, generator --verify, add, commit, push, and the vX.Y.Z tag that triggers the release workflow. Thin executable checklist over CLAUDE.md > Critical rules > Build pipeline (canonical)."
-argument-hint: "[patch | minor] [commit subject]"
+argument-hint: "[patch] [commit subject]"
 ---
 
 # /gse-release — Build pipeline checklist (maintainer)
@@ -17,7 +17,7 @@ Executes the **mandatory 6-step pipeline** for every commit to main, as defined 
 
 ### Step 1 — Bump VERSION
 
-Read the current root `VERSION`. Choose the bump: **patch** for fixes/docs/cosmetic, **minor** for features, schema changes, or audit-engine semantics changes (full matrix: CLAUDE.md > Post-audit fix workflow Phase 4). Use the `$ARGUMENTS` hint if given; otherwise propose one with a single-default question.
+Read the current root `VERSION` and bump the **third number only** (`0.93.0` → `0.93.1`), for fixes and features alike — CLAUDE.md > Versioning — Version freeze. A minor or major bump happens only when the maintainer explicitly asks for it for this release; if `$ARGUMENTS` says `minor`/`major` without that explicit request, ask first.
 
 ### Step 2 — CHANGELOG entry
 

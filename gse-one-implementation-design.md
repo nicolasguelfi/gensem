@@ -797,6 +797,8 @@ The backlog skill is also called internally by:
 These internal calls don't show the backlog display — they just modify backlog.yaml.
 ````
 
+**External advisor tickets (v0.93.4).** A trainer, mentor or expert who inspects the project from outside leaves GitHub issues labelled `gse-advisor` and never writes in the repository — no conflict with the user's sprint, no decision taken for them. Three surfaces read them: `/gse:plan --strategic` Step 0.4 — Advisor Tickets (fetch with `gh issue list --label gse-advisor`, one grouped Gate: accept / keep in pool / decline with a reason, TASKs with `origin: advisor` + `origin_ref` + `github_issue`, DEC- entries, answer written on the issue, declined issues closed), `/gse:deliver` Step 9.5 (delivered advisor TASKs: comment + close their issue), and the `origin` enum of `templates/backlog.yaml`. No configuration key: the label is fixed, and the step degrades to an Inform line without a GitHub remote or a signed-in `gh`. Cost (Meta-4 — Lightness discipline): one question per sprint, only when the advisor left tickets.
+
 ### 5.3 `/gse:collect` — External Source Mode Extension
 
 ````markdown

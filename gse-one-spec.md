@@ -1271,7 +1271,7 @@ The agent also creates backlog items **automatically** during other activities (
 |---------|----------|-------------|
 | `/gse:collect` | **Collect** | Inventory and classify artefacts from **internal** (current project) and **external** (other local projects, GitHub repos) sources. Import open GitHub Issues into the backlog. See Section 4 |
 | `/gse:assess` | **Assess** | Evaluate artefact current status with respect to project goals, identify gaps and risks. For external sources, evaluate compatibility and integration cost |
-| `/gse:plan` | **Plan** | Select items from the backlog pool and promote them to the current sprint. Create new items if needed. **At strategic level:** creates `.gse/plan.yaml` with workflow, budget, and sprint branch. **At tactical level:** adjusts scope and reorders tasks within the active plan. The plan is a **living, filtered view** of the backlog maintained by the orchestrator. |
+| `/gse:plan` | **Plan** | Select items from the backlog pool and promote them to the current sprint. Create new items if needed. **At strategic level:** studies the external advisor's `gse-advisor` tickets (one grouped Gate, §12.3 — Unified Backlog), then creates `.gse/plan.yaml` with workflow, budget, and sprint branch. **At tactical level:** adjusts scope and reorders tasks within the active plan. The plan is a **living, filtered view** of the backlog maintained by the orchestrator. |
 
 ### 3.6 Engineering
 
@@ -2335,7 +2335,7 @@ items:
       derives_from: [DES-003]
     acceptance_criteria: "User can login via GitHub OAuth"
     status: in-progress              # open | planned | in-progress | review | reviewed | fixing | done | delivered | deferred
-    origin: plan                     # plan | review | collect | user | import | ad-hoc
+    origin: plan                     # plan | review | collect | user | import | ad-hoc | advisor
     origin_ref: null
     git:
       branch: gse/sprint-03/feat/auth
@@ -2382,6 +2382,8 @@ items:
 - **Git state is per-TASK** — branch and worktree info lives with the task, not in a separate file
 - **Sprint plan = living filtered view** — `.gse/plan.yaml` is maintained by the orchestrator throughout the sprint. Its authoritative schema is defined in `plugin/templates/plan.yaml`. Key fields: `version`, `id` (PLN-NNN), `sprint`, `mode`, `status` (active|completed|abandoned), `goal`, `tasks[]` (with order, complexity, branch), `budget` (total/consumed/remaining), `workflow` (expected/active/completed/pending/skipped), `coherence` (last_evaluated, scope_changes, alerts), `risks[]`. At delivery, a snapshot is archived to `docs/sprints/sprint-NN/plan-summary.md`
 - **Merge queue = derived view** — items where `status == done AND git.branch_status == active`
+
+**External advisor tickets.** An external advisor (a trainer, a mentor, an expert reviewer) inspects the project from outside and never writes in it: they open GitHub issues labelled `gse-advisor` on the project's repository. The advisor advises; the user decides. The tickets are studied once per sprint, at the opening of the next sprint (`/gse:plan --strategic` Step 0.4 — Advisor Tickets), in one grouped Gate whatever their number: *Accept into this sprint*, *Keep in the pool* or *Decline* with a reason. An accepted or kept ticket becomes a TASK with `origin: advisor`, `origin_ref` (the issue URL) and `github_issue`; accepting and declining are recorded as DEC- entries, and the decision is written back on the issue (declined issues are closed; accepted ones close when `/gse:deliver` delivers their TASK). The step never blocks the activity: without a GitHub remote or a signed-in `gh`, it is skipped with an Inform line. Micro mode has no sprint planning, so advisor tickets reach a Micro project only through `/gse:backlog sync`.
 
 **Archival (multi-sprint scalability):**
 

@@ -38,7 +38,7 @@ Before selecting items or creating the plan, scan for pending Open Questions (`O
 
 1. **Enumerate sources** — list `docs/intent.md` (always) and `docs/sprints/sprint-{NN}/*.md` for the current sprint if it exists.
 2. **Parse `## Open Questions`** sections across those files. Extract entries where `status: pending` AND `resolves_in: PLAN`.
-3. **If zero matches** → skip this step, proceed to Step 0.5.
+3. **If zero matches** → skip this step, proceed to Step 0.4 — Advisor Tickets.
 4. **If ≥ 1 match** → enter the Open Questions Gate. Behavior depends on `profile.yaml → dimensions.decision_involvement`:
 
    - **`autonomous`**: the agent generates proposed answers using intent + project profile + GSE conventions. Low-impact questions (`impact: behavioral` | `cosmetic`) are applied as Inform-tier, resolutions recorded with `answered_by: agent`. High-impact questions (`impact: scope-shaping` | `architectural`) are escalated to a Gate for explicit user validation.
@@ -53,7 +53,25 @@ Before selecting items or creating the plan, scan for pending Open Questions (`O
 
 6. **Scope-shaping propagation** — for any question resolved with `impact: scope-shaping`, refresh `backlog.yaml` task sizings affected by the resolution. If an assigned sprint exists and the change would push the plan over budget, raise a tactical replan notice (Inform-tier).
 
-7. Proceed to Step 0.5 (Previous Sprint Analysis, if applicable), then Step 1 (Present Pool).
+7. Proceed to Step 0.4 (Advisor Tickets), Step 0.5 (Previous Sprint Analysis, if applicable), then Step 1 (Present Pool).
+
+#### Step 0.4 — Advisor Tickets (external advisor, once per sprint)
+
+**Runs for every sprint, the first one included**, whatever the outcome of Step 0.
+
+An **external advisor** — a trainer, a mentor, an expert reviewer — never writes in the project: they open GitHub issues labelled **`gse-advisor`** on the project's repository. They advise; the user decides. This step is where those tickets are studied, once per sprint, at the opening of the next sprint (spec §12.3 — Unified Backlog, "External advisor tickets").
+
+1. **Fetch** — only when the `origin` remote is on GitHub and `gh auth status` succeeds:
+   `gh issue list --label gse-advisor --state open --json number,title,body,url,author,createdAt --limit 50`.
+   Otherwise (no GitHub remote, `gh` missing or signed out, offline): one Inform line — *"Advisor tickets not checked: <reason>."* — and go on. This step never blocks the activity.
+2. **Keep the new ones** — drop the issues already linked to a backlog item (`github_issue` equal to the issue number, in `backlog.yaml` or `backlog-archive.yaml`). Zero new tickets → skip silently (no question).
+3. **One grouped Gate for all of them** — whatever the number of tickets, a single question. For each ticket: number, title, advisor (author login), a one-line summary of the body, and the agent's recommendation with its consequence (P8). Options per ticket: **Accept into this sprint** / **Keep in the pool** / **Decline** (a one-line reason is required) — plus *Discuss* for the whole question. *"As recommended"* answers every ticket at once. With `profile.yaml → dimensions.decision_involvement: supervised`, present the tickets without a recommendation. Never decide on the user's behalf, even with `autonomous`: an advisor ticket is advice to the user, so the decision is always theirs. Cost: one question per sprint, only when the advisor left tickets.
+4. **Apply** —
+   - *Accept* → create a TASK (Add Mode rules of `/gse:backlog`): `origin: advisor`, `origin_ref: <issue URL>`, `github_issue: <number>`, title and description from the issue, `sprint: null` for now — Step 2 selects it into this sprint like any pool item (it counts against the budget). Record a `DEC-NNN` (*"Advisor ticket #N accepted into sprint NN"*).
+   - *Keep in the pool* → the same TASK with `sprint: null`; it shows in the pool of later sprints and is not asked again.
+   - *Decline* → no TASK; record a `DEC-NNN` with the reason.
+5. **Answer the advisor on GitHub** — `gh issue comment <N> --body "<decision> — <reason or TASK id>, sprint NN (GSE-One)"`; for *Decline*, also `gh issue close <N> --reason "not planned"`. Accepted tickets are closed by `/gse:deliver` when their TASK is delivered. If a `gh` call fails, say so in one Inform line and keep the local decision.
+
 
 #### Step 0.5 — Previous Sprint Analysis (Sprint N+1 only)
 

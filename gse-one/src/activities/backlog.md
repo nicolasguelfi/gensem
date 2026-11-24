@@ -126,7 +126,7 @@ Add to `.gse/backlog.yaml`:
   status: open  # open | planned | in-progress | review | reviewed | fixing | done | delivered | deferred
   priority: should  # default, can be changed
   complexity: null  # set during planning
-  origin: user  # plan | review | collect | user | import | ad-hoc
+  origin: user  # plan | review | collect | user | import | ad-hoc | advisor
   created: 2026-01-20T10:30:00Z
   git:
     branch: null

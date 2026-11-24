@@ -294,4 +294,5 @@ Remove backup tags older than `backup_retention_days` (default: 30):
    - Branches cleaned
    - Plan snapshot: `docs/sprints/sprint-{NN}/plan-summary.md`
    - Next step: propose `/gse:compound`
-9.5 **Regenerate dashboard** — Run `python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/dashboard.py"` to update `docs/dashboard.html` with delivery status and release info.
+9.5 **Answer advisor tickets** — for each TASK delivered in this sprint with `origin: advisor` and a `github_issue`: `gh issue comment <N> --body "Delivered in <tag> (TASK-NNN)"` then `gh issue close <N> --reason completed` (spec §12.3 — Unified Backlog, "External advisor tickets"). `gh` unavailable → one Inform line; the issue stays open and the next delivery retries.
+9.6 **Regenerate dashboard** — Run `python3 "$([ -s .gse/registry ] && cat .gse/registry || cat ~/.gse-one)/tools/dashboard.py"` to update `docs/dashboard.html` with delivery status and release info.

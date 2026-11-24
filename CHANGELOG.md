@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.93.4] - 2026-11-24
+
+*An external advisor (trainer, mentor, expert) advises through GitHub issues; the user studies them once per sprint and decides.*
+
+### Added
+- Added `/gse:plan --strategic` Step 0.4 — Advisor Tickets: `gse-advisor` GitHub issues studied in one grouped Gate (accept, keep in pool, decline with reason).
+- Added `origin: advisor` to the backlog (issue URL in `origin_ref`, number in `github_issue`); decisions recorded as DEC- and answered on the issue.
+- Added `/gse:deliver` Step 9.5: delivered advisor TASKs comment on and close their issue.
+
 ## [0.93.3] - 2026-11-23
 
 ### Changed

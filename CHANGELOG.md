@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.93.5] - 2026-11-27
+
+### Fixed
+- Fixed `/gse:deliver` Step 5 — Cleanup order: worktrees are removed before their branches (git refuses to delete a branch checked out in a worktree).
+- Fixed `/gse:deliver` cleanup after a squash merge: squashed branches are deleted with `-D` after their backup tag, instead of silently kept.
+- Fixed `/gse:task --spike`: the spike branch deletion is spelled out (worktree remove, backup tag, `git branch -D`).
+
 ## [0.93.4] - 2026-11-24
 
 *An external advisor (trainer, mentor, expert) advises through GitHub issues; the user studies them once per sprint and decides.*

@@ -163,7 +163,7 @@ Create a new TASK entry in `backlog.yaml`:
 
 **Spike rules:**
 1. **Complexity-boxed** — maximum 3 points. If estimated > 3, reject: "A spike must stay small (max 3 complexity points). Split into a smaller experiment or create a normal task."
-2. **Non-deliverable** — the spike branch is deleted after completion. Code cannot be merged to main. If reusable code emerges, create a normal TASK to implement properly with REQS/TESTS.
+2. **Non-deliverable** — the spike branch is deleted after completion, once its DEC- (rule 3) is recorded: `git worktree remove .worktrees/sprint-{NN}-task-{slug}` (worktree strategy), `git tag gse-backup/sprint-{NN}-task-{slug}-deleted gse/sprint-{NN}/task/{slug}`, then `git branch -D gse/sprint-{NN}/task/{slug}` (`-D`: a spike is never merged; the tag keeps the experiment). Code cannot be merged to main. If reusable code emerges, create a normal TASK to implement properly with REQS/TESTS.
 3. **Must produce DEC-** — at completion, the agent creates a DEC- artefact documenting: the question, the approach tried, the answer (yes/no/partial), and next steps.
 4. **Beginner Gate** — if `it_expertise: beginner`, present a Gate before starting: "This is an experiment — the code won't be kept. It's useful to test an idea before committing to it. Should I proceed?"
 5. **Bypasses REQS/TESTS guardrails** — the spike does not need requirements or test strategy. The question IS the requirement; the experiment IS the test.

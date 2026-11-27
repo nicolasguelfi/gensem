@@ -475,15 +475,15 @@ Version is determined by:
 #### Step 5 — Cleanup
 
 If `git.cleanup_on_deliver` is true:
-1. Delete merged feature branches:
-   ```bash
-   git branch -d gse/sprint-<N>/feat/<name>
-   ```
-2. Remove worktree directories:
+1. Remove worktree directories first (git refuses to delete a branch checked out in a worktree):
    ```bash
    git worktree remove .worktrees/sprint-<N>-feat-<name>
    ```
-3. Delete the sprint integration branch if Step 3 merged it (`git branch -d`, no question, one Inform line; `cleanup_on_deliver: false` keeps every branch).
+2. Delete merged feature branches, each after its `-deleted` backup tag: `git branch -d` after a merge or rebase, `git branch -D` after a squash (a squashed branch is never an ancestor, so `-d` refuses it):
+   ```bash
+   git branch -d gse/sprint-<N>/feat/<name>
+   ```
+3. Delete the sprint integration branch if Step 3 merged it (`git branch -d`; `-D` after its backup tag when Step 3 squashed; no question, one Inform line; `cleanup_on_deliver: false` keeps every branch).
 4. Update each delivered TASK in `.gse/backlog.yaml`: `status: delivered`, `git.branch_status: deleted`, `git.worktree_status: removed`.
 
 #### Step 6 — Generate Release Notes

@@ -226,19 +226,20 @@ If `config.yaml` field `tag_on_deliver` is `true` (and `--skip-tag` was not spec
 
 ### Step 5 — Cleanup
 
-Applied when `config.yaml → git.cleanup_on_deliver` is `true` (default) and `--skip-cleanup` was not given; otherwise branches and worktrees are kept and one Inform line says so. No question is asked — `git branch -d` refuses an unmerged branch, and the delivery tag keeps the history.
+Applied when `config.yaml → git.cleanup_on_deliver` is `true` (default) and `--skip-cleanup` was not given; otherwise branches and worktrees are kept and one Inform line says so. No question is asked — only branches merged in Step 2 are deleted, each after its class-2 backup tag (Step 0), and the delivery tag keeps the history.
 
-1. **Delete merged feature branches**:
-   ```
-   git branch -d gse/sprint-{NN}/{type}/{name}
-   ```
+The order matters: git refuses to delete a branch still checked out in a worktree, so the worktree goes first.
 
-2. **Remove worktree directories**:
+1. **Remove worktree directories** (`worktree` strategy):
    ```
    git worktree remove .worktrees/sprint-{NN}-{type}-{name}
    ```
 
-3. **Sprint branch cleanup** — Only if Step 3 — Merge Sprint into Main merged the sprint: `git branch -d gse/sprint-{NN}/integration` and one Inform line *"Deleted the merged sprint branch (to keep sprint branches: set `git.cleanup_on_deliver: false`)."* If the merge was deferred, the branch is kept and the line says so.
+2. **Delete merged feature branches** — create the class-2 tag `gse-backup/sprint-{NN}-{type}-{name}-deleted` first (Step 0), then:
+   - merged with **merge** or **rebase** in Step 2: `git branch -d gse/sprint-{NN}/{type}/{name}`
+   - merged with **squash** in Step 2: `git branch -D gse/sprint-{NN}/{type}/{name}` — a squashed branch is never an ancestor of the sprint branch, so `-d` would refuse it as unmerged; the backup tag keeps its commits.
+
+3. **Sprint branch cleanup** — Only if Step 3 — Merge Sprint into Main merged the sprint: `git branch -d gse/sprint-{NN}/integration` (after a **squash** into `main`: tag `gse-backup/sprint-{NN}-integration-deleted`, then `git branch -D`) and one Inform line *"Deleted the merged sprint branch (to keep sprint branches: set `git.cleanup_on_deliver: false`)."* If the merge was deferred, the branch is kept and the line says so.
 
 4. **Update TASKs** in `backlog.yaml`:
    - `status: delivered`
